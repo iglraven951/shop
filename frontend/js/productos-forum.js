@@ -84,26 +84,31 @@ class ForumProductManager {
     async cargarProductos() {
         try {
             console.log('📦 Cargando productos...');
-            const response = await fetch('http://localhost:5000/api/products');
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+            try {
+                const response = await fetch('http://localhost:5000/api/products', {
+                    signal: AbortSignal.timeout(3000)
+                });
+                const data = await response.json();
 
-            const data = await response.json();
-            console.log('📦 Respuesta de API:', data);
-
-            if (data.data && data.data.products && Array.isArray(data.data.products)) {
+                if (data.data && data.data.products && Array.isArray(data.data.products)) {
+                    this.productos = data.data.products;
+                    console.log(`✅ ${this.productos.length} productos cargados desde API`);
+                } else {
+                    throw new Error('Formato inválido');
+                }
+            } catch (apiError) {
+                console.log('⚠️ Backend no disponible, usando datos de ejemplo...');
+                await simulateNetworkDelay(300);
+                const data = MOCK_PRODUCTS;
                 this.productos = data.data.products;
-                console.log(`✅ ${this.productos.length} productos cargados`);
-                this.productosFiltrados = [...this.productos];
-                this.currentPage = 1;
-                this.mostrarProductos();
-                this.actualizarContador();
-            } else {
-                console.error('❌ Formato de respuesta inválido:', data);
-                this.mostrarError('Formato de datos inválido');
+                console.log(`✅ ${this.productos.length} productos cargados (DEMO)`);
             }
+
+            this.productosFiltrados = [...this.productos];
+            this.currentPage = 1;
+            this.mostrarProductos();
+            this.actualizarContador();
         } catch (error) {
             console.error('❌ Error cargando productos:', error);
             this.mostrarError(`Error: ${error.message}`);
@@ -113,14 +118,18 @@ class ForumProductManager {
     async cargarCategorias() {
         try {
             console.log('📂 Cargando categorías...');
-            const response = await fetch('http://localhost:5000/api/categories');
+            let data;
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+            try {
+                const response = await fetch('http://localhost:5000/api/categories', {
+                    signal: AbortSignal.timeout(3000)
+                });
+                data = await response.json();
+            } catch (apiError) {
+                console.log('⚠️ Usando categorías de ejemplo...');
+                await simulateNetworkDelay(200);
+                data = MOCK_CATEGORIES;
             }
-
-            const data = await response.json();
-            console.log('📂 Categorías:', data);
 
             if (data.data && data.data.categories && Array.isArray(data.data.categories)) {
                 const categoriesList = document.getElementById('categories-list');
