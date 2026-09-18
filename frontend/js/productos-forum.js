@@ -3,6 +3,37 @@
  * Sistema simple y funcional de foro de productos
  */
 
+// Datos Mock
+const MOCK_PRODUCTS = {
+    data: {
+        products: [
+            { id: 1, title: "iPhone 14 Pro Max", description: "iPhone 14 Pro Max en perfecto estado", price: 1200, category: "Electrónica", seller: { name: "Juan Pérez", rating: 4.8, reviews: 45 }, rating: 4.8, image: "https://via.placeholder.com/300x300?text=iPhone+14", location: { lat: 40.7128, lng: -74.0060 }, tags: ["teléfono", "apple"] },
+            { id: 2, title: "Laptop Dell XPS 15", description: "Laptop de gaming con RTX 3060", price: 1500, category: "Computadoras", seller: { name: "María García", rating: 4.9, reviews: 62 }, rating: 4.9, image: "https://via.placeholder.com/300x300?text=Dell+XPS", location: { lat: 34.0522, lng: -118.2437 }, tags: ["laptop", "gaming"] },
+            { id: 3, title: "Samsung Galaxy Watch 5", description: "Reloj inteligente Samsung", price: 350, category: "Accesorios", seller: { name: "Carlos López", rating: 4.7, reviews: 28 }, rating: 4.7, image: "https://via.placeholder.com/300x300?text=Galaxy+Watch", location: { lat: 41.8781, lng: -87.6298 }, tags: ["reloj", "samsung"] },
+            { id: 4, title: "Sony WH-1000XM5", description: "Auriculares con cancelación de ruido", price: 380, category: "Audio", seller: { name: "Ana Martínez", rating: 4.6, reviews: 35 }, rating: 4.6, image: "https://via.placeholder.com/300x300?text=Sony", location: { lat: 37.7749, lng: -122.4194 }, tags: ["auriculares", "sony"] },
+            { id: 5, title: "PlayStation 5", description: "PS5 con dos controles y juegos", price: 650, category: "Gaming", seller: { name: "Roberto Sánchez", rating: 5, reviews: 18 }, rating: 5, image: "https://via.placeholder.com/300x300?text=PS5", location: { lat: 39.7392, lng: -104.9903 }, tags: ["consola", "gaming"] },
+            { id: 6, title: "GoPro Hero 11", description: "Cámara de acción 5.3K", price: 450, category: "Cámaras", seller: { name: "Fernando Ruiz", rating: 4.8, reviews: 22 }, rating: 4.8, image: "https://via.placeholder.com/300x300?text=GoPro", location: { lat: 47.6062, lng: -122.3321 }, tags: ["cámara", "gopro"] },
+            { id: 7, title: "iPad Air 5", description: "iPad Air 64GB color plata", price: 700, category: "Tablets", seller: { name: "Elena Gómez", rating: 4.9, reviews: 41 }, rating: 4.9, image: "https://via.placeholder.com/300x300?text=iPad+Air", location: { lat: 42.3601, lng: -71.0589 }, tags: ["tablet", "ipad"] },
+            { id: 8, title: "DJI Mini 3 Pro", description: "Dron compacto con cámara 4K", price: 550, category: "Drones", seller: { name: "Diego Torres", rating: 4.7, reviews: 19 }, rating: 4.7, image: "https://via.placeholder.com/300x300?text=DJI", location: { lat: 25.7617, lng: -80.1918 }, tags: ["dron", "dji"] }
+        ]
+    }
+};
+
+const MOCK_CATEGORIES = {
+    data: {
+        categories: [
+            { name: "Electrónica", icon: "📱" },
+            { name: "Computadoras", icon: "💻" },
+            { name: "Audio", icon: "🎵" },
+            { name: "Gaming", icon: "🎮" },
+            { name: "Cámaras", icon: "📷" },
+            { name: "Tablets", icon: "📱" },
+            { name: "Accesorios", icon: "🔌" },
+            { name: "Drones", icon: "🛸" }
+        ]
+    }
+};
+
 class ForumProductManager {
     constructor() {
         this.productos = [];
