@@ -4,11 +4,170 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DiscoveryShop - Foro de Productos</title>
-    <meta http-equiv="refresh" content="0;url=./frontend/">
-    <link rel="canonical" href="./frontend/">
+    <link rel="stylesheet" href="frontend/css/forum-styles.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body>
-    <p>Redirigiendo a DiscoveryShop...</p>
-    <p><a href="./frontend/">Click aquí si no se redirige automáticamente</a></p>
+    <!-- Header -->
+    <header class="header" role="banner">
+        <div class="header-content">
+            <div class="logo-section">
+                <div class="logo">🛍️ DiscoveryShop</div>
+                <p class="tagline">Foro de Productos - Compra, Vende, Conecta</p>
+            </div>
+
+            <div class="search-container">
+                <input type="text" placeholder="Buscar productos..." id="search-input" class="search-input" autocomplete="off" aria-label="Buscar productos">
+                <button class="search-btn" id="search-btn" aria-label="Buscar">🔍</button>
+            </div>
+
+            <div class="header-actions">
+                <button class="user-btn" id="user-btn">Iniciar Sesión</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Contenedor Principal -->
+    <div class="main-container" role="main">
+        <!-- Sidebar de Filtros -->
+        <aside class="filters-panel" role="complementary" aria-label="Filtros de búsqueda">
+            <div class="filters-header">
+                <h3>Filtros</h3>
+                <button class="clear-filters-btn" id="clear-filters-btn" aria-label="Limpiar filtros">Limpiar</button>
+            </div>
+
+            <!-- Categorías -->
+            <div class="filter-group">
+                <h4 class="filter-title">Categoría</h4>
+                <div class="filter-options" id="categories-list">
+                    <!-- Se llena dinámicamente -->
+                </div>
+            </div>
+
+            <!-- Rango de Precio -->
+            <div class="filter-group">
+                <h4 class="filter-title">Rango de Precio</h4>
+                <div class="price-filter">
+                    <div class="price-inputs">
+                        <input type="number" placeholder="Mín" id="price-min" class="price-input" min="0" aria-label="Precio mínimo">
+                        <span class="price-separator" aria-hidden="true">-</span>
+                        <input type="number" placeholder="Máx" id="price-max" class="price-input" min="0" aria-label="Precio máximo">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calificación -->
+            <div class="filter-group">
+                <h4 class="filter-title">Calificación Mínima</h4>
+                <div class="filter-options">
+                    <label class="filter-option">
+                        <input type="radio" name="rating" value="0" checked aria-label="Todas las calificaciones">
+                        <span>Todas</span>
+                    </label>
+                    <label class="filter-option">
+                        <input type="radio" name="rating" value="4" aria-label="4 estrellas o más">
+                        <span>⭐⭐⭐⭐ & más</span>
+                    </label>
+                    <label class="filter-option">
+                        <input type="radio" name="rating" value="3" aria-label="3 estrellas o más">
+                        <span>⭐⭐⭐ & más</span>
+                    </label>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Sección Principal de Productos (FORO VIEW) -->
+        <section class="products-section" aria-label="Lista de productos">
+            <!-- Cabecera -->
+            <div class="products-header">
+                <div class="header-left">
+                    <h1 id="products-title">Productos en Venta</h1>
+                    <p class="result-count" id="result-count" aria-live="polite">Cargando...</p>
+                </div>
+                <div class="sort-container">
+                    <label for="sort-select">Ordenar por:</label>
+                    <select id="sort-select" class="sort-select" aria-label="Ordenar productos">
+                        <option value="reciente">Más Reciente</option>
+                        <option value="precio-asc">Precio: Menor a Mayor</option>
+                        <option value="precio-desc">Precio: Mayor a Menor</option>
+                        <option value="rating">Mejor Calificados</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Lista de Productos (FORO) -->
+            <div class="forum-list" id="products-grid" role="list">
+                <div class="loading-spinner">
+                    <div class="spinner"></div>
+                    <p>Cargando productos...</p>
+                </div>
+            </div>
+
+            <!-- Mensaje vacío -->
+            <div class="empty-state" id="empty-state" style="display: none;" role="status">
+                <div class="empty-content">
+                    <p style="color: #999; font-size: 18px;">No hay productos que coincidan con tu búsqueda</p>
+                </div>
+            </div>
+
+            <!-- Paginación -->
+            <nav class="pagination" id="pagination" style="display: none;" aria-label="Paginación">
+                <button class="pagination-btn" id="prev-page" disabled aria-label="Página anterior">← Anterior</button>
+                <div class="page-info" id="page-info" aria-current="page">Página 1</div>
+                <button class="pagination-btn" id="next-page" aria-label="Página siguiente">Siguiente →</button>
+            </nav>
+        </section>
+
+        <!-- Panel Detalle de Producto -->
+        <aside class="product-detail-panel" id="product-detail-panel" style="display: none;" role="complementary" aria-label="Detalles del producto">
+            <div class="panel-header">
+                <h2 class="panel-title">Detalles del Producto</h2>
+                <button class="close-btn" id="close-detail-btn" aria-label="Cerrar panel de detalles">✕</button>
+            </div>
+            <div class="panel-content" id="panel-content">
+                <!-- Se llena dinámicamente -->
+            </div>
+        </aside>
+    </div>
+
+    <!-- Modal Mapa -->
+    <div class="modal" id="map-modal" style="display: none;">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Ubicación del Vendedor</h2>
+                <button class="close-btn" id="close-map-btn" type="button" aria-label="Cerrar mapa">✕</button>
+            </div>
+            <div class="modal-body">
+                <div id="map" style="height: 500px; width: 100%; border-radius: 8px; background: #2a2a2a;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Mensajes -->
+    <div class="modal" id="messages-modal" style="display: none;">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Mensajes con Vendedor</h2>
+                <button class="close-btn" id="close-messages-btn" type="button" aria-label="Cerrar chat">✕</button>
+            </div>
+            <div class="modal-body">
+                <div id="messages-list" style="height: 320px; overflow-y: auto; margin-bottom: 16px; border: 1px solid #333; padding: 16px; border-radius: 8px; background: #0a0a0a;">
+                    <!-- Se llenan dinámicamente -->
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="message-input" placeholder="Escribe tu mensaje..." style="flex: 1; padding: 11px 14px; border: 1px solid #444; border-radius: 8px; background: #1a1a1a; color: white; font-size: 14px;" autocomplete="off">
+                    <button id="send-message-btn" class="btn btn-primary" type="button" style="min-width: 100px;">Enviar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notificación -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="frontend/js/productos-forum.js"></script>
+    <script src="frontend/js/auth.js"></script>
 </body>
 </html>
