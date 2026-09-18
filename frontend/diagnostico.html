@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnóstico - DiscoveryShop</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #3b82f6;
+            margin-bottom: 20px;
+        }
+        .check {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid;
+            background: #1a1a1a;
+        }
+        .success {
+            border-left-color: #10b981;
+            color: #d1fae5;
+        }
+        .error {
+            border-left-color: #ef4444;
+            color: #fecaca;
+        }
+        .warning {
+            border-left-color: #f59e0b;
+            color: #fef3c7;
+        }
+        .code {
+            background: #0a0a0a;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            margin-top: 5px;
+            font-size: 12px;
+        }
+        button {
+            padding: 10px 20px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px 10px 0;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Diagnóstico de DiscoveryShop</h1>
+        <p>Esto verificará si todos los componentes están funcionando:</p>
+
+        <div id="results"></div>
+
+        <h2 style="margin-top: 30px; margin-bottom: 15px;">🧪 Pruebas Disponibles:</h2>
+        <button onclick="testAPI()">Probar API</button>
+        <button onclick="testLocalStorage()">Probar LocalStorage</button>
+        <button onclick="testProductos()">Cargar Productos</button>
+        <button onclick="location.href='/index.html'">Ir a Index.html</button>
+    </div>
+
+    <script>
+        const results = document.getElementById('results');
+
+        function addResult(title, status, message, code) {
+            const div = document.createElement('div');
+            div.className = `check ${status}`;
+            div.innerHTML = `
+                <strong>${title}</strong>: ${message}
+                ${code ? `<div class="code">${code}</div>` : ''}
+            `;
+            results.appendChild(div);
+        }
+
+        // Al cargar
+        window.addEventListener('load', () => {
+            // 1. Verificar config.js
+            if (typeof API_BASE_URL !== 'undefined') {
+                addResult('✓ config.js', 'success', 'Cargado correctamente', `API_BASE_URL = ${API_BASE_URL}`);
+            } else {
+                addResult('✗ config.js', 'error', 'No está definido API_BASE_URL');
+            }
+
+            // 2. Verificar localStorage
+            try {
+                localStorage.setItem('test', 'ok');
+                localStorage.removeItem('test');
+                addResult('✓ LocalStorage', 'success', 'Disponible');
+            } catch (e) {
+                addResult('✗ LocalStorage', 'error', 'No disponible: ' + e.message);
+            }
+
+            // 3. Verificar conexión a servidor
+            fetch('/api/products')
+                .then(r => {
+                    if (r.ok) {
+                        addResult('✓ API de productos', 'success', 'Responde correctamente');
+                    } else {
+                        addResult('⚠ API de productos', 'warning', `Status: ${r.status}`);
+                    }
+                })
+                .catch(e => {
+                    addResult('✗ API de productos', 'error', 'Error de conexión: ' + e.message);
+                });
+
+            // 4. Verificar archivos CSS
+            const cssLinks = document.querySelectorAll('link[rel="stylesheet"]');
+            addResult('✓ CSS Cargados', 'success', `${cssLinks.length} archivos CSS encontrados`);
+        });
+
+        function testAPI() {
+            fetch('/api/products')
+                .then(r => r.json())
+                .then(data => {
+                    addResult('API Test', 'success', `${data.data?.products?.length || 0} productos encontrados`, JSON.stringify(data, null, 2).substring(0, 200));
+                })
+                .catch(e => {
+                    addResult('API Test', 'error', e.message);
+                });
+        }
+
+        function testLocalStorage() {
+            try {
+                localStorage.setItem('disco_test', 'funcionando');
+                const val = localStorage.getItem('disco_test');
+                localStorage.removeItem('disco_test');
+                addResult('LocalStorage Test', 'success', `Valor guardado y recuperado: "${val}"`);
+            } catch (e) {
+                addResult('LocalStorage Test', 'error', e.message);
+            }
+        }
+
+        function testProductos() {
+            fetch('/api/products')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success && data.data.products) {
+                        const products = data.data.products;
+                        const html = products.slice(0, 3).map(p =>
+                            `<div>${p.title} - S/ ${p.price}</div>`
+                        ).join('');
+                        addResult('Productos Cargados', 'success', `${products.length} productos disponibles`, html);
+                    }
+                })
+                .catch(e => {
+                    addResult('Productos', 'error', e.message);
+                });
+        }
+    </script>
+</body>
+</html>

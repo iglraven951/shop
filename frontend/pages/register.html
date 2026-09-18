@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear Cuenta - DiscoveryShop</title>
+    <link rel="stylesheet" href="../css/modules.css">
+    <link rel="stylesheet" href="../css/auth.css">
+</head>
+<body class="auth-body">
+    <!-- Contenedor del formulario de registro -->
+    <div class="auth-container">
+        <div class="auth-card">
+            <!-- Header -->
+            <div class="auth-header">
+                <h1 class="auth-title">✨ Crear Cuenta</h1>
+                <p class="auth-subtitle">Únete a DiscoveryShop ahora</p>
+            </div>
+
+            <!-- Formulario de registro -->
+            <form id="register-form" class="auth-form" novalidate>
+                <!-- Nombre completo -->
+                <div class="form-group">
+                    <label for="full-name" class="form-label">Nombre Completo</label>
+                    <input
+                        type="text"
+                        id="full-name"
+                        name="fullName"
+                        class="form-input"
+                        placeholder="Juan Pérez García"
+                        required
+                        autocomplete="name"
+                    />
+                    <div class="form-error" id="full-name-error"></div>
+                </div>
+
+                <!-- Email -->
+                <div class="form-group">
+                    <label for="email" class="form-label">Correo Electrónico</label>
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        class="form-input"
+                        placeholder="tu@correo.com"
+                        required
+                        autocomplete="email"
+                    />
+                    <div class="form-error" id="email-error"></div>
+                </div>
+
+                <!-- Username -->
+                <div class="form-group">
+                    <label for="username" class="form-label">Nombre de Usuario</label>
+                    <input
+                        type="text"
+                        id="username"
+                        name="username"
+                        class="form-input"
+                        placeholder="mi_usuario"
+                        required
+                        autocomplete="username"
+                    />
+                    <div class="form-hint">3-20 caracteres, solo letras, números y guiones</div>
+                    <div class="form-error" id="username-error"></div>
+                </div>
+
+                <!-- Contraseña -->
+                <div class="form-group">
+                    <label for="password" class="form-label">Contraseña</label>
+                    <div class="password-field">
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            class="form-input"
+                            placeholder="••••••••"
+                            required
+                            autocomplete="new-password"
+                        />
+                        <button
+                            type="button"
+                            id="toggle-password"
+                            class="toggle-password-btn"
+                            title="Mostrar/Ocultar contraseña"
+                        >
+                            👁️
+                        </button>
+                    </div>
+                    <div class="password-strength" id="password-strength">
+                        <div class="strength-bar" id="strength-bar"></div>
+                    </div>
+                    <div class="form-hint">Mínimo 8 caracteres, incluir mayúsculas y números</div>
+                    <div class="form-error" id="password-error"></div>
+                </div>
+
+                <!-- Confirmar contraseña -->
+                <div class="form-group">
+                    <label for="password-confirm" class="form-label">Confirmar Contraseña</label>
+                    <div class="password-field">
+                        <input
+                            type="password"
+                            id="password-confirm"
+                            name="passwordConfirm"
+                            class="form-input"
+                            placeholder="••••••••"
+                            required
+                            autocomplete="new-password"
+                        />
+                        <button
+                            type="button"
+                            id="toggle-password-confirm"
+                            class="toggle-password-btn"
+                            title="Mostrar/Ocultar contraseña"
+                        >
+                            👁️
+                        </button>
+                    </div>
+                    <div class="form-error" id="password-confirm-error"></div>
+                </div>
+
+                <!-- Términos y condiciones -->
+                <div class="form-group checkbox">
+                    <input
+                        type="checkbox"
+                        id="terms"
+                        name="terms"
+                        class="form-checkbox"
+                        required
+                    />
+                    <label for="terms" class="checkbox-label">
+                        Acepto los
+                        <a href="#" class="link">Términos y Condiciones</a> y la
+                        <a href="#" class="link">Política de Privacidad</a>
+                    </label>
+                </div>
+                <div class="form-error" id="terms-error"></div>
+
+                <!-- Suscripción a newsletter -->
+                <div class="form-group checkbox">
+                    <input
+                        type="checkbox"
+                        id="newsletter"
+                        name="newsletter"
+                        class="form-checkbox"
+                        checked
+                    />
+                    <label for="newsletter" class="checkbox-label">
+                        Deseo recibir ofertas y novedades por correo
+                    </label>
+                </div>
+
+                <!-- Mensaje de error general -->
+                <div class="form-error general-error" id="form-error"></div>
+
+                <!-- Botón de submit -->
+                <button type="submit" class="btn btn-primary btn-login" id="submit-btn">
+                    Crear Cuenta
+                </button>
+            </form>
+
+            <!-- Divider -->
+            <div class="auth-divider">
+                <span>¿Ya tienes cuenta?</span>
+            </div>
+
+            <!-- Links -->
+            <div class="auth-links">
+                <a href="login.html" class="btn btn-secondary btn-full">
+                    Iniciar Sesión
+                </a>
+            </div>
+        </div>
+
+        <!-- Info de requisitos -->
+        <div class="auth-info">
+            <p>🔒 <strong>Requisitos de Seguridad:</strong></p>
+            <ul>
+                <li>Mínimo 8 caracteres</li>
+                <li>Incluir mayúscula (A-Z)</li>
+                <li>Incluir número (0-9)</li>
+                <li>Incluir carácter especial (!@#$%)</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // Configuración global
+        window.config = {
+            apiUrl: 'http://localhost:5000/api',
+            appName: 'DiscoveryShop',
+            debug: true
+        };
+    </script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/pages/register.js"></script>
+</body>
+</html>

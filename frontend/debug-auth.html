@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Autenticación</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #fff;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { margin-bottom: 20px; color: #8b5cf6; }
+        h2 { margin-top: 30px; margin-bottom: 15px; color: #3b82f6; }
+        .section { background: #1a1a1a; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #333; }
+        button {
+            padding: 12px 24px;
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            margin: 10px 5px 10px 0;
+        }
+        button:hover { background: #7c3aed; }
+        input {
+            padding: 10px;
+            margin: 8px 0;
+            width: 100%;
+            max-width: 400px;
+            background: #0a0a0a;
+            border: 1px solid #444;
+            color: #fff;
+            border-radius: 4px;
+        }
+        label { display: block; margin-top: 15px; font-weight: bold; }
+        pre {
+            background: #0a0a0a;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            border: 1px solid #333;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .success { color: #10b981; }
+        .error { color: #ef4444; }
+        .info { color: #3b82f6; }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            background: #1a1a1a;
+            border-left: 4px solid #8b5cf6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐛 Debug Autenticación</h1>
+
+        <div class="section">
+            <h2>1️⃣ Estado del Backend</h2>
+            <button onclick="checkBackend()">Verificar Backend</button>
+            <div id="backend-status"></div>
+        </div>
+
+        <div class="section">
+            <h2>2️⃣ Test de Registro Detallado</h2>
+            <label>Email:</label>
+            <input type="email" id="email" value="test@example.com">
+
+            <label>Usuario:</label>
+            <input type="text" id="username" value="testuser123">
+
+            <label>Nombre Completo:</label>
+            <input type="text" id="fullname" value="Test User">
+
+            <label>Contraseña (con !@#$):</label>
+            <input type="password" id="password" value="TestPassword123!">
+
+            <button onclick="detailedRegister()">Registrarse</button>
+            <div id="register-status"></div>
+            <h3 style="margin-top: 20px; color: #8b5cf6;">Respuesta Completa:</h3>
+            <pre id="register-response"></pre>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000/api';
+
+        async function checkBackend() {
+            const status = document.getElementById('backend-status');
+            status.innerHTML = '<div class="status info">Verificando...</div>';
+
+            try {
+                const response = await fetch(API_URL + '/health');
+                status.innerHTML = `
+                    <div class="status success">
+                        ✅ Backend conectado (${response.status})
+                    </div>
+                `;
+            } catch (error) {
+                status.innerHTML = `
+                    <div class="status error">
+                        ❌ Backend NO disponible<br>
+                        Error: ${error.message}<br><br>
+                        Ejecuta en terminal:<br>
+                        cd backend<br>python app.py
+                    </div>
+                `;
+            }
+        }
+
+        async function detailedRegister() {
+            const status = document.getElementById('register-status');
+            const response_div = document.getElementById('register-response');
+
+            status.innerHTML = '<div class="status info">Enviando...</div>';
+            response_div.innerHTML = '';
+
+            const email = document.getElementById('email').value;
+            const username = document.getElementById('username').value;
+            const fullname = document.getElementById('fullname').value;
+            const password = document.getElementById('password').value;
+
+            const payload = {
+                email, username, full_name: fullname, password
+            };
+
+            response_div.innerHTML = 'Enviando:\n' + JSON.stringify(payload, null, 2);
+
+            try {
+                const fetchResponse = await fetch(API_URL + '/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(payload)
+                });
+
+                const text = await fetchResponse.text();
+                console.log('Response:', text);
+
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch (e) {
+                    status.innerHTML = `
+                        <div class="status error">
+                            ❌ Respuesta NO es JSON (Status ${fetchResponse.status})
+                        </div>
+                    `;
+                    response_div.innerHTML = 'RESPUESTA NO-JSON:\n' + text;
+                    return;
+                }
+
+                if (fetchResponse.ok) {
+                    status.innerHTML = '<div class="status success">✅ Registro exitoso!</div>';
+                } else {
+                    const msg = data.error || data.message || data.detail || 'Error desconocido';
+                    status.innerHTML = `<div class="status error">❌ Error (${fetchResponse.status}): ${msg}</div>`;
+                }
+
+                response_div.innerHTML = 'RESPUESTA (Status ' + fetchResponse.status + '):\n' + JSON.stringify(data, null, 2);
+
+            } catch (error) {
+                status.innerHTML = `<div class="status error">❌ ${error.message}</div>`;
+                response_div.innerHTML = 'ERROR:\n' + error.message;
+            }
+        }
+
+        window.onload = checkBackend;
+    </script>
+</body>
+</html>

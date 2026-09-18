@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Leaflet Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        h1 {
+            margin-bottom: 20px;
+            color: #3b82f6;
+        }
+        #map {
+            width: 100%;
+            height: 400px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid #333;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            background: #1a1a1a;
+            border-left: 4px solid #3b82f6;
+        }
+        .success {
+            border-left-color: #10b981;
+            color: #d1fae5;
+        }
+        .error {
+            border-left-color: #ef4444;
+            color: #fecaca;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px 0;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗺️ Test Leaflet Map</h1>
+
+        <div id="status"></div>
+        <button onclick="testMap()">Crear Mapa</button>
+
+        <div id="map"></div>
+
+        <div id="debug" style="margin-top: 20px; padding: 15px; background: #1a1a1a; border-radius: 8px; max-height: 300px; overflow-y: auto; font-size: 12px; font-family: monospace;"></div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        const debugLog = [];
+        const statusDiv = document.getElementById('status');
+        const debugDiv = document.getElementById('debug');
+
+        function log(msg, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const fullMsg = `[${timestamp}] ${msg}`;
+            debugLog.push({ msg: fullMsg, type });
+            debugDiv.innerHTML = debugLog.map(l => `<div style="color: ${l.type === 'error' ? '#ef4444' : l.type === 'success' ? '#10b981' : '#a0a0a0'}">${l.msg}</div>`).join('');
+            debugDiv.scrollTop = debugDiv.scrollHeight;
+            console.log(fullMsg);
+        }
+
+        function updateStatus(msg, type) {
+            const className = type === 'success' ? 'success' : type === 'error' ? 'error' : '';
+            statusDiv.innerHTML = `<div class="status ${className}">${msg}</div>`;
+        }
+
+        function testMap() {
+            log('🔄 Iniciando test de Leaflet...');
+
+            try {
+                // Verificar Leaflet
+                if (typeof L === 'undefined') {
+                    log('❌ Leaflet no está disponible', 'error');
+                    updateStatus('❌ Leaflet no cargado', 'error');
+                    return;
+                }
+
+                log('✓ Leaflet disponible', 'success');
+
+                // Coordenadas de Arequipa Centro
+                const coords = [-16.3972, -71.5350];
+                const location = 'Arequipa Centro, Perú';
+
+                log(`🗺️ Creando mapa en coordenadas: ${coords[0]}, ${coords[1]}`);
+
+                // Crear mapa
+                const map = L.map('map', {
+                    center: coords,
+                    zoom: 14,
+                    zoomControl: true,
+                    scrollWheelZoom: false
+                });
+
+                log('✓ Mapa creado', 'success');
+
+                // Agregar tile layer
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap',
+                    maxZoom: 19
+                }).addTo(map);
+
+                log('✓ Tile layer agregado', 'success');
+
+                // Crear marcador
+                const redIcon = L.icon({
+                    iconUrl: 'data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 41"><path d="M12.5 0C7.3 0 3 4.3 3 9.5c0 7.6 9.5 31 9.5 31s9.5-23.4 9.5-31C22 4.3 17.7 0 12.5 0z" fill="%23ef4444"/></svg>',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41]
+                });
+
+                const marker = L.marker(coords, {
+                    icon: redIcon,
+                    title: 'Vendedor'
+                }).addTo(map);
+
+                log('✓ Marcador agregado', 'success');
+
+                // Popup
+                marker.bindPopup(`
+                    <div style="min-width: 200px; font-family: Inter, sans-serif;">
+                        <div style="font-weight: bold; color: #1a1a1a; margin-bottom: 6px; font-size: 14px;">Vendedor Test</div>
+                        <div style="font-size: 13px; color: #555; margin-bottom: 4px;">📍 ${location}</div>
+                        <div style="font-size: 12px; color: #888; border-top: 1px solid #ddd; padding-top: 6px; margin-top: 6px;">Producto Test</div>
+                    </div>
+                `).openPopup();
+
+                log('✓ Popup agregado', 'success');
+
+                // Invalidar tamaño
+                setTimeout(() => {
+                    map.invalidateSize(true);
+                    log('✓ Tamaño del mapa ajustado', 'success');
+                }, 200);
+
+                updateStatus('✅ Mapa funcionando correctamente', 'success');
+                log('✅ Test completado exitosamente', 'success');
+
+            } catch (e) {
+                log(`❌ Error: ${e.message}`, 'error');
+                updateStatus(`❌ Error: ${e.message}`, 'error');
+            }
+        }
+
+        // Auto-test cuando carga
+        window.addEventListener('load', () => {
+            log('📍 Página cargada');
+            log(`Leaflet disponible: ${typeof L !== 'undefined'}`);
+        });
+    </script>
+</body>
+</html>

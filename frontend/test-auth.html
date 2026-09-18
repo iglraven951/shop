@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Autenticación</title>
+</head>
+<body style="font-family: monospace; padding: 20px;">
+    <h1>🧪 Test de Autenticación</h1>
+    
+    <div style="margin: 20px 0;">
+        <h2>Estado del Sistema</h2>
+        <pre id="status">Cargando...</pre>
+    </div>
+    
+    <div style="margin: 20px 0;">
+        <h2>Prueba de Endpoints</h2>
+        <button onclick="testEndpoints()">Probar Endpoints</button>
+        <pre id="endpoints-result"></pre>
+    </div>
+    
+    <script>
+        const apiUrl = 'http://localhost:5000/api';
+        
+        async function checkStatus() {
+            const status = document.getElementById('status');
+            
+            try {
+                // Test endpoint simple
+                const response = await fetch(apiUrl + '/health', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                
+                status.textContent = `✅ Backend conectado (Status: ${response.status})`;
+            } catch (error) {
+                status.textContent = `❌ Error conectando al backend:\n${error.message}\n\nAsegúrate que el backend está corriendo en ${apiUrl}`;
+            }
+        }
+        
+        async function testEndpoints() {
+            const result = document.getElementById('endpoints-result');
+            result.textContent = 'Probando endpoints...';
+            
+            try {
+                // Test login con credenciales inválidas
+                const response = await fetch(apiUrl + '/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: 'test@test.com', password: 'test' }),
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                result.textContent = `✅ Endpoint /auth/login respondió\nStatus: ${response.status}\nRespuesta: ${JSON.stringify(data, null, 2)}`;
+            } catch (error) {
+                result.textContent = `❌ Error:\n${error.message}`;
+            }
+        }
+        
+        checkStatus();
+    </script>
+</body>
+</html>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test API Autenticación</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #0a0a0a; color: #fff; }
+        .container { max-width: 800px; margin: 0 auto; }
+        button { padding: 10px 20px; margin: 5px; background: #8b5cf6; color: white; border: none; cursor: pointer; border-radius: 5px; }
+        button:hover { background: #7c3aed; }
+        pre { background: #1a1a1a; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        .error { color: #ef4444; }
+        .success { color: #10b981; }
+        input { padding: 8px; margin: 5px 0; width: 100%; max-width: 300px; border-radius: 5px; border: 1px solid #333; background: #1a1a1a; color: #fff; }
+        label { display: block; margin-top: 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Test API de Autenticación</h1>
+        
+        <h2>1. Test de Conexión</h2>
+        <button onclick="testConnection()">Probar Conexión al Backend</button>
+        <pre id="connection-result"></pre>
+
+        <h2>2. Test de Registro</h2>
+        <label>Email:</label>
+        <input type="email" id="reg-email" placeholder="test@example.com" value="test@example.com">
+        <label>Usuario:</label>
+        <input type="text" id="reg-username" placeholder="testuser" value="testuser123">
+        <label>Nombre Completo:</label>
+        <input type="text" id="reg-fullname" placeholder="Test User" value="Test User">
+        <label>Contraseña (con carácter especial: !@#$):</label>
+        <input type="password" id="reg-password" placeholder="Password123!" value="TestPassword123!">
+        <button onclick="testRegister()">Probar Registro</button>
+        <pre id="register-result"></pre>
+
+        <h2>3. Test de Login</h2>
+        <label>Email:</label>
+        <input type="email" id="login-email" placeholder="test@example.com" value="test@example.com">
+        <label>Contraseña:</label>
+        <input type="password" id="login-password" placeholder="Password123!" value="TestPassword123!">
+        <button onclick="testLogin()">Probar Login</button>
+        <pre id="login-result"></pre>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000/api';
+
+        async function testConnection() {
+            const result = document.getElementById('connection-result');
+            result.innerHTML = 'Probando conexión...';
+            
+            try {
+                const response = await fetch(API_URL + '/health', {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                result.innerHTML = `<span class="success">✓ Backend conectado (Status: ${response.status})</span>`;
+            } catch (error) {
+                result.innerHTML = `<span class="error">✗ Error: ${error.message}</span>
+                
+Posibles causas:
+1. El backend NO está corriendo
+2. URL incorrecta: ${API_URL}
+3. Problema de CORS
+
+Solución: Abre terminal y ejecuta:
+cd backend
+python app.py`;
+            }
+        }
+
+        async function testRegister() {
+            const result = document.getElementById('register-result');
+            result.innerHTML = 'Enviando registro...';
+            
+            const email = document.getElementById('reg-email').value;
+            const username = document.getElementById('reg-username').value;
+            const fullName = document.getElementById('reg-fullname').value;
+            const password = document.getElementById('reg-password').value;
+
+            console.log('Datos enviados:', { email, username, full_name: fullName, password });
+
+            try {
+                const response = await fetch(API_URL + '/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        email,
+                        username,
+                        full_name: fullName,
+                        password
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    result.innerHTML = `<span class="success">✓ Registro exitoso!</span>\n\nRespuesta:\n${JSON.stringify(data, null, 2)}`;
+                } else {
+                    result.innerHTML = `<span class="error">✗ Error (${response.status})</span>\n\nRespuesta:\n${JSON.stringify(data, null, 2)}`;
+                }
+            } catch (error) {
+                result.innerHTML = `<span class="error">✗ Error: ${error.message}</span>`;
+            }
+        }
+
+        async function testLogin() {
+            const result = document.getElementById('login-result');
+            result.innerHTML = 'Enviando login...';
+            
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            console.log('Datos enviados:', { email, password });
+
+            try {
+                const response = await fetch(API_URL + '/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        email,
+                        password
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    result.innerHTML = `<span class="success">✓ Login exitoso!</span>\n\nRespuesta:\n${JSON.stringify(data, null, 2)}`;
+                } else {
+                    result.innerHTML = `<span class="error">✗ Error (${response.status})</span>\n\nRespuesta:\n${JSON.stringify(data, null, 2)}`;
+                }
+            } catch (error) {
+                result.innerHTML = `<span class="error">✗ Error: ${error.message}</span>`;
+            }
+        }
+
+        // Test automático al cargar
+        window.onload = () => {
+            testConnection();
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - DiscoveryShop</title>
+    <link rel="stylesheet" href="../css/modules.css">
+    <style>
+        .checkout-container {
+            max-width: 900px;
+            margin: 24px auto;
+            padding: 0 16px;
+        }
+
+        .checkout-header {
+            margin-bottom: 32px;
+            text-align: center;
+        }
+
+        .checkout-header h1 {
+            margin: 0 0 8px 0;
+            font-size: 28px;
+        }
+
+        .checkout-steps {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 32px;
+            position: relative;
+        }
+
+        .checkout-steps::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--border-color);
+            z-index: 0;
+        }
+
+        .step {
+            flex: 1;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--border-color);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 8px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .step.active .step-number {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .step.completed .step-number {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .step-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .checkout-content {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 32px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 24px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 14px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .form-row.full {
+            grid-template-columns: 1fr;
+        }
+
+        .ordenes-resumen {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .ordenes-item {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .ordenes-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .ordenes-item-imagen {
+            width: 60px;
+            height: 60px;
+            border-radius: 4px;
+            overflow: hidden;
+            flex-shrink: 0;
+            background: var(--bg-secondary);
+        }
+
+        .ordenes-item-imagen img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .ordenes-item-info {
+            flex: 1;
+        }
+
+        .ordenes-item-titulo {
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .ordenes-item-precio {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .ordenes-totales {
+            background: var(--bg-secondary);
+            border-top: 2px solid var(--border-color);
+            padding-top: 16px;
+            margin-top: 16px;
+        }
+
+        .totales-fila {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .totales-fila.total {
+            font-weight: bold;
+            font-size: 16px;
+            color: var(--primary-color);
+        }
+
+        .payment-methods {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .payment-method {
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--bg-primary);
+        }
+
+        .payment-method:hover {
+            border-color: var(--primary-color);
+        }
+
+        .payment-method input[type="radio"] {
+            display: none;
+        }
+
+        .payment-method input[type="radio"]:checked + label {
+            color: var(--primary-color);
+        }
+
+        .payment-method.selected {
+            border-color: var(--primary-color);
+            background: rgba(var(--primary-rgb), 0.05);
+        }
+
+        .payment-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .payment-label {
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .checkout-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: space-between;
+        }
+
+        .btn-prev,
+        .btn-next {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-prev {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .btn-prev:hover:not(:disabled) {
+            background: var(--border-color);
+        }
+
+        .btn-next {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-next:hover:not(:disabled) {
+            background: var(--primary-hover);
+        }
+
+        .btn-prev:disabled,
+        .btn-next:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .confirmation-message {
+            text-align: center;
+            padding: 48px 24px;
+        }
+
+        .confirmation-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+
+        .confirmation-number {
+            background: var(--bg-primary);
+            border: 2px solid var(--primary-color);
+            border-radius: 8px;
+            padding: 16px;
+            margin: 24px 0;
+            font-family: monospace;
+            font-size: 18px;
+            color: var(--primary-color);
+            word-break: break-all;
+        }
+
+        .error-message {
+            background: rgba(220, 53, 69, 0.1);
+            border: 1px solid rgba(220, 53, 69, 0.3);
+            color: #dc3545;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+
+        .step-content {
+            display: none;
+        }
+
+        .step-content.active {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .payment-methods {
+                grid-template-columns: 1fr;
+            }
+
+            .checkout-content {
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <button class="back-btn" id="back-btn">
+            <span>← Volver</span>
+        </button>
+        <div class="logo">🛍️ DiscoveryShop</div>
+        <div class="header-actions">
+            <button class="user-btn" id="user-btn">Login</button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <section class="feed" style="flex: 1;">
+            <div class="checkout-container">
+                <!-- Header -->
+                <div class="checkout-header">
+                    <h1>Completar Compra</h1>
+                    <p>Sigue los pasos para completar tu pedido</p>
+                </div>
+
+                <!-- Steps Indicator -->
+                <div class="checkout-steps">
+                    <div class="step active" data-step="1">
+                        <div class="step-number">1</div>
+                        <div class="step-label">Carrito</div>
+                    </div>
+                    <div class="step" data-step="2">
+                        <div class="step-number">2</div>
+                        <div class="step-label">Envío</div>
+                    </div>
+                    <div class="step" data-step="3">
+                        <div class="step-number">3</div>
+                        <div class="step-label">Pago</div>
+                    </div>
+                    <div class="step" data-step="4">
+                        <div class="step-number">4</div>
+                        <div class="step-label">Confirmación</div>
+                    </div>
+                </div>
+
+                <div class="checkout-content">
+                    <!-- Error Messages -->
+                    <div id="error-container"></div>
+
+                    <!-- Step 1: Review Cart -->
+                    <div class="step-content active" data-step="1">
+                        <div class="section-title">Revisar Pedido</div>
+                        <div id="ordenes-resumen" class="ordenes-resumen">
+                            <!-- Productos aparecerán aquí -->
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Shipping -->
+                    <div class="step-content" data-step="2">
+                        <div class="section-title">Información de Envío</div>
+                        <form id="shipping-form">
+                            <div class="form-group full">
+                                <label for="address">Dirección de Envío *</label>
+                                <input
+                                    type="text"
+                                    id="address"
+                                    name="address"
+                                    placeholder="Calle, número"
+                                    required
+                                    minlength="5"
+                                >
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="city">Ciudad *</label>
+                                    <input
+                                        type="text"
+                                        id="city"
+                                        name="city"
+                                        placeholder="Tu ciudad"
+                                        required
+                                        minlength="2"
+                                    >
+                                </div>
+                                <div class="form-group">
+                                    <label for="state">Estado/Región *</label>
+                                    <input
+                                        type="text"
+                                        id="state"
+                                        name="state"
+                                        placeholder="Tu estado"
+                                        required
+                                        minlength="2"
+                                    >
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="zip">Código Postal *</label>
+                                    <input
+                                        type="text"
+                                        id="zip"
+                                        name="zip"
+                                        placeholder="12345"
+                                        required
+                                        minlength="3"
+                                    >
+                                </div>
+                                <div class="form-group">
+                                    <label for="phone">Teléfono de Contacto *</label>
+                                    <input
+                                        type="tel"
+                                        id="phone"
+                                        name="phone"
+                                        placeholder="+XX XXX-XXX-XXXX"
+                                        required
+                                        minlength="7"
+                                    >
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Step 3: Payment -->
+                    <div class="step-content" data-step="3">
+                        <div class="section-title">Método de Pago</div>
+                        <div class="payment-methods">
+                            <div class="payment-method" onclick="selectPaymentMethod('card')">
+                                <div class="payment-icon">💳</div>
+                                <label class="payment-label">Tarjeta de Crédito</label>
+                            </div>
+                            <div class="payment-method" onclick="selectPaymentMethod('transfer')">
+                                <div class="payment-icon">🏦</div>
+                                <label class="payment-label">Transferencia Bancaria</label>
+                            </div>
+                            <div class="payment-method" onclick="selectPaymentMethod('cash')">
+                                <div class="payment-icon">💵</div>
+                                <label class="payment-label">Contra Entrega</label>
+                            </div>
+                        </div>
+
+                        <!-- Payment Details (will show based on selection) -->
+                        <div id="payment-details"></div>
+                    </div>
+
+                    <!-- Step 4: Confirmation -->
+                    <div class="step-content" data-step="4">
+                        <div class="confirmation-message" id="confirmation-message">
+                            <div class="confirmation-icon">⏳</div>
+                            <h3>Procesando tu pedido...</h3>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Buttons -->
+                    <div class="checkout-actions" id="checkout-actions">
+                        <button class="btn-prev" id="btn-prev" style="display: none;" onclick="previousStep()">
+                            Anterior
+                        </button>
+                        <button class="btn-next" id="btn-next" onclick="nextStep()">
+                            Siguiente
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module">
+        import { Config, ApiEndpoints } from '../js/config.js';
+
+        // Global state
+        let currentStep = 1;
+        let selectedPaymentMethod = null;
+        let cartItems = [];
+
+        // Initialize
+        async function init() {
+            await loadCart();
+            renderOrderSummary();
+            updateStepUI();
+        }
+
+        async function loadCart() {
+            try {
+                const response = await Config.fetch(ApiEndpoints.cart.get);
+                if (response.success && response.data.items) {
+                    cartItems = response.data.items;
+                } else {
+                    showError('No hay productos en el carrito');
+                    setTimeout(() => window.location.href = '/pages/carrito.html', 2000);
+                }
+            } catch (error) {
+                showError('Error cargando el carrito');
+            }
+        }
+
+        function renderOrderSummary() {
+            const container = document.getElementById('ordenes-resumen');
+            if (cartItems.length === 0) {
+                container.innerHTML = '<p>Tu carrito está vacío</p>';
+                return;
+            }
+
+            const items = cartItems.map(item => `
+                <div class="ordenes-item">
+                    <div class="ordenes-item-imagen">
+                        <img src="${item.image_url || '/placeholder.jpg'}" alt="${item.product_title}" onerror="this.src='/placeholder.jpg'">
+                    </div>
+                    <div class="ordenes-item-info">
+                        <div class="ordenes-item-titulo">${item.product_title}</div>
+                        <div class="ordenes-item-precio">
+                            ${item.quantity} x $${parseFloat(item.price).toFixed(2)} = $${(item.quantity * parseFloat(item.price)).toFixed(2)}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            const total = cartItems.reduce((sum, item) => sum + (item.quantity * parseFloat(item.price)), 0);
+
+            container.innerHTML = items + `
+                <div class="ordenes-totales">
+                    <div class="totales-fila">
+                        <span>Subtotal</span>
+                        <span>$${total.toFixed(2)}</span>
+                    </div>
+                    <div class="totales-fila">
+                        <span>Envío</span>
+                        <span>$0.00</span>
+                    </div>
+                    <div class="totales-fila total">
+                        <span>Total</span>
+                        <span>$${total.toFixed(2)}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateStepUI() {
+            // Update step indicators
+            document.querySelectorAll('.step').forEach(step => {
+                const stepNum = parseInt(step.dataset.step);
+                step.classList.remove('active', 'completed');
+                if (stepNum < currentStep) {
+                    step.classList.add('completed');
+                } else if (stepNum === currentStep) {
+                    step.classList.add('active');
+                }
+            });
+
+            // Update step content
+            document.querySelectorAll('.step-content').forEach(content => {
+                content.classList.remove('active');
+                if (parseInt(content.dataset.step) === currentStep) {
+                    content.classList.add('active');
+                }
+            });
+
+            // Update buttons
+            const btnPrev = document.getElementById('btn-prev');
+            const btnNext = document.getElementById('btn-next');
+
+            if (currentStep === 1) {
+                btnPrev.style.display = 'none';
+                btnNext.textContent = 'Siguiente';
+            } else if (currentStep === 4) {
+                btnPrev.style.display = 'block';
+                btnNext.style.display = 'none';
+            } else {
+                btnPrev.style.display = 'block';
+                btnNext.textContent = 'Siguiente';
+            }
+        }
+
+        window.nextStep = async function() {
+            // Validar paso actual
+            if (currentStep === 2) {
+                const form = document.getElementById('shipping-form');
+                if (!form.checkValidity()) {
+                    showError('Por favor completa todos los campos requeridos');
+                    return;
+                }
+            } else if (currentStep === 3) {
+                if (!selectedPaymentMethod) {
+                    showError('Por favor selecciona un método de pago');
+                    return;
+                }
+            }
+
+            // Move to next step
+            if (currentStep < 4) {
+                currentStep++;
+                updateStepUI();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else if (currentStep === 4) {
+                // Final step - process order
+                await processOrder();
+            }
+        };
+
+        window.previousStep = function() {
+            if (currentStep > 1) {
+                currentStep--;
+                updateStepUI();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        };
+
+        window.selectPaymentMethod = function(method) {
+            selectedPaymentMethod = method;
+
+            // Update UI
+            document.querySelectorAll('.payment-method').forEach(el => {
+                el.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+
+            // Show payment details
+            const details = document.getElementById('payment-details');
+            if (method === 'card') {
+                details.innerHTML = `
+                    <div class="form-group">
+                        <label for="card-number">Número de Tarjeta</label>
+                        <input type="text" id="card-number" placeholder="1234 5678 9012 3456" maxlength="19">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="card-exp">Vencimiento</label>
+                            <input type="text" id="card-exp" placeholder="MM/YY" maxlength="5">
+                        </div>
+                        <div class="form-group">
+                            <label for="card-cvv">CVV</label>
+                            <input type="text" id="card-cvv" placeholder="123" maxlength="4">
+                        </div>
+                    </div>
+                `;
+            } else if (method === 'transfer') {
+                details.innerHTML = `
+                    <div style="background: var(--bg-primary); padding: 16px; border-radius: 4px; margin-top: 16px;">
+                        <p><strong>Instrucciones de Transferencia:</strong></p>
+                        <p>Banco: Banco Nacional</p>
+                        <p>Cuenta: 1234567890</p>
+                        <p>Titular: DiscoveryShop Inc.</p>
+                        <p style="margin-top: 16px; color: var(--text-secondary); font-size: 12px;">
+                            Tu pedido será confirmado una vez recibamos la transferencia (puede tardar 1-2 días hábiles)
+                        </p>
+                    </div>
+                `;
+            } else if (method === 'cash') {
+                details.innerHTML = `
+                    <div style="background: var(--bg-primary); padding: 16px; border-radius: 4px; margin-top: 16px;">
+                        <p><strong>Pago contra entrega</strong></p>
+                        <p>Pagarás al recibir tu pedido. El envío será entregado en 3-5 días hábiles.</p>
+                    </div>
+                `;
+            }
+        };
+
+        async function processOrder() {
+            try {
+                clearError();
+                const form = document.getElementById('shipping-form');
+                const formData = new FormData(form);
+
+                const response = await Config.fetch(ApiEndpoints.orders.checkout || '/api/orders/checkout', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        shipping_address: formData.get('address'),
+                        city: formData.get('city'),
+                        state: formData.get('state'),
+                        zip_code: formData.get('zip'),
+                        phone: formData.get('phone'),
+                        payment_method: selectedPaymentMethod
+                    })
+                });
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.message || 'Error procesando la orden');
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Show confirmation
+                    const confirmMsg = document.getElementById('confirmation-message');
+                    confirmMsg.innerHTML = `
+                        <div class="confirmation-icon">✅</div>
+                        <h3>¡Pedido Confirmado!</h3>
+                        <p>Tu pedido ha sido recibido y está siendo procesado.</p>
+                        <div class="confirmation-number">${data.data.order_id}</div>
+                        <p>Se te ha enviado un correo de confirmación con los detalles de tu pedido.</p>
+                        <p style="margin-top: 24px;">
+                            <button onclick="window.location.href = '/pages/ordenes.html'" style="background: var(--primary-color); color: white; border: none; padding: 12px 24px; border-radius: 4px; cursor: pointer;">
+                                Ver Mis Órdenes
+                            </button>
+                        </p>
+                    `;
+                    currentStep = 4;
+                    updateStepUI();
+                } else {
+                    showError(data.message || 'Error procesando la orden');
+                    currentStep = 3;
+                    updateStepUI();
+                }
+            } catch (error) {
+                showError(error.message || 'Error procesando la orden');
+                currentStep = 3;
+                updateStepUI();
+            }
+        }
+
+        function showError(message) {
+            const container = document.getElementById('error-container');
+            container.innerHTML = `<div class="error-message">${message}</div>`;
+        }
+
+        function clearError() {
+            document.getElementById('error-container').innerHTML = '';
+        }
+
+        // Initialize on load
+        init();
+
+        // Back button
+        document.getElementById('back-btn').addEventListener('click', () => {
+            if (currentStep > 1) {
+                previousStep();
+            } else {
+                window.history.back();
+            }
+        });
+    </script>
+</body>
+</html>

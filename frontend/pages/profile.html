@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Perfil - DiscoveryShop</title>
+    <link rel="stylesheet" href="../css/modules.css">
+    <link rel="stylesheet" href="../css/auth.css">
+    <link rel="stylesheet" href="../css/profile.css">
+</head>
+<body>
+    <!-- Header (compartido) -->
+    <header class="header">
+        <a href="/" class="logo">🛍️ DiscoveryShop</a>
+        <div class="header-actions">
+            <button class="user-btn" id="user-btn">Login</button>
+        </div>
+    </header>
+
+    <!-- Contenedor principal de perfil -->
+    <div class="profile-container">
+        <!-- Sidebar de navegación -->
+        <aside class="profile-sidebar">
+            <div class="profile-card">
+                <div class="profile-avatar" id="profile-avatar">👤</div>
+                <h2 class="profile-username" id="profile-username">Cargando...</h2>
+                <p class="profile-role" id="profile-role"></p>
+            </div>
+
+            <nav class="profile-nav">
+                <button class="nav-item active" data-tab="perfil">
+                    👤 Información Personal
+                </button>
+                <button class="nav-item" data-tab="compras">
+                    🛒 Mis Compras
+                </button>
+                <button class="nav-item" data-tab="productos" id="tab-productos" style="display: none;">
+                    📦 Mis Productos
+                </button>
+                <button class="nav-item" data-tab="vendedor" id="tab-vendedor" style="display: none;">
+                    🎯 Configuración de Vendedor
+                </button>
+                <button class="nav-item" data-tab="configuracion">
+                    ⚙️ Configuración
+                </button>
+            </nav>
+        </aside>
+
+        <!-- Contenido principal -->
+        <main class="profile-main">
+            <!-- TAB: Información Personal -->
+            <div class="profile-tab active" id="tab-perfil">
+                <div class="tab-header">
+                    <h1>Información Personal</h1>
+                    <button class="btn btn-small btn-secondary" id="edit-profile-btn">
+                        ✏️ Editar
+                    </button>
+                </div>
+
+                <div class="profile-info">
+                    <div class="info-row">
+                        <span class="label">Nombre Completo:</span>
+                        <span class="value" id="info-full-name">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Nombre de Usuario:</span>
+                        <span class="value" id="info-username">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Correo Electrónico:</span>
+                        <span class="value" id="info-email">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Estado de Cuenta:</span>
+                        <span class="value badge badge-success" id="info-status">Activa</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Miembro desde:</span>
+                        <span class="value" id="info-created">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Tipo de Cuenta:</span>
+                        <span class="value" id="info-type">Comprador</span>
+                    </div>
+                </div>
+
+                <!-- Botón para convertirse en vendedor -->
+                <div class="action-buttons" id="seller-actions" style="display: none;">
+                    <button class="btn btn-success" id="become-vendor-btn">
+                        🚀 Convertirse en Vendedor
+                    </button>
+                </div>
+
+                <!-- Modal de edición de perfil -->
+                <div id="edit-profile-modal" class="modal" style="display: none;">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2>Editar Perfil</h2>
+                            <button class="close-btn" id="close-modal-btn">&times;</button>
+                        </div>
+
+                        <form id="edit-profile-form" class="auth-form">
+                            <div class="form-group">
+                                <label for="edit-full-name" class="form-label">Nombre Completo</label>
+                                <input
+                                    type="text"
+                                    id="edit-full-name"
+                                    class="form-input"
+                                    required
+                                />
+                            </div>
+
+                            <div class="form-group">
+                                <label for="edit-email" class="form-label">Email</label>
+                                <input
+                                    type="email"
+                                    id="edit-email"
+                                    class="form-input"
+                                    required
+                                />
+                                <div class="form-hint">Se te pedirá confirmar tu contraseña</div>
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" id="cancel-btn">
+                                    Cancelar
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    Guardar Cambios
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: Mis Compras -->
+            <div class="profile-tab" id="tab-compras">
+                <div class="tab-header">
+                    <h1>Historial de Compras</h1>
+                </div>
+
+                <div class="purchases-container" id="purchases-container">
+                    <div class="loading">⏳ Cargando compras...</div>
+                </div>
+            </div>
+
+            <!-- TAB: Mis Productos (Solo vendedores) -->
+            <div class="profile-tab" id="tab-productos-content" style="display: none;">
+                <div class="tab-header">
+                    <h1>Mis Productos</h1>
+                    <a href="/#" class="btn btn-success">
+                        ➕ Agregar Producto
+                    </a>
+                </div>
+
+                <div class="products-container" id="vendor-products-container">
+                    <div class="loading">⏳ Cargando productos...</div>
+                </div>
+            </div>
+
+            <!-- TAB: Configuración de Vendedor -->
+            <div class="profile-tab" id="tab-vendedor-content" style="display: none;">
+                <div class="tab-header">
+                    <h1>Configuración de Vendedor</h1>
+                </div>
+
+                <div class="vendor-settings">
+                    <div class="settings-group">
+                        <h3>Información de Tienda</h3>
+                        <div class="info-row">
+                            <span class="label">Estado de Verificación:</span>
+                            <span class="badge badge-warning">Pendiente de Verificación</span>
+                        </div>
+                        <p class="hint">Tu tienda será verificada por el equipo de DiscoveryShop</p>
+                    </div>
+
+                    <div class="settings-group">
+                        <h3>Comisión de Plataforma</h3>
+                        <p>Comisión actual: <strong>10%</strong></p>
+                        <p class="hint">La comisión se aplica sobre el precio final de venta</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: Configuración -->
+            <div class="profile-tab" id="tab-configuracion">
+                <div class="tab-header">
+                    <h1>Configuración</h1>
+                </div>
+
+                <div class="settings-container">
+                    <!-- Seguridad -->
+                    <div class="settings-group">
+                        <h3>🔒 Seguridad</h3>
+
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <p class="setting-label">Cambiar Contraseña</p>
+                                <p class="setting-desc">Actualiza tu contraseña regularmente</p>
+                            </div>
+                            <button class="btn btn-small btn-secondary" id="change-password-btn">
+                                Cambiar
+                            </button>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <p class="setting-label">Autenticación de Dos Factores</p>
+                                <p class="setting-desc">Protege tu cuenta con 2FA</p>
+                            </div>
+                            <button class="btn btn-small btn-secondary" disabled>
+                                Próximamente
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Privacidad -->
+                    <div class="settings-group">
+                        <h3>🔐 Privacidad</h3>
+
+                        <div class="setting-item checkbox">
+                            <div class="checkbox-wrapper">
+                                <input type="checkbox" id="public-profile" class="form-checkbox" checked>
+                                <label for="public-profile" class="checkbox-label">
+                                    <p class="setting-label">Perfil Público</p>
+                                    <p class="setting-desc">Permitir que otros usuarios vean tu perfil</p>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="setting-item checkbox">
+                            <div class="checkbox-wrapper">
+                                <input type="checkbox" id="show-purchases" class="form-checkbox">
+                                <label for="show-purchases" class="checkbox-label">
+                                    <p class="setting-label">Mostrar Historial de Compras</p>
+                                    <p class="setting-desc">Permitir ver mis compras en mi perfil</p>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notificaciones -->
+                    <div class="settings-group">
+                        <h3>🔔 Notificaciones</h3>
+
+                        <div class="setting-item checkbox">
+                            <div class="checkbox-wrapper">
+                                <input type="checkbox" id="email-updates" class="form-checkbox" checked>
+                                <label for="email-updates" class="checkbox-label">
+                                    <p class="setting-label">Actualizaciones de Pedidos</p>
+                                    <p class="setting-desc">Recibe notificaciones sobre tus pedidos</p>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="setting-item checkbox">
+                            <div class="checkbox-wrapper">
+                                <input type="checkbox" id="email-marketing" class="form-checkbox" checked>
+                                <label for="email-marketing" class="checkbox-label">
+                                    <p class="setting-label">Ofertas y Promociones</p>
+                                    <p class="setting-desc">Recibe ofertas especiales y novedades</p>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Peligro -->
+                    <div class="settings-group danger">
+                        <h3>⚠️ Zona de Peligro</h3>
+
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <p class="setting-label">Descargar Datos Personales</p>
+                                <p class="setting-desc">Obtén una copia de tus datos</p>
+                            </div>
+                            <button class="btn btn-small btn-secondary" id="download-data-btn">
+                                Descargar
+                            </button>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <p class="setting-label">Eliminar Cuenta</p>
+                                <p class="setting-desc">Esta acción es irreversible</p>
+                            </div>
+                            <button class="btn btn-small btn-danger" id="delete-account-btn">
+                                Eliminar Cuenta
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal de cambio de contraseña -->
+    <div id="change-password-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Cambiar Contraseña</h2>
+                <button class="close-btn" id="close-password-modal">&times;</button>
+            </div>
+
+            <form id="change-password-form" class="auth-form">
+                <div class="form-group">
+                    <label for="old-password" class="form-label">Contraseña Actual</label>
+                    <input
+                        type="password"
+                        id="old-password"
+                        class="form-input"
+                        required
+                    />
+                    <div class="form-error" id="old-password-error"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="new-password" class="form-label">Nueva Contraseña</label>
+                    <input
+                        type="password"
+                        id="new-password"
+                        class="form-input"
+                        required
+                    />
+                    <div class="form-error" id="new-password-error"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="new-password-confirm" class="form-label">Confirmar Contraseña</label>
+                    <input
+                        type="password"
+                        id="new-password-confirm"
+                        class="form-input"
+                        required
+                    />
+                    <div class="form-error" id="new-password-confirm-error"></div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="cancel-password-btn">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        Cambiar Contraseña
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        window.config = {
+            apiUrl: 'http://localhost:5000/api',
+            appName: 'DiscoveryShop',
+            debug: true
+        };
+    </script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/pages/profile.js"></script>
+</body>
+</html>
