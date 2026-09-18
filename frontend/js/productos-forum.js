@@ -86,9 +86,13 @@ class ForumProductManager {
             console.log('📦 Cargando productos...');
 
             try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 3000);
+
                 const response = await fetch('http://localhost:5000/api/products', {
-                    signal: AbortSignal.timeout(3000)
+                    signal: controller.signal
                 });
+                clearTimeout(timeoutId);
                 const data = await response.json();
 
                 if (data.data && data.data.products && Array.isArray(data.data.products)) {
@@ -121,9 +125,13 @@ class ForumProductManager {
             let data;
 
             try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 3000);
+
                 const response = await fetch('http://localhost:5000/api/categories', {
-                    signal: AbortSignal.timeout(3000)
+                    signal: controller.signal
                 });
+                clearTimeout(timeoutId);
                 data = await response.json();
             } catch (apiError) {
                 console.log('⚠️ Usando categorías de ejemplo...');
