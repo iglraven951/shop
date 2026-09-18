@@ -34,6 +34,10 @@ const MOCK_CATEGORIES = {
     }
 };
 
+async function simulateNetworkDelay(ms = 300) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 class ForumProductManager {
     constructor() {
         this.productos = [];
