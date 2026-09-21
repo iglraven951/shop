@@ -79,7 +79,10 @@
         },
         {
             id: 'animales',
-            reason: 'No se permite la publicación de animales ni de mascotas.',
+            /* Cubre también los accesorios: una jaula es un objeto, pero el
+               foro no tiene categoría para mascotas, así que tampoco encaja.
+               El motivo lo dice para que el rechazo no parezca un error. */
+            reason: 'No se permite la publicación de animales, mascotas ni artículos para mascotas.',
             weight: 8,
             terms: ['perro', 'perros', 'perrito', 'cachorro', 'gato', 'gatos', 'gatito',
                 'mascota', 'mascotas', 'loro', 'periquito', 'conejo', 'hamster', 'pez',

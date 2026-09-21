@@ -306,14 +306,27 @@
         const text = normalize(message);
         const tokens = tokenize(message);
 
+        const district = extractDistrict(text, tokens);
+        const condition = extractCondition(text);
+
+        /* Lo que ya se entendió como filtro no debe quedarse además como
+           texto libre: «qué hay en Cayma» buscaba la palabra «cayma» dentro
+           de los títulos *y* filtraba por distrito, y la respuesta salía
+           redundante («coinciden con «cayma» en Cayma»). */
+        const consumed = new Set();
+        if (district) tokenize(district).forEach((t) => consumed.add(t));
+        if (condition) tokenize(condition).forEach((t) => consumed.add(t));
+
+        const queryTokens = tokens.filter((t) => !consumed.has(t));
+
         return {
             text,
             tokens,
             intents: detectIntents(text, tokens),
-            query: extractQuery(tokens),
+            query: extractQuery(queryTokens),
             category: extractCategory(tokens),
-            district: extractDistrict(text, tokens),
-            condition: extractCondition(text),
+            district,
+            condition,
             ...extractPrice(text),
         };
     }
