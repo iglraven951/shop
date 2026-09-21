@@ -13,9 +13,10 @@
     'use strict';
 
     const SESSION_KEY = 'discoveryshop:intro-seen';
-    /* Debe cubrir el retraso más la duración de `intro-exit` en intro.css */
-    const TOTAL_MS = 2100;
-    const COUNT_MS = 1250;
+    /* Debe cubrir el retraso más la duración de la salida en intro.css:
+       4400 ms de secuencia + 800 ms de telón, con holgura. */
+    const TOTAL_MS = 5600;
+    const COUNT_MS = 4100;
 
     /** El almacenamiento falla en ventana privada: nunca debe romper la página. */
     function alreadySeen() {

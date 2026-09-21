@@ -35,16 +35,24 @@ const PAGES = [
 /* --- Páginas retiradas al pasar de tienda a foro --- */
 const REMOVED_PAGES = ['carrito.html', 'producto.html', 'vender.html', 'favoritos.html'];
 
-/* Orden obligatorio del núcleo: cada script depende de los anteriores. */
+/* Orden obligatorio del núcleo: cada script depende de los anteriores.
+   Los dos motores propios van aquí y no aparte porque el resto del núcleo
+   cuenta con ellos: mock-api llama al revisor al crear una publicación, y el
+   chat flotante al buscador. Ambos se leen de forma perezosa, así que su
+   ausencia no rompe nada de golpe —simplemente la función desaparece sin
+   avisar, que es peor. Esta lista es la que impide que vuelva a ocurrir. */
 const CORE_ORDER = [
     'assets/js/core/seed.js',
+    'assets/js/core/moderator.js',
     'assets/js/core/mock-api.js',
     'assets/js/core/store.js',
     'assets/js/core/api.js',
+    'assets/js/core/assistant.js',
     'assets/js/ui/toast.js',
     'assets/js/ui/modal.js',
     'assets/js/ui/components.js',
     'assets/js/ui/shell.js',
+    'assets/js/ui/assistant-widget.js',
 ];
 
 const CORE_CSS = [
@@ -52,6 +60,9 @@ const CORE_CSS = [
     'assets/css/base.css',
     'assets/css/components.css',
     'assets/css/layout.css',
+    // El chat flotante está en las once páginas; sin su hoja se vería como
+    // una lista suelta de texto encima del contenido.
+    'assets/css/assistant.css',
 ];
 
 console.log('\nVERIFICACIÓN DE INTEGRIDAD\n' + '='.repeat(58));
@@ -121,7 +132,7 @@ presentPages.forEach((page) => {
     // Scripts del núcleo, en orden
     const positions = CORE_ORDER.map((src) => html.indexOf(src));
     const allPresent = positions.every((pos) => pos !== -1);
-    check(`${page}: incluye los 8 scripts del núcleo`, allPresent,
+    check(`${page}: incluye los ${CORE_ORDER.length} scripts del núcleo`, allPresent,
         allPresent ? '' : `faltan: ${CORE_ORDER.filter((_, i) => positions[i] === -1).map((s) => path.basename(s)).join(', ')}`);
 
     if (allPresent) {
@@ -214,6 +225,33 @@ pageScripts.forEach((file) => {
         check(`${file}: escapa los datos que interpola en HTML`, /escapeHtml|escapeAttr/.test(code));
     }
 });
+
+/* === 3c. La cinta de productos de la portada ===
+
+   Las tres piezas —marcado, hoja y script— solo sirven juntas. Si alguien
+   quita una, la sección queda como un hueco vacío o como una columna de
+   fotos sin animar, y ninguna de las dos cosas da un error visible. */
+{
+    const home = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+    const piezas = [
+        ['marcado', 'id="showcase-track"'],
+        ['hoja', 'assets/css/showcase.css'],
+        ['script', 'assets/js/ui/showcase.js'],
+    ];
+    const presentes = piezas.filter(([, aguja]) => home.includes(aguja));
+    check('index.html: la cinta lleva marcado, hoja y script',
+        presentes.length === piezas.length,
+        presentes.length === piezas.length ? ''
+            : `falta: ${piezas.filter(([, a]) => !home.includes(a)).map(([n]) => n).join(', ')}`);
+
+    check('existe assets/css/showcase.css', exists('assets/css/showcase.css'));
+    check('existe assets/js/ui/showcase.js', exists('assets/js/ui/showcase.js'));
+
+    // El script se apoya en el shell para el tema y en api para los datos
+    const posShell = home.indexOf('assets/js/ui/shell.js');
+    const posCinta = home.indexOf('assets/js/ui/showcase.js');
+    check('index.html: la cinta carga tras el shell', posCinta > posShell && posShell !== -1);
+}
 
 /* === 4b. Los IDs que busca cada script existen en su página === */
 // Detecta el desajuste clásico al repartir HTML y JS en archivos distintos.

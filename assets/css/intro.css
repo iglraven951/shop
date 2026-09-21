@@ -1,19 +1,23 @@
 /* ==========================================================================
    DiscoveryShop · Entrada
 
-   Presentación breve de la marca y salida rápida al foro: contador de carga,
-   el nombre revelado tras una máscara y un telón que se levanta. Poco más de
-   un segundo y medio — lo justo para que se lea la marca sin estorbar a quien
-   viene a buscar algo.
+   Presentación de marca en cuatro actos, de unos 4,2 s:
 
-   La secuencia está en CSS y se completa sola, así que sigue funcionando sin
-   JavaScript. El script solo añade la memoria de sesión, el poder saltarla y
-   la precisión del contador.
+     0,0 s  El símbolo se dibuja sobre el fondo oscuro mientras el contador
+            arranca y una rejilla se despliega desde el centro.
+     1,0 s  Un barrido de luz cruza el símbolo: la lupa «escanea».
+     1,4 s  El nombre sube palabra a palabra desde detrás de una máscara.
+     2,4 s  Aparecen la línea de lugar y el lema.
+     3,4 s  El contador llega a 100 y el telón se levanta descubriendo el foro.
+
+   La secuencia está escrita en CSS y se completa sola, así que sigue
+   funcionando sin JavaScript. El script solo añade la memoria de sesión, el
+   poder saltarla y la precisión del contador.
    ========================================================================== */
 
 /* El contador se anima como número, no como texto: así el CSS puede llevarlo
-   de 0 a 100 sin JavaScript. Donde no se admita `@property`, el JavaScript
-   hace el mismo trabajo y, si tampoco lo hay, queda fijo en 100. */
+   de 0 a 100 sin JavaScript. Donde no se admita `@property`, el script hace
+   el mismo trabajo. */
 @property --intro-count {
     syntax: "<integer>";
     inherits: false;
@@ -28,15 +32,14 @@
     place-items: center;
     background: var(--brand-950);
     overflow: hidden;
-    /* Toda la secuencia ocupa 1,5 s; después el telón se levanta en 0,5 s */
-    animation: intro-exit 500ms var(--ease-cinema) 1500ms forwards;
+    animation: intro-exit 800ms var(--ease-cinema) 4400ms forwards;
 }
 
 .intro.is-done {
     animation: intro-exit 320ms var(--ease-cinema) forwards;
 }
 
-/* El telón sube: se va revelando la página desde abajo */
+/* El telón sube y descubre la página */
 @keyframes intro-exit {
     to {
         clip-path: inset(0 0 100% 0);
@@ -46,37 +49,48 @@
 }
 
 /* --------------------------------------------------------------------------
-   Ambiente
+   Acto 0 · Ambiente
    -------------------------------------------------------------------------- */
 
-/* Dos halos que se cruzan y respiran: dan profundidad al fondo plano */
+/* Tres halos que derivan a distinta velocidad: dan profundidad a un fondo
+   que de otro modo se vería plano en pantallas grandes. */
 .intro::before {
     content: "";
     position: absolute;
-    inset: -30%;
+    inset: -35%;
     background:
-        radial-gradient(38% 38% at 28% 30%, rgba(34, 211, 238, 0.30), transparent 68%),
-        radial-gradient(45% 45% at 72% 68%, rgba(56, 136, 221, 0.38), transparent 70%);
-    animation: intro-drift 6s var(--ease-in-out) infinite alternate;
+        radial-gradient(34% 34% at 24% 26%, rgba(34, 211, 238, 0.34), transparent 66%),
+        radial-gradient(42% 42% at 76% 70%, rgba(56, 136, 221, 0.42), transparent 68%),
+        radial-gradient(28% 28% at 58% 18%, rgba(150, 193, 237, 0.22), transparent 70%);
+    animation: intro-drift 9s var(--ease-in-out) infinite alternate;
 }
 
 @keyframes intro-drift {
-    from { transform: translate3d(-2%, -1%, 0) scale(1); }
-    to { transform: translate3d(2%, 1%, 0) scale(1.08); }
+    from { transform: translate3d(-3%, -2%, 0) scale(1) rotate(0deg); }
+    to { transform: translate3d(3%, 2%, 0) scale(1.12) rotate(4deg); }
 }
 
-/* Rejilla tenue, difuminada hacia los bordes */
+/* La rejilla se abre desde el centro, como si el espacio se revelara */
 .intro::after {
     content: "";
     position: absolute;
     inset: 0;
     background-image:
-        linear-gradient(rgba(150, 193, 237, 0.07) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(150, 193, 237, 0.07) 1px, transparent 1px);
+        linear-gradient(rgba(150, 193, 237, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(150, 193, 237, 0.08) 1px, transparent 1px);
     background-size: 72px 72px;
-    mask-image: radial-gradient(circle at 50% 50%, #000 10%, transparent 72%);
-    -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 10%, transparent 72%);
+    mask-image: radial-gradient(circle at 50% 50%, #000 var(--grid, 0%), transparent 74%);
+    -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 var(--grid, 0%), transparent 74%);
+    animation: intro-grid 2400ms var(--ease-cinema) 200ms forwards;
 }
+
+@property --grid {
+    syntax: "<percentage>";
+    inherits: false;
+    initial-value: 0%;
+}
+
+@keyframes intro-grid { to { --grid: 32%; } }
 
 /* --------------------------------------------------------------------------
    Composición
@@ -92,51 +106,106 @@
     text-align: center;
 }
 
-/* --- Símbolo --- */
+/* --------------------------------------------------------------------------
+   Acto 1 · El símbolo
+   -------------------------------------------------------------------------- */
 .intro-mark {
     position: relative;
-    width: clamp(64px, 12vmin, 92px);
+    width: clamp(78px, 15vmin, 116px);
     aspect-ratio: 1;
     color: var(--on-navy);
     opacity: 0;
-    animation: intro-mark-in 700ms var(--ease-cinema) 80ms forwards;
+    animation:
+        intro-mark-in 1100ms var(--ease-cinema) 120ms forwards,
+        intro-mark-settle 2600ms var(--ease-in-out) 1400ms;
 }
 
 @keyframes intro-mark-in {
-    0% { opacity: 0; transform: scale(0.6) rotate(-12deg); }
-    100% { opacity: 1; transform: scale(1) rotate(0); }
+    0% { opacity: 0; transform: scale(0.5) rotate(-18deg); filter: blur(10px); }
+    55% { opacity: 1; filter: blur(0); }
+    100% { opacity: 1; transform: scale(1) rotate(0); filter: blur(0); }
+}
+
+/* Respiración lenta mientras el resto de la secuencia avanza: sin esto el
+   símbolo se queda congelado y la pantalla parece detenida. */
+@keyframes intro-mark-settle {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-5px) scale(1.03); }
+}
+
+/* Aro que late alrededor del símbolo */
+.intro-mark::before {
+    content: "";
+    position: absolute;
+    inset: -28%;
+    border: 1px solid rgba(150, 193, 237, 0.4);
+    border-radius: 50%;
+    opacity: 0;
+    animation: intro-ring 2200ms var(--ease-cinema) 700ms forwards;
+}
+
+@keyframes intro-ring {
+    0% { opacity: 0; transform: scale(0.6); }
+    40% { opacity: 1; }
+    100% { opacity: 0; transform: scale(1.5); }
 }
 
 .intro-mark svg { width: 100%; height: 100%; }
 
 /* El asa se dibuja de un trazo.
-   El JavaScript mide la longitud exacta con getTotalLength() y la escribe en
+   El script mide la longitud exacta con getTotalLength() y la escribe en
    `--len`. El valor por defecto (19) es esa longitud calculada sobre el
    viewBox de 40: media circunferencia de radio 4,6 más dos tramos de 1,8. */
 .intro-mark .draw {
     stroke-dasharray: var(--len, 19);
     stroke-dashoffset: var(--len, 19);
-    animation: intro-draw 600ms var(--ease-cinema) 200ms forwards;
+    animation: intro-draw 900ms var(--ease-cinema) 320ms forwards;
 }
 
 @keyframes intro-draw { to { stroke-dashoffset: 0; } }
 
 .intro-mark .fill {
     opacity: 0;
-    animation: intro-appear 450ms var(--ease-out) 320ms forwards;
+    animation: intro-appear 600ms var(--ease-out) 620ms forwards;
 }
 
 @keyframes intro-appear { to { opacity: 1; } }
 
 /* --------------------------------------------------------------------------
-   El nombre: cada palabra sube desde detrás de una máscara
+   Acto 2 · El barrido de la lupa
+   -------------------------------------------------------------------------- */
+.intro-mark-sweep {
+    position: absolute;
+    inset: -20%;
+    background: linear-gradient(
+        102deg,
+        transparent 40%,
+        rgba(255, 255, 255, 0.7) 50%,
+        transparent 60%
+    );
+    mix-blend-mode: overlay;
+    opacity: 0;
+    transform: translateX(-130%);
+    animation: intro-sweep 1200ms var(--ease-cinema) 1000ms forwards;
+    pointer-events: none;
+}
+
+@keyframes intro-sweep {
+    0% { opacity: 0; transform: translateX(-130%); }
+    20% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { opacity: 0; transform: translateX(130%); }
+}
+
+/* --------------------------------------------------------------------------
+   Acto 3 · El nombre
    -------------------------------------------------------------------------- */
 .intro-name {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
     gap: 0 0.28em;
-    font-size: clamp(2.25rem, 9vmin, 5rem);
+    font-size: clamp(2.25rem, 9vmin, 5.25rem);
     font-weight: 800;
     letter-spacing: -0.035em;
     line-height: 0.98;
@@ -148,15 +217,15 @@
     display: inline-block;
     overflow: hidden;
     /* Sitio para las colas de las letras; sin esto la «y» se corta */
-    padding-bottom: 0.12em;
-    margin-bottom: -0.12em;
+    padding-bottom: 0.14em;
+    margin-bottom: -0.14em;
 }
 
 .intro-word span {
     display: inline-block;
-    transform: translateY(105%);
-    animation: intro-rise 800ms var(--ease-cinema) forwards;
-    animation-delay: calc(360ms + var(--w, 0) * 110ms);
+    transform: translateY(108%);
+    animation: intro-rise 1000ms var(--ease-cinema) forwards;
+    animation-delay: calc(1400ms + var(--w, 0) * 190ms);
 }
 
 @keyframes intro-rise { to { transform: translateY(0); } }
@@ -178,21 +247,23 @@
     }
 }
 
-/* --- Línea inferior --- */
+/* --------------------------------------------------------------------------
+   Acto 4 · Lugar y lema
+   -------------------------------------------------------------------------- */
 .intro-sub {
     display: flex;
     align-items: center;
     gap: var(--space-4);
     opacity: 0;
-    animation: intro-appear 500ms var(--ease-out) 900ms forwards;
+    animation: intro-appear 700ms var(--ease-out) 2400ms forwards;
 }
 
 .intro-sub-rule {
-    width: clamp(24px, 6vmin, 46px);
+    width: clamp(26px, 7vmin, 56px);
     height: 1px;
     background: linear-gradient(90deg, transparent, var(--brand-300));
     transform: scaleX(0);
-    animation: intro-rule 600ms var(--ease-cinema) 950ms forwards;
+    animation: intro-rule 900ms var(--ease-cinema) 2450ms forwards;
 }
 
 .intro-sub-rule:last-of-type { background: linear-gradient(90deg, var(--brand-300), transparent); }
@@ -200,12 +271,63 @@
 @keyframes intro-rule { to { transform: scaleX(1); } }
 
 .intro-sub-text {
-    font-size: clamp(0.6875rem, 1.9vmin, 0.85rem);
+    font-size: clamp(0.6875rem, 1.9vmin, 0.9rem);
     font-weight: 600;
     letter-spacing: var(--tracking-widest);
     text-transform: uppercase;
     color: var(--brand-200);
     white-space: nowrap;
+}
+
+.intro-tagline {
+    max-width: 32ch;
+    font-size: clamp(0.8125rem, 2.3vmin, 1rem);
+    line-height: var(--leading-snug);
+    color: rgba(198, 221, 245, 0.78);
+    opacity: 0;
+    animation: intro-tagline-in 900ms var(--ease-cinema) 2800ms forwards;
+}
+
+@keyframes intro-tagline-in {
+    0% { opacity: 0; transform: translateY(14px); filter: blur(4px); }
+    100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+/* --------------------------------------------------------------------------
+   Acto final · El destello
+
+   Justo antes de que suba el telón, un pulso de luz se abre desde el centro
+   y la composición avanza un paso hacia quien mira. Es el remate: cierra la
+   secuencia con un golpe de brillo en lugar de dejarla apagarse.
+   -------------------------------------------------------------------------- */
+.intro-stage::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 38%;
+    width: 1px;
+    height: 1px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.85);
+    opacity: 0;
+    pointer-events: none;
+    animation: intro-bloom 900ms var(--ease-cinema) 3900ms forwards;
+}
+
+@keyframes intro-bloom {
+    0% { opacity: 0; box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.85); }
+    35% { opacity: 1; box-shadow: 0 0 90px 30px rgba(255, 255, 255, 0.6); }
+    100% { opacity: 0; box-shadow: 0 0 260px 130px rgba(120, 200, 255, 0); }
+}
+
+/* La composición se adelanta mientras estalla el destello */
+.intro-stage {
+    animation: intro-forward 900ms var(--ease-cinema) 3900ms forwards;
+}
+
+@keyframes intro-forward {
+    to { transform: scale(1.06); }
 }
 
 /* --------------------------------------------------------------------------
@@ -225,19 +347,19 @@
     color: var(--on-navy);
     font-variant-numeric: tabular-nums;
     opacity: 0;
-    animation: intro-appear 300ms var(--ease-out) 120ms forwards;
+    animation: intro-appear 400ms var(--ease-out) 150ms forwards;
 }
 
 /* El número se pinta desde la variable animada, no desde el texto */
 .intro-count-value::after {
     content: counter(intro-n);
     counter-reset: intro-n var(--intro-count);
-    animation: intro-tick 1250ms var(--ease-out) 120ms forwards;
+    animation: intro-tick 4100ms var(--ease-out) 150ms forwards;
 }
 
 @keyframes intro-tick { to { --intro-count: 100; } }
 
-/* Cuando el JavaScript lleva la cuenta, escribe el número como texto y el
+/* Cuando el script lleva la cuenta, escribe el número como texto y el
    pseudoelemento se aparta para no duplicarlo. */
 .intro-count.is-scripted .intro-count-value::after { content: none; }
 
@@ -258,7 +380,7 @@
     transform-origin: left;
     transform: scaleX(0);
     background: linear-gradient(90deg, var(--brand-600), var(--brand-300), var(--accent));
-    animation: intro-progress 1400ms var(--ease-out) forwards;
+    animation: intro-progress 4250ms var(--ease-out) forwards;
 }
 
 @keyframes intro-progress { to { transform: scaleX(1); } }
@@ -284,7 +406,7 @@
     font-weight: 600;
     letter-spacing: var(--tracking-wide);
     opacity: 0;
-    animation: intro-appear 400ms var(--ease-out) 500ms forwards;
+    animation: intro-appear 400ms var(--ease-out) 600ms forwards;
     transition: background-color var(--duration-fast) var(--ease-out),
                 color var(--duration-fast) var(--ease-out);
 }
@@ -332,7 +454,7 @@
         padding-inline: var(--space-4);
     }
 
-    .intro::after { background-size: 44px 44px; }
+    .intro::after { background-size: 48px 48px; }
 }
 
 .intro[hidden] { display: none !important; }

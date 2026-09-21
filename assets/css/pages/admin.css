@@ -36,16 +36,22 @@
 
 .admin-boot-title { height: 64px; border-radius: var(--radius-md); }
 
+/* Doce columnas para que las tres tarjetas guía (cuatro cada una) y las
+   cuatro de contexto (tres cada una) caigan en filas exactas. */
 .admin-boot-metrics {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(12, minmax(0, 1fr));
     gap: var(--space-4);
 }
 
-.admin-boot-card { height: 96px; border-radius: var(--radius-lg); }
+.admin-boot-card {
+    grid-column: span 3;
+    height: 96px;
+    border-radius: var(--radius-lg);
+}
 
-.admin-boot-card:nth-child(-n + 2) {
-    grid-column: span 2;
+.admin-boot-card:nth-child(-n + 3) {
+    grid-column: span 4;
     height: 172px;
 }
 
@@ -166,7 +172,7 @@
 
 .admin-metrics-primary {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: var(--space-4);
 }
 
@@ -331,6 +337,17 @@
 .admin-metric.is-brand .admin-metric-pulse {
     background: var(--brand);
     box-shadow: 0 0 0 4px var(--brand-soft);
+    animation: admin-pulse 2.4s var(--ease-in-out) infinite;
+}
+
+/* El cian queda para lo que decidió la IA: así el ojo separa su trabajo del
+   de las dos colas humanas sin necesidad de leer la etiqueta. */
+.admin-metric.is-accent::before { background: var(--accent); }
+.admin-metric.is-accent .admin-metric-value { color: var(--accent); }
+
+.admin-metric.is-accent .admin-metric-pulse {
+    background: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-soft);
     animation: admin-pulse 2.4s var(--ease-in-out) infinite;
 }
 
@@ -1083,6 +1100,373 @@
 .admin-timeline-link:hover { color: var(--brand-hover); }
 
 /* --------------------------------------------------------------------------
+   Lo que opinó la IA, dentro de la cola
+   Discreto a propósito: cuenta quién revisó antes y con cuánta seguridad, sin
+   competir con los botones que resuelven la fila. El motivo completo va en el
+   `title` y, para quien no usa ratón, repetido en texto solo para lectores.
+   -------------------------------------------------------------------------- */
+.admin-ai-verdict {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    margin-top: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-3xs);
+    line-height: var(--leading-snug);
+    color: var(--text-secondary);
+    background: var(--bg-sunken);
+    border-radius: var(--radius-sm);
+    cursor: help;
+}
+
+.admin-ai-verdict-mark {
+    width: 8px;
+    height: 8px;
+    flex-shrink: 0;
+    border-radius: var(--radius-full);
+    background: var(--text-muted);
+}
+
+.admin-ai-verdict-label { font-weight: 700; }
+
+.admin-ai-verdict-score {
+    margin-inline-start: auto;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
+}
+
+.admin-ai-verdict.is-approved .admin-ai-verdict-mark { background: var(--success); }
+.admin-ai-verdict.is-approved .admin-ai-verdict-label { color: var(--success); }
+
+.admin-ai-verdict.is-rejected .admin-ai-verdict-mark { background: var(--danger); }
+.admin-ai-verdict.is-rejected .admin-ai-verdict-label { color: var(--danger); }
+
+.admin-ai-verdict.is-pending .admin-ai-verdict-mark { background: var(--warning); }
+.admin-ai-verdict.is-pending .admin-ai-verdict-label { color: var(--warning); }
+
+/* --------------------------------------------------------------------------
+   Asistente IA · resumen
+   Tres cifras con el color de su decisión. La de «en duda» es la única que
+   pide algo, y es la única que se permite teñir la tarjeta entera.
+   -------------------------------------------------------------------------- */
+.admin-ai-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-3);
+    margin-bottom: var(--space-5);
+}
+
+.admin-ai-stat {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-width: 0;
+    padding: var(--space-4);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.admin-ai-stat::before {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: 3px;
+    background: var(--text-muted);
+}
+
+.admin-ai-stat-icon {
+    font-size: var(--text-sm);
+    line-height: 1;
+    margin-bottom: var(--space-1);
+}
+
+.admin-ai-stat-value {
+    font-size: var(--text-2xl);
+    font-weight: 750;
+    line-height: var(--leading-tight);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: var(--tracking-tight);
+}
+
+.admin-ai-stat-label {
+    font-size: var(--text-3xs);
+    font-weight: 600;
+    line-height: var(--leading-snug);
+    color: var(--text-secondary);
+}
+
+.admin-ai-stat.is-approved::before { background: var(--success); }
+.admin-ai-stat.is-approved .admin-ai-stat-value { color: var(--success); }
+
+.admin-ai-stat.is-rejected::before { background: var(--danger); }
+.admin-ai-stat.is-rejected .admin-ai-stat-value { color: var(--danger); }
+
+.admin-ai-stat.is-pending {
+    background: var(--warning-soft);
+    border-color: var(--warning);
+}
+
+.admin-ai-stat.is-pending::before { background: var(--warning); }
+.admin-ai-stat.is-pending .admin-ai-stat-value { color: var(--warning); }
+.admin-ai-stat.is-pending .admin-ai-stat-label { color: var(--text-primary); }
+
+/* --------------------------------------------------------------------------
+   Asistente IA · ajustes de aviso
+   -------------------------------------------------------------------------- */
+.admin-ai-settings {
+    margin-bottom: var(--space-6);
+    padding: var(--space-5);
+    background: var(--bg-sunken);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+}
+
+.admin-ai-settings-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-base);
+    font-weight: 700;
+    letter-spacing: var(--tracking-tight);
+}
+
+.admin-ai-settings-note {
+    max-width: 70ch;
+    margin: var(--space-2) 0 var(--space-4);
+    font-size: var(--text-2xs);
+    line-height: var(--leading-normal);
+    color: var(--text-secondary);
+}
+
+.admin-ai-input-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+/* El 51 no se escribe: se enseña pegado al campo para que quede claro que el
+   número va sin prefijo y aun así llegará bien. */
+.admin-ai-prefix {
+    display: inline-grid;
+    place-items: center;
+    min-height: 44px;
+    padding-inline: var(--space-3);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-secondary);
+    background: var(--bg-raised);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+}
+
+.admin-ai-input-row .input {
+    flex: 1 1 180px;
+    min-width: 0;
+    font-variant-numeric: tabular-nums;
+}
+
+.admin-ai-field .field-hint { max-width: 70ch; }
+
+.admin-ai-pref {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-top: var(--space-5);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border-subtle);
+}
+
+.admin-ai-pref-text {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-width: 0;
+}
+
+.admin-ai-pref-label {
+    font-size: var(--text-sm);
+    font-weight: 650;
+}
+
+.admin-ai-pref-hint {
+    font-size: var(--text-3xs);
+    line-height: var(--leading-snug);
+    color: var(--text-secondary);
+}
+
+.admin-ai-test { margin-top: var(--space-4); }
+
+/* --------------------------------------------------------------------------
+   Asistente IA · la bandeja, contada como una conversación
+   Cada decisión es un mensaje de la IA. Lo más reciente va arriba, que es
+   como se lee una bandeja de avisos, no como se lee un chat.
+   -------------------------------------------------------------------------- */
+.admin-ai-toolbar-side {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+}
+
+.admin-ai-thread {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.admin-ai-skeleton {
+    height: 132px;
+    border-radius: var(--radius-lg);
+}
+
+.admin-ai-msg {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    animation: fade-in var(--duration-base) var(--ease-out);
+}
+
+/* Quien escribe es la propia plataforma, así que el avatar es su símbolo.
+   Se pinta con `mask` para que tome el color de marca en los dos temas. */
+.admin-ai-avatar {
+    position: relative;
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    background: var(--brand-soft);
+    border: 1px solid var(--brand-ring);
+    border-radius: var(--radius-full);
+}
+
+.admin-ai-avatar::before {
+    content: "";
+    position: absolute;
+    inset: 9px;
+    background-color: var(--brand);
+    -webkit-mask: url("../../img/logo-mark.svg") center / contain no-repeat;
+    mask: url("../../img/logo-mark.svg") center / contain no-repeat;
+}
+
+.admin-ai-bubble {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: var(--space-4);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-inline-start: 3px solid var(--text-muted);
+    border-radius: var(--radius-lg);
+    /* Esquina recortada del lado del avatar: es lo que hace que se lea como
+       una burbuja de conversación y no como una tarjeta más. */
+    border-start-start-radius: var(--radius-xs);
+    transition: background-color var(--duration-slow) var(--ease-out),
+                border-color var(--duration-slow) var(--ease-out),
+                box-shadow var(--duration-slow) var(--ease-out);
+}
+
+/* Canto de color por decisión: se lee la bandeja sin leer una sola palabra */
+.admin-ai-msg.is-approved .admin-ai-bubble { border-inline-start-color: var(--success); }
+.admin-ai-msg.is-rejected .admin-ai-bubble { border-inline-start-color: var(--danger); }
+.admin-ai-msg.is-pending .admin-ai-bubble { border-inline-start-color: var(--warning); }
+
+/* Sin leer: la burbuja se despega del fondo. Al darla por leída, la
+   transición la devuelve a su sitio sin sobresalto. */
+.admin-ai-msg.is-unread .admin-ai-bubble {
+    background: var(--bg-raised);
+    border-color: var(--brand-ring);
+    box-shadow: var(--shadow-md);
+}
+
+.admin-ai-head {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-3);
+}
+
+.admin-ai-author {
+    font-size: var(--text-sm);
+    font-weight: 700;
+    letter-spacing: var(--tracking-tight);
+}
+
+.admin-ai-score,
+.admin-ai-time {
+    font-size: var(--text-3xs);
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.admin-ai-time { margin-inline-start: auto; }
+
+.admin-ai-new {
+    padding: 2px var(--space-2);
+    font-size: var(--text-3xs);
+    font-weight: 700;
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    color: var(--brand-contrast);
+    background: var(--accent);
+    border-radius: var(--radius-full);
+}
+
+.admin-ai-text {
+    /* El mensaje llega ya redactado, con sus saltos de línea: se respetan */
+    white-space: pre-line;
+    font-size: var(--text-sm);
+    line-height: var(--leading-normal);
+    color: var(--text-secondary);
+    overflow-wrap: anywhere;
+}
+
+.admin-ai-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    margin-top: var(--space-4);
+}
+
+/* Marca discreta de lo ya enviado, para no repetir el mismo aviso */
+.admin-ai-sent {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    margin-inline-start: auto;
+    font-size: var(--text-3xs);
+    font-weight: 650;
+    color: var(--success);
+}
+
+.admin-ai-thread > .empty-state {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xl);
+    padding-block: var(--space-12);
+}
+
+/* Enlace que el panel cuelga del toast de un aviso nuevo: el componente de
+   avisos del núcleo no admite acciones y no es de este panel cambiarlo. */
+.admin-ai-toast-link {
+    display: inline-block;
+    margin-top: var(--space-2);
+    font-size: var(--text-2xs);
+    font-weight: 700;
+    color: var(--brand);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.admin-ai-toast-link:hover { color: var(--brand-hover); }
+
+/* --------------------------------------------------------------------------
    Estados vacíos
    Una cola limpia es la buena noticia del día, no un error: se enmarca como
    un remate de página, con el símbolo de la marca insinuado detrás.
@@ -1196,15 +1580,22 @@
     .admin-sellers { grid-template-columns: minmax(0, 1fr); }
 
     .admin-metrics-secondary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+    /* Tres tarjetas guía no caben en dos columnas: la de la IA, que es la
+       última en llegar, se queda con la fila entera. */
+    .admin-metrics-primary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .admin-metric-lead:nth-child(3) { grid-column: span 2; }
 }
 
 @media (max-width: 720px) {
     .admin-page { padding: var(--space-5) var(--space-4) var(--space-12); }
 
     .admin-boot-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .admin-boot-card:nth-child(-n + 2) { grid-column: span 2; height: 140px; }
+    .admin-boot-card { grid-column: span 1; }
+    .admin-boot-card:nth-child(-n + 3) { grid-column: span 2; height: 140px; }
 
     .admin-metrics-primary { grid-template-columns: minmax(0, 1fr); }
+    .admin-metric-lead:nth-child(3) { grid-column: span 1; }
     .admin-metric-lead { padding: var(--space-5); }
     .admin-metric-lead .admin-metric-value { font-size: var(--text-3xl); }
 
@@ -1233,6 +1624,18 @@
     .admin-timeline-item { gap: var(--space-3); }
     .admin-timeline-dot { width: 30px; height: 30px; border-width: 2px; }
 
+    /* El recuento y el botón de vaciar pasan a su propia línea, bajo el filtro */
+    .admin-ai-toolbar-side {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .admin-ai-msg { gap: var(--space-2); }
+    .admin-ai-avatar { width: 32px; height: 32px; }
+    .admin-ai-avatar::before { inset: 7px; }
+    .admin-ai-bubble { padding: var(--space-3); }
+    .admin-ai-time { margin-inline-start: 0; }
+
     .admin-list > .empty-state,
     .admin-sellers > .empty-state,
     .admin-log > .empty-state { padding-block: var(--space-12); }
@@ -1241,6 +1644,15 @@
 @media (max-width: 520px) {
     .admin-seller-head .avatar { width: 52px; height: 52px; font-size: var(--text-lg); }
     .admin-seller-motivation { padding-left: var(--space-8); }
+
+    /* Las tres cifras siguen en fila: apiladas ocuparían media pantalla y
+       dejarían de leerse como una comparación. */
+    .admin-ai-stat { padding: var(--space-3); }
+    .admin-ai-stat-value { font-size: var(--text-xl); }
+
+    .admin-ai-settings { padding: var(--space-4); }
+    .admin-ai-input-row .btn { width: 100%; }
+    .admin-ai-test { width: 100%; }
 
     .admin-list > .empty-state::before,
     .admin-sellers > .empty-state::before,
@@ -1252,7 +1664,7 @@
 
     .admin-boot-metrics,
     .admin-metrics-secondary { grid-template-columns: minmax(0, 1fr); }
-    .admin-boot-card:nth-child(-n + 2) { grid-column: span 1; }
+    .admin-boot-card:nth-child(-n + 3) { grid-column: span 1; }
 
     .admin-metric-lead .admin-metric-value { font-size: var(--text-2xl); }
 
@@ -1264,6 +1676,11 @@
     .admin-seller-actions > .btn { width: 100%; }
 
     .admin-check { min-width: 36px; }
+
+    /* En el móvil más estrecho cada acción de la burbuja ocupa su línea:
+       apretadas de dos en dos se pulsa la de al lado. */
+    .admin-ai-actions > .btn { width: 100%; }
+    .admin-ai-sent { margin-inline-start: 0; }
 }
 
 /* --------------------------------------------------------------------------
@@ -1272,9 +1689,14 @@
 @media (prefers-reduced-motion: reduce) {
     .admin-metric-pulse,
     .admin-metric.is-warning .admin-metric-pulse,
-    .admin-metric.is-brand .admin-metric-pulse { animation: none; }
+    .admin-metric.is-brand .admin-metric-pulse,
+    .admin-metric.is-accent .admin-metric-pulse { animation: none; }
 
     .admin-metric-action:hover { transform: none; }
     .admin-metric-arrow { transition: none; }
     .admin-metric-action:hover .admin-metric-arrow { transform: none; }
+
+    /* La burbuja conserva su color de «sin leer»; solo deja de moverse */
+    .admin-ai-msg { animation: none; }
+    .admin-ai-bubble { transition: none; }
 }

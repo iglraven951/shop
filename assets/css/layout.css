@@ -1120,27 +1120,44 @@
 
 /* Móvil */
 @media (max-width: 720px) {
-    :root { --header-height: 60px; }
-
-    .header-inner { gap: var(--space-2); padding-inline: var(--space-4); }
+    /* La cabecera pasa a dos filas —marca/acciones arriba, búsqueda abajo—
+       así que mide más, no menos, que en escritorio. El valor va en :root y
+       no en .site-header porque de él dependen los desplazamientos pegajosos
+       y los altos calculados de otras páginas, que se resuelven fuera del
+       subárbol de la cabecera y allí nunca verían un valor local.
+       24 de relleno vertical + 40 de la fila de iconos + 12 de separación
+       + 42 del buscador = 118. */
+    :root { --header-height: 118px; }
 
     .brand-name { font-size: var(--text-base); }
 
-    /* La búsqueda pasa a una fila propia bajo la cabecera */
+    /* La búsqueda baja a una segunda fila, pero DENTRO de la cabecera.
+       Antes iba fija al viewport y el cuerpo llevaba un `padding-top` para
+       dejarle sitio; como la cabecera vive en el flujo normal, ese relleno la
+       empujaba también a ella y dejaba una franja vacía sobre el logotipo.
+       Con las dos filas dentro del mismo bloque pegajoso no hace falta ni
+       posición fija ni relleno, y no queda hueco.
+
+       El alto lo fija el contenido: si un tamaño de letra mayor hace crecer
+       una fila, la cabecera crece con ella en vez de recortarla. */
+    .site-header { height: auto; }
+
+    .header-inner {
+        gap: var(--space-2);
+        padding-inline: var(--space-4);
+        flex-wrap: wrap;
+        row-gap: var(--space-3);
+        padding-block: var(--space-3);
+    }
+
     .header-search {
-        position: fixed;
-        top: var(--header-height);
-        left: 0;
-        right: 0;
+        order: 3;
+        flex-basis: 100%;
         max-width: none;
-        padding: var(--space-3) var(--space-4);
-        background: var(--bg-surface);
-        border-bottom: 1px solid var(--border-subtle);
+        margin-inline: 0;
     }
 
     .search-kbd { display: none; }
-
-    body { padding-top: 62px; }
 
     /* La cabecera no cabe en móvil con todo dentro: a 360 px quedan 328 px
        útiles y solo los iconos ya suman más. Se deja lo imprescindible —

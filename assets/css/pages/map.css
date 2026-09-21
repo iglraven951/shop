@@ -832,9 +832,11 @@
 
 /* Móvil */
 @media (max-width: 720px) {
-    /* La búsqueda global ocupa una fila fija propia bajo la cabecera */
+    /* La búsqueda global es ahora la segunda fila de la cabecera y su alto ya
+       está dentro de `--header-height`: añadir los 74 px de antes descontaría
+       dos veces el mismo espacio. */
     .map-page {
-        --map-chrome: calc(var(--header-height) + 74px);
+        --map-chrome: var(--header-height);
         padding: var(--space-3);
         min-height: 460px;
     }

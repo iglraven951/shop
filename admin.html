@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="assets/css/base.css">
     <link rel="stylesheet" href="assets/css/components.css">
     <link rel="stylesheet" href="assets/css/layout.css">
+    <link rel="stylesheet" href="assets/css/assistant.css">
     <link rel="stylesheet" href="assets/css/pages/admin.css">
 </head>
 <body>
@@ -27,6 +28,7 @@
             <div class="admin-boot" id="admin-boot" aria-live="polite" aria-busy="true">
                 <div class="skeleton admin-boot-title"></div>
                 <div class="admin-boot-metrics">
+                    <div class="skeleton admin-boot-card"></div>
                     <div class="skeleton admin-boot-card"></div>
                     <div class="skeleton admin-boot-card"></div>
                     <div class="skeleton admin-boot-card"></div>
@@ -68,8 +70,9 @@
                         <p class="admin-eyebrow">Equipo de moderación</p>
                         <h1 class="admin-title">Panel de administración</h1>
                         <p class="admin-subtitle">
-                            Revisa las publicaciones que esperan aprobación y las solicitudes
-                            de cuenta de vendedor. Nada se publica en el foro sin pasar por aquí.
+                            La IA revisa cada publicación en cuanto se envía: aquí ves lo que
+                            decidió, resuelves lo que dejó en duda y atiendes las solicitudes
+                            de cuenta de vendedor.
                         </p>
                     </div>
                     <button class="btn btn-secondary admin-refresh" type="button" id="admin-refresh">
@@ -113,6 +116,27 @@
                             <span class="admin-metric-label">Vendedores por aprobar</span>
                             <span class="admin-metric-hint">
                                 <span>Ir a las solicitudes</span>
+                                <svg class="admin-metric-arrow" width="14" height="14" viewBox="0 0 16 16"
+                                     fill="none" stroke="currentColor" stroke-width="2"
+                                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M2.5 8h10"/><path d="m8.5 4 4 4-4 4"/>
+                                </svg>
+                            </span>
+                        </button>
+
+                        <!-- Lo que la IA no se atrevió a decidir. Es trabajo real y
+                             pendiente, así que vive en el primer nivel junto a las
+                             otras dos colas, no entre las cifras de contexto. -->
+                        <button class="admin-metric admin-metric-lead admin-metric-action is-accent" type="button"
+                                data-goto-tab="ia" data-metric-card="posts-doubt">
+                            <span class="admin-metric-top">
+                                <span class="admin-metric-icon" aria-hidden="true">🤔</span>
+                                <span class="admin-metric-pulse" aria-hidden="true"></span>
+                            </span>
+                            <span class="admin-metric-value" data-metric="posts-doubt">—</span>
+                            <span class="admin-metric-label">Publicaciones en duda</span>
+                            <span class="admin-metric-hint">
+                                <span>Ver lo que dijo la IA</span>
                                 <svg class="admin-metric-arrow" width="14" height="14" viewBox="0 0 16 16"
                                      fill="none" stroke="currentColor" stroke-width="2"
                                      stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -164,6 +188,12 @@
                         <span aria-hidden="true">🧑‍💼</span>
                         <span>Vendedores</span>
                         <span class="admin-tab-count" data-tab-count="vendedores" hidden></span>
+                    </button>
+                    <button class="admin-tab" type="button" role="tab" data-tab="ia"
+                            id="tab-ia" aria-controls="panel-ia" aria-selected="false" tabindex="-1">
+                        <span aria-hidden="true">🤖</span>
+                        <span>Asistente IA</span>
+                        <span class="admin-tab-count" data-tab-count="ia" hidden></span>
                     </button>
                     <button class="admin-tab" type="button" role="tab" data-tab="historial"
                             id="tab-historial" aria-controls="panel-historial" aria-selected="false" tabindex="-1">
@@ -270,6 +300,126 @@
                     <div class="admin-sellers" id="admin-seller-list" aria-busy="true"></div>
                 </section>
 
+                <!-- Pestaña: Asistente IA
+                     La bandeja de la IA, contada como una conversación: cada
+                     decisión es un mensaje suyo, con lo que hay que hacer al pie. -->
+                <section class="admin-panel" id="panel-ia" role="tabpanel"
+                         aria-labelledby="tab-ia" tabindex="0" hidden>
+
+                    <p class="admin-panel-intro">
+                        La IA de la plataforma revisa cada publicación en cuanto se envía.
+                        Cuando lo tiene claro decide sola; cuando no, la deja en duda y te
+                        la trae aquí para que la resuelvas tú.
+                    </p>
+
+                    <!-- Resumen: tres cifras, cada una con el color de su decisión -->
+                    <div class="admin-ai-summary">
+                        <div class="admin-ai-stat is-approved">
+                            <span class="admin-ai-stat-icon" aria-hidden="true">✅</span>
+                            <span class="admin-ai-stat-value" data-ai-stat="approved">—</span>
+                            <span class="admin-ai-stat-label">Aprobadas</span>
+                        </div>
+                        <div class="admin-ai-stat is-rejected">
+                            <span class="admin-ai-stat-icon" aria-hidden="true">🚫</span>
+                            <span class="admin-ai-stat-value" data-ai-stat="rejected">—</span>
+                            <span class="admin-ai-stat-label">Rechazadas</span>
+                        </div>
+                        <div class="admin-ai-stat is-pending">
+                            <span class="admin-ai-stat-icon" aria-hidden="true">🤔</span>
+                            <span class="admin-ai-stat-value" data-ai-stat="pending">—</span>
+                            <span class="admin-ai-stat-label">En duda</span>
+                        </div>
+                    </div>
+
+                    <!-- Ajustes de aviso -->
+                    <section class="admin-ai-settings" aria-labelledby="admin-ai-settings-title">
+                        <h2 class="admin-ai-settings-title" id="admin-ai-settings-title">
+                            <span aria-hidden="true">📲</span>
+                            Avisos en tu WhatsApp
+                        </h2>
+                        <p class="admin-ai-settings-note">
+                            El foro no tiene servidor propio, así que no manda los mensajes
+                            por su cuenta: cada aviso abre WhatsApp con el texto ya escrito
+                            y llega a tu chat de un clic.
+                        </p>
+
+                        <form id="admin-ai-form" novalidate>
+                            <div class="field admin-ai-field">
+                                <label class="label" for="admin-whatsapp">Tu número de WhatsApp</label>
+                                <div class="admin-ai-input-row">
+                                    <span class="admin-ai-prefix" aria-hidden="true">+51</span>
+                                    <input class="input" type="tel" id="admin-whatsapp" name="whatsapp"
+                                           inputmode="numeric" autocomplete="off" maxlength="15"
+                                           placeholder="Móvil de nueve dígitos"
+                                           aria-describedby="admin-whatsapp-hint">
+                                    <button class="btn btn-primary" type="submit" id="admin-whatsapp-save">
+                                        Guardar
+                                    </button>
+                                </div>
+                                <p class="field-error" id="admin-whatsapp-error" role="alert" hidden></p>
+                                <p class="field-hint" id="admin-whatsapp-hint">
+                                    Móvil peruano de nueve dígitos; el 51 se antepone solo.
+                                    El campo empieza vacío a propósito: tu número es un dato
+                                    personal, no está escrito en el código del sitio y se
+                                    guarda únicamente en este navegador.
+                                </p>
+                            </div>
+                        </form>
+
+                        <div class="admin-ai-pref">
+                            <div class="admin-ai-pref-text">
+                                <span class="admin-ai-pref-label" id="admin-auto-notify-label">
+                                    Avisarme de cada decisión
+                                </span>
+                                <span class="admin-ai-pref-hint">
+                                    Al abrir el panel te avisamos de lo que la IA haya decidido
+                                    mientras no estabas, con el enlace a WhatsApp a mano.
+                                </span>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="admin-auto-notify"
+                                       aria-labelledby="admin-auto-notify-label">
+                                <span class="switch-track"></span>
+                                <span class="switch-thumb"></span>
+                            </label>
+                        </div>
+
+                        <button class="btn btn-secondary btn-sm admin-ai-test" type="button"
+                                id="admin-whatsapp-test">
+                            <span aria-hidden="true">✉️</span>
+                            <span>Enviar mensaje de prueba</span>
+                        </button>
+                    </section>
+
+                    <!-- Bandeja -->
+                    <div class="admin-toolbar">
+                        <div class="segmented admin-filters" role="group" aria-label="Filtrar avisos por decisión">
+                            <button class="segmented-item" type="button" data-inbox-decision="all" aria-pressed="true">
+                                Todos <span class="admin-filter-count" data-count="inbox-all"></span>
+                            </button>
+                            <button class="segmented-item" type="button" data-inbox-decision="approved" aria-pressed="false">
+                                Aprobadas <span class="admin-filter-count" data-count="inbox-approved"></span>
+                            </button>
+                            <button class="segmented-item" type="button" data-inbox-decision="rejected" aria-pressed="false">
+                                Rechazadas <span class="admin-filter-count" data-count="inbox-rejected"></span>
+                            </button>
+                            <button class="segmented-item" type="button" data-inbox-decision="pending" aria-pressed="false">
+                                En duda <span class="admin-filter-count" data-count="inbox-pending"></span>
+                            </button>
+                        </div>
+
+                        <div class="admin-ai-toolbar-side">
+                            <p class="admin-queue-status" id="admin-inbox-status" role="status"></p>
+                            <button class="btn btn-ghost btn-sm" type="button" id="admin-inbox-clear">
+                                Vaciar bandeja
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="admin-ai-thread" id="admin-inbox-thread" role="log"
+                         aria-live="polite" aria-busy="true" aria-label="Avisos de la IA"></div>
+                </section>
+
                 <!-- Pestaña: Historial -->
                 <section class="admin-panel" id="panel-historial" role="tabpanel"
                          aria-labelledby="tab-historial" tabindex="0" hidden>
@@ -289,13 +439,16 @@
     <div id="app-footer"></div>
 
     <script src="assets/js/core/seed.js"></script>
+    <script src="assets/js/core/moderator.js"></script>
     <script src="assets/js/core/mock-api.js"></script>
     <script src="assets/js/core/store.js"></script>
     <script src="assets/js/core/api.js"></script>
+    <script src="assets/js/core/assistant.js"></script>
     <script src="assets/js/ui/toast.js"></script>
     <script src="assets/js/ui/modal.js"></script>
     <script src="assets/js/ui/components.js"></script>
     <script src="assets/js/ui/shell.js"></script>
+    <script src="assets/js/ui/assistant-widget.js"></script>
     <script src="assets/js/pages/admin.js"></script>
 </body>
 </html>

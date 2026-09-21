@@ -1,10 +1,11 @@
 /**
  * DiscoveryShop · Panel de administración
  *
- * Dos colas de trabajo: publicaciones que esperan aprobación y solicitudes de
- * cuenta de vendedor. El acceso se resuelve antes de pintar cualquier dato: sin
- * sesión se invita a entrar, y con sesión sin permisos se explica el porqué.
- * Ninguna cifra ni botón de moderación llega al DOM de quien no es admin.
+ * Dos colas de trabajo —publicaciones y solicitudes de vendedor— más la
+ * bandeja de la IA, que cuenta lo que ha decidido por su cuenta. El acceso se
+ * resuelve antes de pintar cualquier dato: sin sesión se invita a entrar, y
+ * con sesión sin permisos se explica el porqué. Ninguna cifra ni botón de
+ * moderación llega al DOM de quien no es admin.
  *
  * Cada pestaña carga sus datos la primera vez que se abre (carga perezosa) y
  * toda acción de moderación refresca las métricas, para que la insignia de la
@@ -20,7 +21,7 @@
     const toast = global.toast;
     const modal = global.modal;
 
-    const TABS = ['publicaciones', 'vendedores', 'historial'];
+    const TABS = ['publicaciones', 'vendedores', 'ia', 'historial'];
 
     /** Motivos que el equipo escribe una y otra vez: un clic rellena el campo. */
     const REJECTION_PRESETS = [
@@ -85,6 +86,50 @@
         },
     };
 
+    /**
+     * Las tres salidas del revisor automático. La tercera no es un fallo: es
+     * la IA reconociendo que no lo tiene claro, y por eso se presenta en ámbar
+     * de «pendiente de ti», no en rojo de error.
+     */
+    const AI_DECISIONS = {
+        approved: { label: 'Aprobada', badge: 'badge-success', icon: '✅' },
+        rejected: { label: 'Rechazada', badge: 'badge-danger', icon: '🚫' },
+        pending: { label: 'En duda', badge: 'badge-warning', icon: '🤔' },
+    };
+
+    const INBOX_FILTERS = ['all', 'approved', 'rejected', 'pending'];
+
+    const EMPTY_INBOX = {
+        all: {
+            icon: '🤖',
+            title: 'La IA aún no ha revisado ninguna publicación',
+            message: 'En cuanto alguien publique un artículo, su decisión aparecerá aquí como un mensaje.',
+        },
+        approved: {
+            icon: '✅',
+            title: 'Todavía no ha aprobado nada',
+            message: 'Cuando una publicación encaje claramente con el foro, la IA la aprobará y te lo contará aquí.',
+        },
+        rejected: {
+            icon: '🙌',
+            title: 'Todavía no ha rechazado nada',
+            message: 'Ninguna publicación ha dado motivos para rechazarla de forma automática.',
+        },
+        pending: {
+            icon: '👌',
+            title: 'No hay nada en duda',
+            message: 'La IA resolvió sola todo lo que le llegó. Cuando dude, te lo dejará aquí.',
+        },
+    };
+
+    /** Texto del mensaje de prueba: sirve para comprobar que el número es el bueno. */
+    const TEST_MESSAGE = [
+        '🤖 IA de DiscoveryShop',
+        '',
+        'Mensaje de prueba.',
+        'Si lees esto, los avisos de la revisión llegarán a este chat.',
+    ].join('\n');
+
     const EMPTY_SELLERS = {
         pending: {
             icon: '✅',
@@ -115,6 +160,21 @@
         posts: { status: 'pending', q: '', items: [], loaded: false },
         sellers: { status: 'pending', items: [], loaded: false },
         log: { items: [], loaded: false },
+        inbox: {
+            decision: 'all',
+            items: [],
+            unread: 0,
+            summary: { approved: 0, rejected: 0, pending: 0 },
+            loaded: false,
+            // Avisos ya anunciados con un toast en esta visita: sin esto,
+            // pulsar «Actualizar» volvería a cantar lo mismo.
+            announced: new Set(),
+        },
+        // Publicaciones que siguen esperando a una persona. Se usa dos veces:
+        // para la métrica de dudas y para saber si un aviso todavía se puede
+        // resolver desde su propia burbuja.
+        doubt: { ids: new Set(), count: 0 },
+        settings: { whatsapp: '', auto_notify: true },
         selection: new Set(),
         bulkRunning: false,
         // Índice de fila a la que devolver el foco tras repintar (atajos de teclado).
@@ -125,6 +185,10 @@
     // no puede dejar en pantalla el resultado de una consulta anterior.
     let postsTicket = 0;
     let sellersTicket = 0;
+    let inboxTicket = 0;
+
+    // Vigila qué burbujas sin leer entran en pantalla para darlas por leídas.
+    let inboxObserver = null;
 
     /* ======================================================================
        Arranque y control de acceso
@@ -148,7 +212,15 @@
         showContent();
         bindEvents();
 
+        // Los ajustes van primero: de ellos depende si un aviso nuevo puede
+        // abrir WhatsApp y si hay que anunciarlo con un toast.
+        await loadSettings();
         await refreshStats();
+
+        // La bandeja se carga aunque la pestaña activa sea otra: su insignia y
+        // el aviso de lo que la IA decidió no pueden esperar a que se abra.
+        await loadInbox();
+
         activateTab(tabFromHash(), { syncHash: false });
     }
 
@@ -200,12 +272,38 @@
         try {
             const stats = await api.getAdminStats();
             state.stats = stats;
+
+            await refreshDoubtQueue();
             renderMetrics(stats);
 
             // Mantiene al día la insignia de la cabecera inyectada por shell.js.
             store.set({ pendingModeration: stats.posts.pending + stats.sellers.pending });
         } catch (error) {
             toast.error(error.message);
+        }
+    }
+
+    /**
+     * Relee la cola pendiente para saber cuántas publicaciones dejó la IA en
+     * duda y cuáles siguen sin resolver.
+     *
+     * Las estadísticas generales cuentan todo lo pendiente sin distinguir quién
+     * lo dejó así, y la diferencia importa: una duda de la IA viene con un
+     * motivo escrito y se resuelve desde su propia burbuja.
+     */
+    async function refreshDoubtQueue() {
+        try {
+            const data = await api.getAdminPosts('pending', '');
+            const items = data.posts || [];
+
+            state.doubt.ids = new Set(items.map((post) => post.id));
+            state.doubt.count = items.filter(
+                (post) => post.review && post.review.decision === 'pending'
+            ).length;
+        } catch (error) {
+            // Sin este dato el panel sigue siendo utilizable: se deja a cero.
+            state.doubt.ids = new Set();
+            state.doubt.count = 0;
         }
     }
 
@@ -223,6 +321,7 @@
 
         setMetric('posts-pending', format.number(stats.posts.pending));
         setMetric('sellers-pending', format.number(stats.sellers.pending));
+        setMetric('posts-doubt', format.number(state.doubt.count));
         setMetric('posts-approved', format.number(stats.posts.approved));
         setMetric('posts-rejected', format.number(stats.posts.rejected));
         setMetric('users-total', format.number(stats.users.total));
@@ -240,6 +339,9 @@
 
         const sellersCard = $('[data-metric-card="sellers-pending"]');
         if (sellersCard) sellersCard.classList.toggle('is-brand', stats.sellers.pending > 0);
+
+        const doubtCard = $('[data-metric-card="posts-doubt"]');
+        if (doubtCard) doubtCard.classList.toggle('is-accent', state.doubt.count > 0);
 
         setCount('posts-pending', stats.posts.pending);
         setCount('posts-approved', stats.posts.approved);
@@ -299,6 +401,7 @@
     function loadTab(tab) {
         if (tab === 'publicaciones' && !state.posts.loaded) loadPosts();
         if (tab === 'vendedores' && !state.sellers.loaded) loadSellers();
+        if (tab === 'ia' && !state.inbox.loaded) loadInbox();
         if (tab === 'historial' && !state.log.loaded) loadLog();
     }
 
@@ -372,6 +475,36 @@
         return parts.join('');
     }
 
+    /** Porcentaje legible a partir de la confianza (0-1) que devuelve la IA. */
+    function confidencePercent(value) {
+        return Math.round(Math.min(1, Math.max(0, Number(value) || 0)) * 100);
+    }
+
+    /**
+     * Etiqueta discreta con lo que opinó la IA de una publicación.
+     *
+     * El motivo va en `title` para quien usa ratón y repetido en texto oculto
+     * para quien no lo tiene: un `title` no lo anuncia ningún lector de
+     * pantalla por sí solo.
+     */
+    function reviewTag(post) {
+        const review = post.review;
+        const meta = review && AI_DECISIONS[review.decision];
+        if (!meta) return '';
+
+        const score = confidencePercent(review.confidence);
+        const reason = review.reason || '';
+
+        return `
+        <p class="admin-ai-verdict is-${escapeAttr(review.decision)}"
+           title="${escapeAttr(`La IA la marcó como «${meta.label.toLowerCase()}» con ${score} % de confianza. ${reason}`)}">
+            <span class="admin-ai-verdict-mark" aria-hidden="true"></span>
+            <span class="admin-ai-verdict-label">La IA: ${escapeHtml(meta.label.toLowerCase())}</span>
+            <span class="admin-ai-verdict-score">${score} % de confianza</span>
+            <span class="sr-only">Motivo: ${escapeHtml(reason)}</span>
+        </p>`;
+    }
+
     function queueItem(post) {
         const selected = state.selection.has(post.id);
 
@@ -385,6 +518,7 @@
 
             <div class="admin-queue-body">
                 ${UI.postRow(post, { showStatus: true, actions: rowActions(post) })}
+                ${reviewTag(post)}
                 ${post.status === 'rejected' && post.rejection_reason ? `
                 <p class="admin-queue-reason">
                     <strong>Motivo del rechazo:</strong> ${escapeHtml(post.rejection_reason)}
@@ -901,6 +1035,480 @@
     }
 
     /* ======================================================================
+       Ajustes de aviso
+
+       El número de WhatsApp es un dato personal y el repositorio es público,
+       así que no está escrito en ninguna parte del código: lo introduce el
+       administrador una vez y queda guardado en su propio navegador.
+       ====================================================================== */
+
+    async function loadSettings() {
+        try {
+            const data = await api.getSettings();
+            state.settings = { whatsapp: '', auto_notify: true, ...(data.settings || {}) };
+        } catch (error) {
+            // Sin ajustes se trabaja igual: solo no habrá enlaces a WhatsApp.
+            state.settings = { whatsapp: '', auto_notify: false };
+        }
+
+        applySettings();
+    }
+
+    function applySettings() {
+        const input = $('#admin-whatsapp');
+        const notify = $('#admin-auto-notify');
+
+        if (input) input.value = state.settings.whatsapp || '';
+        if (notify) notify.checked = !!state.settings.auto_notify;
+    }
+
+    function showWhatsappError(message) {
+        const node = $('#admin-whatsapp-error');
+        const input = $('#admin-whatsapp');
+
+        node.textContent = message || '';
+        node.hidden = !message;
+        input.classList.toggle('is-invalid', !!message);
+    }
+
+    async function saveWhatsapp() {
+        const input = $('#admin-whatsapp');
+        // Se guarda solo el número: espacios, guiones y paréntesis sobran y el
+        // enlace de WhatsApp no los admite.
+        const digits = input.value.replace(/\D/g, '');
+
+        if (digits && digits.length < 9) {
+            showWhatsappError('Un móvil peruano tiene nueve dígitos. Revísalo y vuelve a guardarlo.');
+            input.focus();
+            return;
+        }
+
+        try {
+            const data = await api.updateSettings({ whatsapp: digits });
+            state.settings = { ...state.settings, ...(data.settings || {}) };
+
+            input.value = state.settings.whatsapp || '';
+            showWhatsappError('');
+
+            // Las burbujas cambian: con número guardado ya pueden abrir WhatsApp.
+            if (state.inbox.loaded) renderInbox();
+
+            toast.success(digits
+                ? 'Número guardado. Los avisos se abrirán en tu WhatsApp.'
+                : 'Número borrado. Los avisos se quedarán solo en este panel.');
+        } catch (error) {
+            showWhatsappError(error.message);
+        }
+    }
+
+    async function toggleAutoNotify(enabled) {
+        try {
+            const data = await api.updateSettings({ auto_notify: enabled });
+            state.settings = { ...state.settings, ...(data.settings || {}) };
+        } catch (error) {
+            // Se devuelve el interruptor a su sitio: mentir sobre el estado
+            // guardado es peor que no poder cambiarlo.
+            $('#admin-auto-notify').checked = !enabled;
+            toast.error(error.message);
+        }
+    }
+
+    /** Abre WhatsApp en otra pestaña con el mensaje ya redactado. */
+    function openWhatsapp(link) {
+        global.open(link, '_blank', 'noopener');
+    }
+
+    /** Lleva la atención al campo cuando todavía no hay número que usar. */
+    function requireWhatsapp() {
+        activateTab('ia');
+        showWhatsappError('Escribe aquí tu número para que podamos abrirte el aviso en WhatsApp.');
+
+        const reduce = global.matchMedia
+            && global.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        const input = $('#admin-whatsapp');
+        input.focus();
+        input.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' });
+    }
+
+    function sendTestMessage() {
+        const link = api.whatsappLink(state.settings.whatsapp, TEST_MESSAGE);
+
+        if (!link) {
+            requireWhatsapp();
+            return;
+        }
+
+        openWhatsapp(link);
+        toast.info('Abrimos WhatsApp con el mensaje de prueba.');
+    }
+
+    /* ======================================================================
+       Bandeja de la IA
+
+       Se pinta como una conversación y no como una tabla porque eso es lo que
+       es: la IA cuenta lo que ha hecho, en el mismo orden en que lo hizo. Lo
+       más reciente va arriba, que es como se lee una bandeja de avisos.
+       ====================================================================== */
+
+    async function loadInbox() {
+        const thread = $('#admin-inbox-thread');
+        const ticket = ++inboxTicket;
+
+        thread.setAttribute('aria-busy', 'true');
+        thread.innerHTML = Array.from({ length: 3 },
+            () => '<div class="skeleton admin-ai-skeleton" aria-hidden="true"></div>').join('');
+
+        try {
+            const data = await api.getAdminInbox(state.inbox.decision);
+            if (ticket !== inboxTicket) return;
+
+            state.inbox.items = data.inbox || [];
+            state.inbox.unread = data.unread || 0;
+            state.inbox.summary = data.summary || { approved: 0, rejected: 0, pending: 0 };
+            state.inbox.loaded = true;
+
+            renderInbox();
+            announceNew();
+        } catch (error) {
+            if (ticket !== inboxTicket) return;
+
+            state.inbox.items = [];
+            thread.innerHTML = UI.emptyState({
+                icon: '⚠️',
+                title: 'No se pudo cargar la bandeja',
+                message: error.message,
+            });
+            toast.error(error.message);
+        } finally {
+            if (ticket === inboxTicket) thread.setAttribute('aria-busy', 'false');
+        }
+    }
+
+    /**
+     * Anuncia con un toast lo que la IA decidió sin que nadie lo viera.
+     *
+     * Un sitio sin servidor no recibe avisos por su cuenta: la bandeja solo
+     * cambia cuando el navegador vuelve a leerla. Por eso lo que se anuncia es
+     * lo que está sin leer al abrir el panel, y cada aviso se canta una vez.
+     */
+    function announceNew() {
+        const fresh = state.inbox.items.filter(
+            (item) => !item.read && !state.inbox.announced.has(item.id)
+        );
+
+        state.inbox.items.forEach((item) => state.inbox.announced.add(item.id));
+
+        if (!state.settings.auto_notify || !fresh.length) return;
+
+        const newest = fresh[0];
+        const doubts = fresh.filter((item) => item.decision === 'pending').length;
+
+        const message = fresh.length === 1
+            ? `La IA revisó «${newest.post_title}».`
+            : `La IA revisó ${format.number(fresh.length)} publicaciones mientras no estabas`
+              + `${doubts ? `, ${format.number(doubts)} de ellas en duda` : ''}.`;
+
+        toast.info(message, { title: 'Aviso de la IA', duration: 9000 });
+        attachWhatsappAction(newest);
+    }
+
+    /**
+     * Añade el enlace a WhatsApp al último toast pintado.
+     *
+     * El componente de avisos del núcleo no admite acciones y no es de este
+     * panel para cambiarlo: se le cuelga el enlace al vuelo, que es menos
+     * invasivo que duplicar todo el componente solo para esto.
+     */
+    function attachWhatsappAction(item) {
+        const link = api.whatsappLink(state.settings.whatsapp, item.message);
+        if (!link) return;
+
+        const content = document.querySelector('.toast-stack .toast:last-child .toast-content');
+        if (!content) return;
+
+        const anchor = document.createElement('a');
+        anchor.className = 'admin-ai-toast-link';
+        anchor.href = link;
+        anchor.target = '_blank';
+        anchor.rel = 'noopener';
+        anchor.textContent = 'Enviar a mi WhatsApp';
+        anchor.addEventListener('click', () => { markSent(item.id); });
+
+        content.appendChild(anchor);
+    }
+
+    function inboxBubble(item) {
+        const meta = AI_DECISIONS[item.decision] || AI_DECISIONS.pending;
+        const id = escapeAttr(item.id);
+        const score = confidencePercent(item.confidence);
+
+        // Solo se ofrece resolver lo que de verdad sigue esperando: si ya se
+        // decidió desde la cola, los botones aquí solo darían un error.
+        const unresolved = item.decision === 'pending' && state.doubt.ids.has(item.post_id);
+
+        return `
+        <article class="admin-ai-msg is-${escapeAttr(item.decision)}${item.read ? '' : ' is-unread'}"
+                 data-inbox-id="${id}">
+            <span class="admin-ai-avatar" aria-hidden="true"></span>
+
+            <div class="admin-ai-bubble">
+                <header class="admin-ai-head">
+                    <span class="admin-ai-author">IA de DiscoveryShop</span>
+                    <span class="badge ${meta.badge}">${escapeHtml(`${meta.icon} ${meta.label}`)}</span>
+                    <span class="admin-ai-score">${score} % de confianza</span>
+                    ${item.read ? '' : '<span class="admin-ai-new">Nuevo</span>'}
+                    <time class="admin-ai-time" datetime="${escapeAttr(item.created_at)}">
+                        ${escapeHtml(format.relative(item.created_at))}
+                    </time>
+                </header>
+
+                <!-- Tal cual, con sus saltos de línea: esto es exactamente lo
+                     que se enviará por WhatsApp, así que se ve antes de enviarlo -->
+                <p class="admin-ai-text">${escapeHtml(item.message)}</p>
+
+                <footer class="admin-ai-actions">
+                    <button class="btn btn-primary btn-sm" type="button" data-inbox-send="${id}">
+                        <span aria-hidden="true">📲</span>
+                        <span>Enviar a mi WhatsApp</span>
+                    </button>
+                    <a class="btn btn-ghost btn-sm" href="publicacion.html?id=${escapeAttr(item.post_id)}"
+                       target="_blank" rel="noopener">Ver publicación</a>
+                    ${unresolved ? `
+                    <button class="btn btn-success btn-sm" type="button" data-inbox-approve="${id}">
+                        Aprobar
+                    </button>
+                    <button class="btn btn-danger btn-sm" type="button" data-inbox-reject="${id}">
+                        Rechazar
+                    </button>` : ''}
+                    ${item.sent_whatsapp ? `
+                    <span class="admin-ai-sent" title="Ya lo enviaste a tu WhatsApp">
+                        <span aria-hidden="true">✓</span> Enviado
+                    </span>` : ''}
+                </footer>
+            </div>
+        </article>`;
+    }
+
+    function renderInbox() {
+        const thread = $('#admin-inbox-thread');
+        const items = state.inbox.items;
+
+        renderInboxSummary();
+        updateInboxStatusLine();
+        setTabCount('ia', state.inbox.unread);
+
+        if (!items.length) {
+            thread.innerHTML = UI.emptyState(EMPTY_INBOX[state.inbox.decision] || EMPTY_INBOX.all);
+            return;
+        }
+
+        thread.innerHTML = items.map(inboxBubble).join('');
+        watchUnread();
+    }
+
+    function renderInboxSummary() {
+        const summary = state.inbox.summary || { approved: 0, rejected: 0, pending: 0 };
+        const total = summary.approved + summary.rejected + summary.pending;
+
+        Object.keys(AI_DECISIONS).forEach((decision) => {
+            const node = $(`[data-ai-stat="${decision}"]`);
+            if (node) node.textContent = format.number(summary[decision] || 0);
+        });
+
+        setCount('inbox-all', total);
+        setCount('inbox-approved', summary.approved || 0);
+        setCount('inbox-rejected', summary.rejected || 0);
+        setCount('inbox-pending', summary.pending || 0);
+    }
+
+    function updateInboxStatusLine() {
+        const total = state.inbox.items.length;
+        const unread = state.inbox.unread;
+        const node = $('#admin-inbox-status');
+
+        if (!total) {
+            node.textContent = '';
+            return;
+        }
+
+        node.textContent = `${format.number(total)} ${format.plural(total, 'aviso', 'avisos')}`
+            + (unread ? ` · ${format.number(unread)} sin leer` : '');
+    }
+
+    /**
+     * Da por leído cada aviso cuando de verdad aparece en pantalla.
+     *
+     * Marcarlos todos al pintarlos sería más simple, pero entonces «sin leer»
+     * no significaría nada: bastaría con abrir la pestaña para perder de vista
+     * lo que acababa de llegar.
+     */
+    function watchUnread() {
+        if (inboxObserver) inboxObserver.disconnect();
+
+        const pendingNodes = $$('.admin-ai-msg.is-unread', $('#admin-inbox-thread'));
+        if (!pendingNodes.length) return;
+
+        // Sin IntersectionObserver no hay forma de saber qué se ha visto: se
+        // dan por leídos al pintarlos, que es la lectura más conservadora.
+        if (typeof global.IntersectionObserver !== 'function') {
+            pendingNodes.forEach(markNodeRead);
+            return;
+        }
+
+        inboxObserver = new global.IntersectionObserver((entries, observer) => {
+            entries.forEach((entry) => {
+                if (!entry.isIntersecting) return;
+                observer.unobserve(entry.target);
+                markNodeRead(entry.target);
+            });
+        }, { threshold: 0.55 });
+
+        pendingNodes.forEach((node) => inboxObserver.observe(node));
+    }
+
+    async function markNodeRead(node) {
+        const id = node.dataset.inboxId;
+        const item = state.inbox.items.find((entry) => entry.id === id);
+        if (!item || item.read) return;
+
+        try {
+            await api.markInboxRead(id);
+        } catch (error) {
+            return;   // sigue sin leer: se reintentará en la próxima carga
+        }
+
+        item.read = true;
+        state.inbox.unread = Math.max(0, state.inbox.unread - 1);
+        setTabCount('ia', state.inbox.unread);
+        updateInboxStatusLine();
+
+        // Se deja ver un instante como nuevo: apagarlo en el acto impediría
+        // distinguir lo que acaba de llegar de lo ya revisado.
+        setTimeout(() => {
+            node.classList.remove('is-unread');
+            const flag = node.querySelector('.admin-ai-new');
+            if (flag) flag.remove();
+        }, 1600);
+    }
+
+    /** Marca un aviso como enviado y refleja el cambio sin repintar la bandeja. */
+    async function markSent(id) {
+        const item = state.inbox.items.find((entry) => entry.id === id);
+        if (!item || item.sent_whatsapp) return;
+
+        try {
+            await api.markInboxSent(id);
+        } catch (error) {
+            toast.error(error.message);
+            return;
+        }
+
+        const wasUnread = !item.read;
+        item.sent_whatsapp = true;
+        item.read = true;
+
+        if (wasUnread) {
+            state.inbox.unread = Math.max(0, state.inbox.unread - 1);
+            setTabCount('ia', state.inbox.unread);
+            updateInboxStatusLine();
+        }
+
+        const node = findBubble(id);
+        if (node) node.outerHTML = inboxBubble(item);
+    }
+
+    function findBubble(id) {
+        return $$('.admin-ai-msg', $('#admin-inbox-thread'))
+            .find((node) => node.dataset.inboxId === id) || null;
+    }
+
+    function sendInboxToWhatsapp(id) {
+        const item = state.inbox.items.find((entry) => entry.id === id);
+        if (!item) return;
+
+        const link = api.whatsappLink(state.settings.whatsapp, item.message);
+
+        if (!link) {
+            requireWhatsapp();
+            return;
+        }
+
+        openWhatsapp(link);
+        markSent(id);
+    }
+
+    async function approveFromInbox(id) {
+        const item = state.inbox.items.find((entry) => entry.id === id);
+        if (!item) return;
+
+        try {
+            const { post } = await api.approvePost(item.post_id);
+            toast.success(`«${post.title}» fue aprobada y ya es visible en el feed.`);
+            await afterInboxDecision();
+        } catch (error) {
+            toast.error(error.message);
+        }
+    }
+
+    function openRejectFromInbox(id) {
+        const item = state.inbox.items.find((entry) => entry.id === id);
+        if (!item) return;
+
+        openReasonDialog({
+            title: 'Rechazar publicación',
+            subject: item.post_title,
+            note: 'Quien publicó recibirá este motivo tal cual. Sé claro y respetuoso.',
+            confirmLabel: 'Rechazar publicación',
+            submit: async (reason) => {
+                const data = await api.rejectPost(item.post_id, reason);
+                toast.warning(`«${data.post.title}» fue rechazada. Se avisó a quien la publicó.`);
+                await afterInboxDecision();
+            },
+        });
+    }
+
+    /** Tras resolver una duda desde la bandeja, nada de lo demás sigue al día. */
+    async function afterInboxDecision() {
+        state.posts.loaded = false;
+        state.log.loaded = false;
+
+        await refreshStats();   // recalcula también qué dudas quedan abiertas
+        renderInbox();          // la burbuja resuelta pierde sus dos botones
+    }
+
+    async function emptyInbox() {
+        if (!state.inbox.items.length && !state.inbox.unread) {
+            toast.info('La bandeja ya está vacía.');
+            return;
+        }
+
+        const confirmed = await modal.confirm({
+            title: '¿Vaciar la bandeja?',
+            message: 'Se borrarán todos los avisos de la IA. Las publicaciones en duda '
+                + 'seguirán en la cola de Publicaciones, esperando tu decisión.',
+            confirmLabel: 'Vaciar bandeja',
+            danger: true,
+        });
+
+        if (!confirmed) return;
+
+        try {
+            await api.clearInbox();
+
+            state.inbox.items = [];
+            state.inbox.unread = 0;
+            state.inbox.summary = { approved: 0, rejected: 0, pending: 0 };
+            state.inbox.announced.clear();
+
+            renderInbox();
+            toast.success('Bandeja vaciada.');
+        } catch (error) {
+            toast.error(error.message);
+        }
+    }
+
+    /* ======================================================================
        Diálogo de motivo obligatorio
        ====================================================================== */
 
@@ -1001,6 +1609,8 @@
         bindPostControls();
         bindSellerControls();
         bindBulk();
+        bindInboxControls();
+        bindSettingsControls();
         bindShortcuts();
 
         $('#admin-refresh').addEventListener('click', refreshAll);
@@ -1010,8 +1620,10 @@
         state.posts.loaded = false;
         state.sellers.loaded = false;
         state.log.loaded = false;
+        state.inbox.loaded = false;
 
         await refreshStats();
+        await loadInbox();      // deja `loaded` en true: `loadTab` no repetirá
         loadTab(state.tab);
         toast.info('Datos actualizados.');
     }
@@ -1117,6 +1729,59 @@
             const reject = event.target.closest('[data-reject-seller]');
             if (reject) openRejectSeller(reject.dataset.rejectSeller);
         });
+    }
+
+    function bindInboxControls() {
+        $$('[data-inbox-decision]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const decision = button.dataset.inboxDecision;
+                if (!INBOX_FILTERS.includes(decision)) return;
+
+                state.inbox.decision = decision;
+                $$('[data-inbox-decision]').forEach((other) => {
+                    other.setAttribute('aria-pressed', String(other === button));
+                });
+                loadInbox();
+            });
+        });
+
+        $('#admin-inbox-clear').addEventListener('click', emptyInbox);
+
+        $('#admin-inbox-thread').addEventListener('click', (event) => {
+            const send = event.target.closest('[data-inbox-send]');
+            if (send) {
+                sendInboxToWhatsapp(send.dataset.inboxSend);
+                return;
+            }
+
+            const approve = event.target.closest('[data-inbox-approve]');
+            if (approve) {
+                approveFromInbox(approve.dataset.inboxApprove);
+                return;
+            }
+
+            const reject = event.target.closest('[data-inbox-reject]');
+            if (reject) openRejectFromInbox(reject.dataset.inboxReject);
+        });
+    }
+
+    function bindSettingsControls() {
+        $('#admin-ai-form').addEventListener('submit', (event) => {
+            event.preventDefault();
+            saveWhatsapp();
+        });
+
+        // Mientras se corrige el número, el error deja de tener sentido.
+        $('#admin-whatsapp').addEventListener('input', () => {
+            const error = $('#admin-whatsapp-error');
+            if (!error.hidden) showWhatsappError('');
+        });
+
+        $('#admin-auto-notify').addEventListener('change', (event) => {
+            toggleAutoNotify(event.target.checked);
+        });
+
+        $('#admin-whatsapp-test').addEventListener('click', sendTestMessage);
     }
 
     function bindBulk() {

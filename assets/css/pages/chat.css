@@ -640,10 +640,12 @@
     .chat-bubble { max-width: 82%; }
 }
 
-/* La cabecera fija de búsqueda añade 62 px de desplazamiento al body */
+/* La búsqueda ya no va fija al viewport: forma la segunda fila de la cabecera
+   y su alto está incluido en `--header-height`. Sumar aquí aquellos 62 px
+   volvería a descontarlos por partida doble y acortaría el hilo. */
 @media (max-width: 720px) {
     .chat-page {
-        --chat-outer: calc(62px + var(--space-6));
+        --chat-outer: var(--space-6);
         padding: var(--space-3) var(--space-4);
     }
 
