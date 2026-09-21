@@ -17,6 +17,9 @@
        4400 ms de secuencia + 800 ms de telón, con holgura. */
     const TOTAL_MS = 5600;
     const COUNT_MS = 4100;
+    /* La variante sin movimiento dura mucho menos: no hay nada que ver
+       ocurrir, solo la marca sostenida. 1700 ms de reposo + 500 de fundido. */
+    const QUIET_MS = 2400;
 
     /** El almacenamiento falla en ventana privada: nunca debe romper la página. */
     function alreadySeen() {
@@ -32,6 +35,20 @@
             sessionStorage.setItem(SESSION_KEY, '1');
         } catch (error) {
             /* sin memoria: volverá a verse, preferible a fallar */
+        }
+    }
+
+    /**
+     * `?intro` en la dirección vuelve a mostrarla aunque ya se haya visto en
+     * esta sesión. Sirve para revisarla sin cerrar la pestaña —y para saber,
+     * desde un móvil, si lo que la escondía era la memoria de sesión o la
+     * preferencia de movimiento.
+     */
+    function replayRequested() {
+        try {
+            return new URLSearchParams(global.location.search).has('intro');
+        } catch (error) {
+            return false;
         }
     }
 
@@ -131,14 +148,19 @@
         const intro = document.getElementById('intro');
         if (!intro) return;
 
-        if (alreadySeen() || prefersReducedMotion()) {
+        if (alreadySeen() && !replayRequested()) {
             dismiss(intro, true);
             return;
         }
 
+        /* Con movimiento reducido la entrada sigue apareciendo, pero quieta:
+           el CSS la deja ya colocada y solo la funde. Aquí se omite lo que
+           únicamente aporta movimiento. */
+        const quiet = prefersReducedMotion();
+
         prepareStrokes(intro);
         splitWords(intro.querySelector('.intro-name'));
-        runCounter(intro);
+        if (!quiet) runCounter(intro);
 
         const skip = intro.querySelector('.intro-skip');
         if (skip) skip.addEventListener('click', () => dismiss(intro));
@@ -151,7 +173,7 @@
         intro.addEventListener('click', () => dismiss(intro));
 
         // Red de seguridad por si alguna animación no dispara su evento
-        setTimeout(() => dismiss(intro), TOTAL_MS);
+        setTimeout(() => dismiss(intro), quiet ? QUIET_MS : TOTAL_MS);
     }
 
     if (document.readyState === 'loading') {

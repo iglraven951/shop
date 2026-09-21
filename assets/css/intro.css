@@ -424,17 +424,63 @@
 /* --------------------------------------------------------------------------
    Preferencias del sistema
 
-   Con movimiento reducido la capa no aparece: mostrarla quieta sería peor que
-   no mostrarla, y el objetivo —llegar al foro— se cumple igual.
+   Antes, con movimiento reducido, la capa no aparecía en absoluto. Era una
+   decisión equivocada: en un móvil el ahorro de batería activa esa preferencia
+   por su cuenta, así que la entrada desaparecía para mucha gente que nunca la
+   pidió —y quien la tiene puesta a propósito pide que nada se mueva, no que se
+   le oculte la marca.
+
+   Así que aquí la secuencia se queda quieta: todo llega ya colocado, se
+   sostiene un momento y se funde. No hay desplazamientos, ni giros, ni zoom,
+   ni barridos, ni contador —que es justo lo que molesta—, pero la entrada
+   existe.
    -------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
     .intro,
-    .intro * {
+    .intro *,
+    .intro::before,
+    .intro::after,
+    .intro-mark::before,
+    .intro-stage::after {
         animation: none !important;
         transition: none !important;
     }
 
-    .intro { display: none; }
+    /* Lo que la secuencia habría construido, ya construido */
+    .intro-mark,
+    .intro-mark .fill,
+    .intro-sub,
+    .intro-tagline,
+    .intro-skip {
+        opacity: 1;
+        transform: none;
+        filter: none;
+    }
+
+    .intro-word span { transform: none; }
+    .intro-mark .draw { stroke-dashoffset: 0; }
+    .intro-sub-rule { transform: scaleX(1); }
+
+    /* Piezas que solo existen para moverse */
+    .intro-mark::before,
+    .intro-mark-sweep,
+    .intro-count,
+    .intro-progress,
+    .intro::after,
+    .intro-stage::after {
+        display: none;
+    }
+
+    /* Un reposo y un fundido. Un cambio de opacidad no desplaza nada, que es
+       lo que esta preferencia pide evitar. */
+    .intro { animation: intro-exit-quiet 500ms linear 1700ms forwards !important; }
+
+    @keyframes intro-exit-quiet {
+        to { opacity: 0; visibility: hidden; }
+    }
+
+    /* Al tocar la pantalla se va sin esperar */
+    .intro.is-done { opacity: 0; visibility: hidden; }
 }
 
 /* --------------------------------------------------------------------------

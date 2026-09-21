@@ -253,6 +253,71 @@ pageScripts.forEach((file) => {
     check('index.html: la cinta carga tras el shell', posCinta > posShell && posShell !== -1);
 }
 
+/* === 3d. La entrada con movimiento reducido ===
+
+   La secuencia construye la composición desde la nada: casi cada pieza parte
+   de opacity:0 o desplazada y llega a su sitio por animación. Con movimiento
+   reducido no hay animaciones, así que la variante quieta tiene que dejarlas
+   ya colocadas — o esconder las que solo existen para moverse.
+
+   Sin esto, un acto nuevo en la entrada quedaría invisible en cualquier móvil
+   con ahorro de batería, que es donde el navegador activa esa preferencia por
+   su cuenta. Y no daría ningún error: simplemente faltaría. */
+{
+    // Fuera los comentarios primero: si no, el que precede a una regla se lee
+    // como parte de su selector.
+    const css = read('assets/css/intro.css').replace(/\/\*[\s\S]*?\*\//g, '');
+
+    const inicio = css.indexOf('@media (prefers-reduced-motion: reduce)');
+    check('intro.css: contempla el movimiento reducido', inicio !== -1);
+
+    if (inicio !== -1) {
+        // Buscar el cierre del bloque contando llaves
+        let nivel = 0;
+        let fin = css.length;
+        for (let n = css.indexOf('{', inicio); n < css.length; n += 1) {
+            if (css[n] === '{') nivel += 1;
+            else if (css[n] === '}') {
+                nivel -= 1;
+                if (nivel === 0) { fin = n + 1; break; }
+            }
+        }
+
+        const secuencia = css.slice(0, inicio);
+        const quieto = css.slice(inicio, fin);
+
+        const invisibles = [...secuencia.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+            .map(([, sel, cuerpo]) => ({ sel: sel.trim().replace(/\s+/g, ' '), cuerpo }))
+            .filter(({ sel }) => sel.startsWith('.intro') && !sel.includes('%') && !sel.includes('@'))
+            .filter(({ cuerpo }) => /opacity:\s*0\s*[;}]?/.test(cuerpo)
+                || /transform:\s*[^;]*(translate|scale[XY]?\(0|rotate)/.test(cuerpo)
+                || /stroke-dashoffset:\s*var\(--len/.test(cuerpo));
+
+        check('intro.css: hay piezas que nacen invisibles', invisibles.length >= 8,
+            `encontradas ${invisibles.length}`);
+
+        invisibles.forEach(({ sel }) => {
+            // Basta con que el bloque quieto lo nombre: o lo recoloca, o lo
+            // esconde por ser puro movimiento. Las dos cosas son correctas.
+            const cubierto = sel.split(',').every((uno) => quieto.includes(uno.trim()));
+            check(`intro.css: ${sel} se ve sin movimiento`, cubierto);
+        });
+
+        // La capa entera no puede desaparecer: ese era el fallo corregido.
+        check('intro.css: la entrada no se oculta del todo',
+            !/\.intro\s*\{[^}]*display:\s*none/.test(quieto));
+        check('intro.css: la variante quieta tiene su propia salida',
+            quieto.includes('intro-exit-quiet'));
+    }
+
+    // Y el script debe acompañarla, no retirarla de golpe
+    const js = read('assets/js/ui/intro.js');
+    check('intro.js: el movimiento reducido ya no la descarta',
+        !/alreadySeen\(\)\s*\|\|\s*prefersReducedMotion\(\)/.test(js));
+    check('intro.js: la variante quieta tiene su propia duración', js.includes('QUIET_MS'));
+    check('intro.js: ?intro permite volver a verla', js.includes('replayRequested'));
+}
+
 /* === 4b. Los IDs que busca cada script existen en su página === */
 // Detecta el desajuste clásico al repartir HTML y JS en archivos distintos.
 // Un script puede servir a varias páginas (auth.js cubre login y registro),
