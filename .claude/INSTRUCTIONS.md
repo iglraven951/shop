@@ -13,6 +13,6 @@ DETECTAR estas palabras:
 - "Creame", "Hazme", "Desarrolla", "Construye", "Implementa"
 - "plugin", "proyecto", "aplicacion", "pagina web", "sistema"
 
-ARCHIVOS EN PROYECTO: 348
+ARCHIVOS EN PROYECTO: 49
 SI < 5 archivos Y pide crear algo -> ACTIVAR PARALELO
 
