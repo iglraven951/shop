@@ -231,6 +231,57 @@
         }
 
         /* ------------------------------------------------------------------
+           Bandeja de la IA y ajustes
+           ------------------------------------------------------------------ */
+
+        /** @param {'all'|'approved'|'rejected'|'pending'} [decision] */
+        getAdminInbox(decision = 'all') {
+            return this.request(`/api/admin/inbox${this.toQuery({ decision })}`);
+        }
+
+        markInboxRead(id) {
+            return this.request(`/api/admin/inbox/${id}/read`, { method: 'POST' });
+        }
+
+        markInboxSent(id) {
+            return this.request(`/api/admin/inbox/${id}/sent`, { method: 'POST' });
+        }
+
+        clearInbox() {
+            return this.request('/api/admin/inbox', { method: 'DELETE' });
+        }
+
+        getSettings() {
+            return this.request('/api/admin/settings');
+        }
+
+        updateSettings(data) {
+            return this.request('/api/admin/settings', { method: 'PUT', body: data });
+        }
+
+        /**
+         * Enlace que abre WhatsApp con el aviso ya redactado.
+         *
+         * Un sitio sin servidor no puede enviar mensajes por su cuenta: haría
+         * falta guardar credenciales, y en un sitio estático quedarían a la
+         * vista de cualquiera. Con este enlace el mensaje llega igual, en el
+         * chat propio del administrador, a un clic.
+         *
+         * @param {string} phone - Número con código de país, solo dígitos.
+         * @param {string} message
+         * @returns {string|null}
+         */
+        whatsappLink(phone, message) {
+            const digits = String(phone || '').replace(/\D/g, '');
+            if (!digits) return null;
+
+            // Perú: si llega un móvil de 9 dígitos, se antepone el 51
+            const full = digits.length === 9 ? `51${digits}` : digits;
+
+            return `https://wa.me/${full}?text=${encodeURIComponent(message)}`;
+        }
+
+        /* ------------------------------------------------------------------
            Autenticación
            ------------------------------------------------------------------ */
 

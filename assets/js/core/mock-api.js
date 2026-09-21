@@ -15,8 +15,11 @@
 (function (global) {
     'use strict';
 
-    const STORAGE_KEY = 'discoveryshop:db:v2';
-    const SCHEMA_VERSION = 2;
+/* Al subir la versión, los datos guardados en el navegador se descartan y se
+   regeneran desde `seed.js`. Se sube cada vez que el modelo cambia: la v3 trae
+   las fotos reales del catálogo, la bandeja de la IA y los ajustes. */
+    const STORAGE_KEY = 'discoveryshop:db:v3';
+    const SCHEMA_VERSION = 3;
 
     /* ----------------------------------------------------------------------
        Utilidades
@@ -138,8 +141,12 @@
                 sessions: {},
                 conversations: [],
                 notifications: [],
-                // Registro de decisiones del administrador, para auditoría
+                // Registro de decisiones de moderación, humanas y de la IA
                 moderation_log: [],
+                // Avisos de la IA dirigidos al administrador
+                admin_inbox: [],
+                // Ajustes: a qué número de WhatsApp van las notificaciones
+                settings: { whatsapp: '', auto_notify: true },
             };
 
             this.persist(state);
@@ -276,6 +283,12 @@
                 ['POST', /^\/api\/admin\/sellers\/([\w-]+)\/approve$/, this.approveSeller],
                 ['POST', /^\/api\/admin\/sellers\/([\w-]+)\/reject$/, this.rejectSeller],
                 ['GET', /^\/api\/admin\/log$/, this.adminLog],
+                ['GET', /^\/api\/admin\/inbox$/, this.adminInbox],
+                ['POST', /^\/api\/admin\/inbox\/([\w-]+)\/read$/, this.markInboxRead],
+                ['POST', /^\/api\/admin\/inbox\/([\w-]+)\/sent$/, this.markInboxSent],
+                ['DELETE', /^\/api\/admin\/inbox$/, this.clearInbox],
+                ['GET', /^\/api\/admin\/settings$/, this.getSettings],
+                ['PUT', /^\/api\/admin\/settings$/, this.updateSettings],
 
                 // Mensajería directa
                 ['GET', /^\/api\/chat\/conversations$/, this.listConversations],
@@ -481,10 +494,90 @@
                 updated_at: nowIso(),
             };
 
+            // La IA de la plataforma revisa la publicación en el acto. Puede
+            // aprobarla, rechazarla o dejarla en duda para que la vea una
+            // persona; lo que decide queda registrado con su motivo.
+            const verdict = this.autoReview(post);
+
             this.state.posts.unshift(post);
+            this.refreshAuthorCounters(user.id);
             this.save();
 
-            return ok({ post: this.decorate(post, user) });
+            return ok({ post: this.decorate(post, user), review: verdict });
+        }
+
+        /**
+         * Aplica el veredicto del revisor automático a una publicación recién
+         * creada y deja constancia para el administrador.
+         *
+         * @param {object} post - Se modifica en el sitio.
+         * @returns {{decision: string, reason: string, confidence: number}}
+         */
+        autoReview(post) {
+            const moderator = global.DiscoveryModerator;
+
+            // Sin el revisor cargado, la publicación espera revisión humana:
+            // nunca se publica algo sin que alguien o algo lo haya mirado.
+            if (!moderator) {
+                return { decision: 'pending', reason: 'Revisión automática no disponible.', confidence: 0 };
+            }
+
+            const verdict = moderator.review(post);
+
+            post.status = verdict.decision;
+            post.rejection_reason = verdict.decision === 'rejected' ? verdict.reason : null;
+            post.review = {
+                by: 'ia',
+                decision: verdict.decision,
+                reason: verdict.reason,
+                confidence: verdict.confidence,
+                signals: verdict.signals,
+                at: nowIso(),
+            };
+
+            // Registro de moderación, igual que el de una decisión humana
+            this.state.moderation_log.push({
+                id: uid('log'),
+                admin_id: 'ia',
+                admin_name: 'IA de DiscoveryShop',
+                action: verdict.decision === 'approved' ? 'approve_post'
+                    : verdict.decision === 'rejected' ? 'reject_post' : 'flag_post',
+                target_id: post.id,
+                description: verdict.decision === 'approved'
+                    ? `Aprobó «${post.title}»: ${verdict.reason}`
+                    : verdict.decision === 'rejected'
+                        ? `Rechazó «${post.title}»: ${verdict.reason}`
+                        : `Dejó en revisión «${post.title}»: ${verdict.reason}`,
+                confidence: verdict.confidence,
+                created_at: nowIso(),
+            });
+
+            // Aviso a quien publicó
+            const toAuthor = {
+                approved: `Tu publicación «${post.title}» fue aprobada y ya es visible en el foro.`,
+                rejected: `Tu publicación «${post.title}» fue rechazada: ${verdict.reason}`,
+                pending: `Tu publicación «${post.title}» quedó en revisión. Te avisaremos en cuanto se resuelva.`,
+            }[verdict.decision];
+
+            this.notify(post.author.id, `post_${verdict.decision}`, post.id, toAuthor);
+
+            // Aviso para el administrador, en su bandeja de la plataforma
+            this.state.admin_inbox = this.state.admin_inbox || [];
+            this.state.admin_inbox.unshift({
+                id: uid('ai'),
+                post_id: post.id,
+                post_title: post.title,
+                author: post.author.username,
+                decision: verdict.decision,
+                reason: verdict.reason,
+                confidence: verdict.confidence,
+                message: moderator.notificationText(post, verdict),
+                read: false,
+                sent_whatsapp: false,
+                created_at: nowIso(),
+            });
+
+            return verdict;
         }
 
         updatePost({ params, body, token }) {
@@ -1029,6 +1122,87 @@
 
             this.save();
             return ok({ user: this.publicUser(user) });
+        }
+
+        /* ---- Bandeja de la IA: lo que ha decidido, para el administrador ---- */
+
+        adminInbox({ query, token }) {
+            this.requireAdmin(token);
+
+            const filter = query.get('decision');
+            let items = this.state.admin_inbox || [];
+
+            if (filter && filter !== 'all') {
+                items = items.filter((i) => i.decision === filter);
+            }
+
+            return ok({
+                inbox: items,
+                unread: (this.state.admin_inbox || []).filter((i) => !i.read).length,
+                summary: {
+                    approved: (this.state.admin_inbox || []).filter((i) => i.decision === 'approved').length,
+                    rejected: (this.state.admin_inbox || []).filter((i) => i.decision === 'rejected').length,
+                    pending: (this.state.admin_inbox || []).filter((i) => i.decision === 'pending').length,
+                },
+            });
+        }
+
+        markInboxRead({ params, token }) {
+            this.requireAdmin(token);
+
+            const item = (this.state.admin_inbox || []).find((i) => i.id === params.id);
+            if (!item) fail('Aviso no encontrado', 404);
+
+            item.read = true;
+            this.save();
+            return ok({ item });
+        }
+
+        /** Marca que el aviso ya se envió por WhatsApp, para no repetirlo. */
+        markInboxSent({ params, token }) {
+            this.requireAdmin(token);
+
+            const item = (this.state.admin_inbox || []).find((i) => i.id === params.id);
+            if (!item) fail('Aviso no encontrado', 404);
+
+            item.sent_whatsapp = true;
+            item.read = true;
+            this.save();
+            return ok({ item });
+        }
+
+        clearInbox({ token }) {
+            this.requireAdmin(token);
+            this.state.admin_inbox = [];
+            this.save();
+            return ok({ cleared: true });
+        }
+
+        /* ---- Ajustes del administrador ---- */
+
+        getSettings({ token }) {
+            this.requireAdmin(token);
+            return ok({ settings: this.state.settings || {} });
+        }
+
+        updateSettings({ body, token }) {
+            this.requireAdmin(token);
+
+            this.state.settings = this.state.settings || {};
+
+            if (body.whatsapp !== undefined) {
+                // Solo dígitos: el enlace de WhatsApp no admite otra cosa
+                const digits = String(body.whatsapp).replace(/\D/g, '');
+                if (digits && digits.length < 9) fail('El número parece incompleto');
+                this.state.settings.whatsapp = digits;
+            }
+
+            if (body.auto_notify !== undefined) {
+                this.state.settings.auto_notify = !!body.auto_notify;
+            }
+
+            this.save();
+            return ok({ settings: this.state.settings });
         }
 
         adminLog({ token }) {
