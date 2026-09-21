@@ -793,6 +793,47 @@ body.is-modal-open {
     max-width: 44ch;
     font-size: var(--text-sm);
     color: var(--text-secondary);
+    /* `max-width` limita la caja, pero una palabra larga la desborda igual */
+    overflow-wrap: anywhere;
+}
+
+/* --------------------------------------------------------------------------
+   Área táctil en dispositivos sin ratón
+
+   Algunos controles miden menos de los 44 px que recomienda la guía de
+   accesibilidad: agrandarlos rompería la densidad del diseño en escritorio.
+   En su lugar se extiende la zona pulsable con un pseudoelemento invisible,
+   y solo donde importa: `pointer: coarse` acierta con el dedo y falla con el
+   ratón, que es exactamente la distinción relevante (un portátil táctil
+   también la necesita; una ventana estrecha de escritorio, no).
+   -------------------------------------------------------------------------- */
+@media (pointer: coarse) {
+    .post-menu-btn,
+    .segmented-item,
+    .chip-remove,
+    .toast-close,
+    .comment-delete,
+    .modal-close,
+    .input-group .input-action {
+        position: relative;
+    }
+
+    .post-menu-btn::after,
+    .segmented-item::after,
+    .chip-remove::after,
+    .toast-close::after,
+    .comment-delete::after,
+    .modal-close::after,
+    .input-group .input-action::after {
+        content: "";
+        position: absolute;
+        /* Centra un objetivo de 44×44 sobre el control, sea cual sea su tamaño */
+        top: 50%;
+        left: 50%;
+        width: 44px;
+        height: 44px;
+        transform: translate(-50%, -50%);
+    }
 }
 
 /* --------------------------------------------------------------------------
@@ -1026,4 +1067,9 @@ body.is-modal-open {
 .alert-warning { background: var(--warning-soft); color: var(--warning); }
 .alert-danger { background: var(--danger-soft); color: var(--danger); }
 
-.alert .alert-body { color: var(--text-secondary); }
+/* Las alertas muestran motivos de rechazo y errores del servidor: texto que no
+   controlamos y que puede traer identificadores largos sin espacios. */
+.alert .alert-body {
+    color: var(--text-secondary);
+    overflow-wrap: anywhere;
+}

@@ -534,6 +534,9 @@
     font-weight: 680;
     line-height: var(--leading-snug);
     letter-spacing: var(--tracking-tight);
+    /* Un título sin espacios («MegaProductoNombreLarguísimo») desbordaría la
+       tarjeta y provocaría scroll horizontal en móvil. */
+    overflow-wrap: anywhere;
 }
 
 .post-title a {
