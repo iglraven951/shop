@@ -1,10 +1,22 @@
 /* ==========================================================================
    DiscoveryShop · Panel de administración
    Solo tokens de `tokens.css`: ni un valor de color escrito a mano.
-   Reutiliza `.post-row`, `.badge`, `.btn`, `.segmented` y `.empty-state`.
+   Reutiliza `.post-row`, `.badge`, `.btn`, `.segmented` y `.empty-state`;
+   nunca los redefine, solo los ajusta dentro de clases propias del panel.
+
+   Idea rectora: esto es una herramienta de trabajo, no un formulario. La
+   jerarquía se ordena por lo que exige una decisión — primero las dos colas,
+   después la cola abierta, y al final las cifras que solo se consultan.
    ========================================================================== */
 
 .admin-page {
+    /* Iconos de acción en línea. Se pintan con `mask`, así que heredan
+       `currentColor` del botón: el mismo trazo sirve en verde y en rojo, y en
+       los dos temas. Van aquí porque los botones de cada fila los genera el
+       JavaScript y no se les puede insertar un <svg> desde el marcado. */
+    --admin-icon-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3 8.4 3.6 3.6L13 4.6'/%3E%3C/svg%3E");
+    --admin-icon-cross: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4.2 4.2 11.8 11.8M11.8 4.2 4.2 11.8'/%3E%3C/svg%3E");
+
     width: 100%;
     max-width: 1400px;
     margin-inline: auto;
@@ -13,6 +25,8 @@
 
 /* --------------------------------------------------------------------------
    Carga inicial
+   El esqueleto imita la jerarquía real (dos tarjetas grandes y cuatro
+   pequeñas) para que al llegar los datos nada salte de sitio.
    -------------------------------------------------------------------------- */
 .admin-boot {
     display: flex;
@@ -24,11 +38,17 @@
 
 .admin-boot-metrics {
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: var(--space-4);
 }
 
-.admin-boot-card { height: 116px; border-radius: var(--radius-lg); }
+.admin-boot-card { height: 96px; border-radius: var(--radius-lg); }
+
+.admin-boot-card:nth-child(-n + 2) {
+    grid-column: span 2;
+    height: 172px;
+}
+
 .admin-boot-body { height: 320px; border-radius: var(--radius-lg); }
 
 /* --------------------------------------------------------------------------
@@ -47,7 +67,7 @@
     padding: var(--space-10) var(--space-8);
     text-align: center;
     background: var(--bg-surface);
-    background-image: var(--gradient-surface);
+    background-image: var(--gradient-glow);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-lg);
@@ -83,17 +103,23 @@
    Cabecera
    -------------------------------------------------------------------------- */
 .admin-header {
+    position: relative;
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
     gap: var(--space-5);
     flex-wrap: wrap;
     margin-bottom: var(--space-6);
+    padding-bottom: var(--space-5);
+    border-bottom: 1px solid var(--border-subtle);
 }
 
 .admin-header-text { min-width: 0; flex: 1 1 340px; }
 
 .admin-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
     font-size: var(--text-2xs);
     font-weight: 700;
     letter-spacing: var(--tracking-wide);
@@ -102,9 +128,19 @@
     margin-bottom: var(--space-2);
 }
 
+/* Guion de marca: ancla el título a la izquierda sin añadir ruido */
+.admin-eyebrow::before {
+    content: "";
+    width: 18px;
+    height: 2px;
+    border-radius: var(--radius-full);
+    background: var(--brand);
+}
+
 .admin-title {
     font-size: var(--text-3xl);
     margin-bottom: var(--space-2);
+    letter-spacing: var(--tracking-tight);
 }
 
 .admin-subtitle {
@@ -117,16 +153,31 @@
 .admin-refresh { flex-shrink: 0; }
 
 /* --------------------------------------------------------------------------
-   Métricas
+   Métricas · dos niveles
+   Arriba, las dos colas que exigen una decisión: grandes, de marca y
+   claramente pulsables. Abajo, las cifras de contexto: compactas y sobrias.
    -------------------------------------------------------------------------- */
 .admin-metrics {
-    display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    display: flex;
+    flex-direction: column;
     gap: var(--space-4);
     margin-bottom: var(--space-8);
 }
 
+.admin-metrics-primary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+}
+
+.admin-metrics-secondary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-3);
+}
+
 .admin-metric {
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: var(--space-1);
@@ -137,6 +188,7 @@
     background-image: var(--gradient-surface);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-lg);
+    overflow: hidden;
 }
 
 .admin-metric-icon {
@@ -167,38 +219,152 @@
     line-height: var(--leading-snug);
 }
 
-/* Tarjetas pulsables: llevan a su cola de trabajo */
+/* --- Nivel 1: tarjetas guía --- */
+.admin-metric-lead {
+    gap: var(--space-2);
+    padding: var(--space-6) var(--space-6) var(--space-5);
+    background-image: var(--gradient-glow);
+    border-color: var(--brand-ring);
+    box-shadow: var(--shadow-md);
+}
+
+/* Raíl de color en el canto: el mismo sitio en las dos tarjetas, de modo que
+   el tono se compara de un vistazo sin leer una sola cifra. */
+.admin-metric-lead::before {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: 4px;
+    background: var(--success);
+    transition: background-color var(--duration-base) var(--ease-out);
+}
+
+.admin-metric-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+}
+
+.admin-metric-top .admin-metric-icon {
+    font-size: var(--text-2xl);
+    margin-bottom: 0;
+}
+
+/* Punto de estado. Verde y quieto cuando no hay nada que hacer; late solo
+   cuando de verdad espera trabajo. */
+.admin-metric-pulse {
+    width: 10px;
+    height: 10px;
+    flex-shrink: 0;
+    border-radius: var(--radius-full);
+    background: var(--success);
+    box-shadow: 0 0 0 4px var(--success-soft);
+}
+
+.admin-metric-lead .admin-metric-value {
+    font-size: var(--text-4xl);
+    color: var(--success);
+}
+
+.admin-metric-lead .admin-metric-label {
+    font-size: var(--text-sm);
+    font-weight: 650;
+    color: var(--text-primary);
+}
+
+.admin-metric-lead .admin-metric-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+    font-size: var(--text-2xs);
+    font-weight: 650;
+    color: var(--brand);
+}
+
+.admin-metric-arrow {
+    flex-shrink: 0;
+    transition: transform var(--duration-base) var(--ease-out);
+}
+
+/* --- Tarjetas pulsables: llevan a su cola de trabajo --- */
 .admin-metric-action {
     cursor: pointer;
     transition: border-color var(--duration-fast) var(--ease-out),
                 transform var(--duration-fast) var(--ease-out),
+                box-shadow var(--duration-fast) var(--ease-out),
                 background-color var(--duration-fast) var(--ease-out);
 }
 
 .admin-metric-action:hover {
-    border-color: var(--border-strong);
-    background-color: var(--bg-raised);
+    border-color: var(--brand);
     transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
 }
+
+.admin-metric-action:hover .admin-metric-arrow { transform: translateX(4px); }
 
 .admin-metric-action:active { transform: translateY(0); }
 
-.admin-metric-action .admin-metric-hint { color: var(--brand); font-weight: 650; }
-
-/* Solo se tiñen cuando de verdad hay trabajo pendiente */
-.admin-metric.is-warning {
-    border-color: var(--warning);
-    background-color: var(--warning-soft);
+.admin-metric-action:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 3px;
 }
 
+/* --- Estado de aviso: el JavaScript pone la clase solo si hay pendientes.
+       Sin ella la tarjeta queda en verde, que es la lectura correcta de un
+       cero: cola limpia, no alarma. --- */
+.admin-metric.is-warning::before { background: var(--warning); }
 .admin-metric.is-warning .admin-metric-value { color: var(--warning); }
 
-.admin-metric.is-brand {
-    border-color: var(--brand);
-    background-color: var(--brand-soft);
+.admin-metric.is-warning .admin-metric-pulse {
+    background: var(--warning);
+    box-shadow: 0 0 0 4px var(--warning-soft);
+    animation: admin-pulse 2.4s var(--ease-in-out) infinite;
 }
 
+.admin-metric.is-brand::before { background: var(--brand); }
 .admin-metric.is-brand .admin-metric-value { color: var(--brand); }
+
+.admin-metric.is-brand .admin-metric-pulse {
+    background: var(--brand);
+    box-shadow: 0 0 0 4px var(--brand-soft);
+    animation: admin-pulse 2.4s var(--ease-in-out) infinite;
+}
+
+@keyframes admin-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.55; transform: scale(0.82); }
+}
+
+/* --- Nivel 2: cifras de contexto --- */
+.admin-metric-compact {
+    padding: var(--space-4);
+    background-image: none;
+    background-color: var(--bg-sunken);
+}
+
+.admin-metric-compact .admin-metric-icon {
+    font-size: var(--text-sm);
+    margin-bottom: var(--space-2);
+    opacity: 0.7;
+}
+
+.admin-metric-compact .admin-metric-value {
+    font-size: var(--text-xl);
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
+/* El gris apagado no llega a AA sobre `--bg-sunken` (3.36:1 en tema claro):
+   estas etiquetas usan el secundario, que sí lo alcanza. */
+.admin-metric-compact .admin-metric-label {
+    font-size: var(--text-3xs);
+    font-weight: 600;
+    color: var(--text-secondary);
+}
 
 /* --------------------------------------------------------------------------
    Pestañas
@@ -322,9 +488,15 @@
     gap: var(--space-2);
     flex-wrap: wrap;
     margin-bottom: var(--space-4);
+    padding: var(--space-2) var(--space-3);
     font-size: var(--text-2xs);
-    color: var(--text-muted);
+    /* Sobre `--bg-sunken` el gris apagado se queda en 3.36:1 en tema claro;
+       el secundario sube a 6.14:1 sin dejar de ser un texto de apoyo. */
+    color: var(--text-secondary);
     line-height: var(--leading-snug);
+    background: var(--bg-sunken);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
 }
 
 .admin-hint kbd {
@@ -341,56 +513,23 @@
 }
 
 /* --------------------------------------------------------------------------
-   Barra de acciones en lote
-   -------------------------------------------------------------------------- */
-.admin-bulk {
-    position: sticky;
-    top: calc(var(--header-height) + var(--space-3));
-    z-index: var(--z-sticky);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-4);
-    flex-wrap: wrap;
-    margin-bottom: var(--space-4);
-    padding: var(--space-3) var(--space-4);
-    background: var(--bg-overlay);
-    border: 1px solid var(--brand);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-md);
-    animation: fade-in-up var(--duration-fast) var(--ease-out);
-}
-
-.admin-bulk-count {
-    font-size: var(--text-sm);
-    font-weight: 650;
-    font-variant-numeric: tabular-nums;
-}
-
-.admin-bulk-actions {
-    display: flex;
-    gap: var(--space-2);
-    flex-wrap: wrap;
-}
-
-.admin-bulk-progress {
-    flex-basis: 100%;
-    font-size: var(--text-2xs);
-    color: var(--brand);
-    font-variant-numeric: tabular-nums;
-}
-
-/* --------------------------------------------------------------------------
-   Cola de publicaciones
+   Cabecera de la cola
+   Se queda pegada bajo la cabecera del sitio: en una tarea repetitiva,
+   «Seleccionar todo» y el recuento deben seguir al alcance al desplazar.
    -------------------------------------------------------------------------- */
 .admin-queue-head {
+    position: sticky;
+    top: var(--header-height);
+    z-index: var(--z-base);
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: var(--space-4);
     flex-wrap: wrap;
     margin-bottom: var(--space-3);
-    padding-inline: var(--space-1);
+    padding: var(--space-2) var(--space-3);
+    background: var(--bg-base);
+    border-bottom: 1px solid var(--border-subtle);
 }
 
 .admin-check {
@@ -403,6 +542,7 @@
     flex-shrink: 0;
     cursor: pointer;
     font-size: var(--text-2xs);
+    font-weight: 600;
     color: var(--text-secondary);
 }
 
@@ -416,10 +556,15 @@
 
 .admin-check-all { justify-content: flex-start; }
 
+/* --------------------------------------------------------------------------
+   Cola de publicaciones
+   Es el corazón del panel: más aire entre filas y una miniatura que permita
+   juzgar la foto sin abrir la publicación.
+   -------------------------------------------------------------------------- */
 .admin-list {
     display: flex;
     flex-direction: column;
-    gap: var(--space-3);
+    gap: var(--space-4);
 }
 
 .admin-queue-item {
@@ -439,6 +584,39 @@
     flex: 1;
     min-width: 0;
 }
+
+/* --- Ajustes de `.post-row` dentro de la cola (la regla global no se toca) --- */
+.admin-queue-item .post-row {
+    gap: var(--space-5);
+    padding: var(--space-4) var(--space-5);
+    border-left-width: 3px;
+}
+
+.admin-queue-item .post-row-thumb {
+    width: 104px;
+    height: 104px;
+    border-radius: var(--radius-md);
+}
+
+/* La antigüedad viaja en esta línea («Ana · Cayma · hace 3 horas») y en
+   moderación es el dato que ordena la urgencia: sube de tamaño y de color. */
+.admin-queue-item .post-row-meta {
+    font-size: var(--text-xs);
+    font-weight: 550;
+    color: var(--text-secondary);
+}
+
+.admin-queue-item .post-row-title { font-size: var(--text-base); }
+
+.admin-queue-item .post-row-actions { gap: var(--space-2); }
+
+/* Canto de color por estado de revisión, para leer la cola sin leer texto:
+     ámbar → espera decisión   ·   rojo → rechazada   ·   verde → ya publicada
+   (Para graduar el ámbar por horas de espera haría falta que el marcado
+   trajera la antigüedad; el CSS no puede deducirla del texto «hace 3 horas».) */
+.admin-queue-item .post-row:has(.badge-warning) { border-left-color: var(--warning); }
+.admin-queue-item .post-row:has(.badge-danger) { border-left-color: var(--danger); }
+.admin-queue-item .post-row:has(.badge-success) { border-left-color: var(--success); }
 
 .admin-queue-item.is-selected .post-row {
     border-color: var(--brand);
@@ -473,22 +651,52 @@
     overflow-wrap: anywhere;
 }
 
+/* --------------------------------------------------------------------------
+   Acciones de moderación · color y forma
+   En una tarea que se repite cientos de veces, el color y el símbolo se leen
+   antes que la palabra. Aprobar va en verde macizo (acción principal) y
+   Rechazar en rojo perfilado: distintos en tono, en relleno y en icono.
+   -------------------------------------------------------------------------- */
+.admin-list [data-reject-post],
+.admin-sellers [data-reject-seller] {
+    --btn-border: var(--danger);
+}
+
+.admin-list [data-approve-post]::before,
+.admin-list [data-reject-post]::before,
+.admin-sellers [data-approve-seller]::before,
+.admin-sellers [data-reject-seller]::before {
+    content: "";
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    background-color: currentColor;
+    -webkit-mask: var(--admin-icon-check) center / contain no-repeat;
+    mask: var(--admin-icon-check) center / contain no-repeat;
+}
+
+.admin-list [data-reject-post]::before,
+.admin-sellers [data-reject-seller]::before {
+    -webkit-mask-image: var(--admin-icon-cross);
+    mask-image: var(--admin-icon-cross);
+}
+
 /* --- Esqueletos de carga --- */
 .admin-queue-skeleton {
     display: flex;
     align-items: center;
-    gap: var(--space-4);
-    padding: var(--space-4);
+    gap: var(--space-5);
+    padding: var(--space-4) var(--space-5);
     background: var(--bg-surface);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-md);
 }
 
 .admin-skeleton-thumb {
-    width: 76px;
-    height: 76px;
+    width: 104px;
+    height: 104px;
     flex-shrink: 0;
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-md);
 }
 
 .admin-skeleton-body {
@@ -507,7 +715,7 @@
 }
 
 .admin-seller-skeleton {
-    height: 246px;
+    height: 280px;
     border-radius: var(--radius-lg);
 }
 
@@ -518,11 +726,99 @@
 }
 
 /* --------------------------------------------------------------------------
+   Barra de acciones en lote
+   Es un modo distinto de trabajo, y se nota: fondo de marca fijo, texto de
+   alto contraste y anclada al pie para no perderla al desplazar la cola.
+   -------------------------------------------------------------------------- */
+.admin-bulk {
+    position: sticky;
+    bottom: var(--space-4);
+    z-index: var(--z-sticky);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+    margin-top: var(--space-5);
+    padding: var(--space-3) var(--space-4);
+    /* Azul fijo del logo: no se invierte con el tema, así que el texto de
+       encima usa `--on-navy` y no `--text-primary`. */
+    background: var(--brand-800);
+    /* El rim claro es lo que separa la barra del fondo: en tema oscuro el azul
+       marino y la página casi comparten luminancia (1.66:1), y sin él el borde
+       de la barra no se percibiría. Con `--brand-400` llega a 3.23:1. */
+    border: 1px solid var(--brand-400);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xl);
+    animation: fade-in-up var(--duration-fast) var(--ease-out);
+}
+
+.admin-bulk-count {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--on-navy);
+}
+
+/* Punto vivo: confirma que el panel está en modo selección */
+.admin-bulk-count::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: var(--radius-full);
+    background: var(--brand-400);
+}
+
+.admin-bulk-actions {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+/* Sobre el azul fijo, los botones heredados no sirven tal cual: el fantasma
+   usaría `--text-secondary`, que en tema claro es casi negro. Se reajustan
+   sus variables en lugar de redefinir `.btn`. */
+.admin-bulk .btn-ghost {
+    --btn-bg: transparent;
+    --btn-fg: var(--on-navy-soft);
+    --btn-border: transparent;
+}
+
+.admin-bulk .btn-ghost:hover:not(:disabled) {
+    --btn-bg: var(--brand-600);
+    --btn-fg: var(--on-navy);
+}
+
+.admin-bulk .btn-danger {
+    --btn-bg: var(--danger);
+    --btn-fg: var(--brand-contrast);
+    --btn-border: transparent;
+}
+
+.admin-bulk .btn-danger:hover:not(:disabled) { filter: brightness(1.08); }
+
+.admin-bulk-progress {
+    flex-basis: 100%;
+    font-size: var(--text-2xs);
+    font-weight: 600;
+    color: var(--on-navy-soft);
+    font-variant-numeric: tabular-nums;
+}
+
+/* --------------------------------------------------------------------------
    Solicitudes de vendedor
+   Estructura de ficha: quién es arriba, los datos en pares alineados como un
+   libro de registro, y la motivación destacada como cita — que es lo que de
+   verdad se lee para decidir.
    -------------------------------------------------------------------------- */
 .admin-sellers {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+    /* `min()` evita que la columna mínima desborde un contenedor más estrecho
+       que 340px, que es justo lo que pasaría con un `minmax()` a secas. */
+    grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr));
     gap: var(--space-4);
 }
 
@@ -539,15 +835,30 @@
     background-image: var(--gradient-surface);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-lg);
-    transition: border-color var(--duration-fast) var(--ease-out);
+    transition: border-color var(--duration-fast) var(--ease-out),
+                box-shadow var(--duration-fast) var(--ease-out);
 }
 
-.admin-seller:hover { border-color: var(--border-default); }
+.admin-seller:hover {
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-md);
+}
 
 .admin-seller-head {
     display: flex;
     align-items: center;
-    gap: var(--space-3);
+    gap: var(--space-4);
+    padding-bottom: var(--space-4);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+/* Las iniciales son lo único que identifica a la persona antes de leer:
+   merecen tamaño y el gradiente de marca completo. */
+.admin-seller-head .avatar {
+    width: 64px;
+    height: 64px;
+    font-size: var(--text-xl);
+    box-shadow: var(--shadow-sm);
 }
 
 .admin-seller-identity {
@@ -556,22 +867,40 @@
 }
 
 .admin-seller-name {
-    font-size: var(--text-base);
+    font-size: var(--text-lg);
     font-weight: 700;
+    letter-spacing: var(--tracking-tight);
 }
 
 .admin-seller-email {
+    margin-top: 2px;
     font-size: var(--text-2xs);
     color: var(--text-muted);
 }
 
+/* Pares etiqueta/valor alineados en dos columnas verdaderas: `display: contents`
+   deshace la caja intermedia de cada par para que todas las etiquetas compartan
+   una única columna y los valores queden a la misma altura. */
 .admin-seller-facts {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-3);
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: var(--space-4);
 }
 
-.admin-fact { min-width: 0; }
+.admin-fact {
+    display: contents;
+    min-width: 0;
+}
+
+/* Etiqueta y valor comparten caja de línea aunque tengan cuerpos distintos:
+   sin esto, cada filete quedaría a una altura diferente y el bloque perdería
+   el aire de registro ordenado. */
+.admin-fact-term,
+.admin-fact-value {
+    padding-block: var(--space-2);
+    line-height: var(--space-5);
+    border-bottom: 1px solid var(--border-subtle);
+}
 
 .admin-fact-term {
     font-size: var(--text-3xs);
@@ -579,25 +908,44 @@
     letter-spacing: var(--tracking-wide);
     text-transform: uppercase;
     color: var(--text-muted);
-    margin-bottom: 2px;
+    white-space: nowrap;
 }
 
 .admin-fact-value {
+    text-align: right;
     font-size: var(--text-xs);
-    font-weight: 600;
+    font-weight: 650;
     color: var(--text-primary);
 }
 
+/* La última fila cierra la ficha sin línea suelta */
+.admin-fact:last-child .admin-fact-term,
+.admin-fact:last-child .admin-fact-value { border-bottom: none; }
+
 .admin-seller-motivation {
-    padding: var(--space-3) var(--space-4);
+    position: relative;
+    padding: var(--space-4) var(--space-4) var(--space-4) var(--space-10);
     background: var(--bg-sunken);
     border-left: 3px solid var(--brand);
     border-radius: var(--radius-sm);
 }
 
+/* Comilla de apertura: marca el texto como voz del solicitante, no como dato */
+.admin-seller-motivation::before {
+    content: "\201C";
+    position: absolute;
+    inset-block-start: var(--space-1);
+    inset-inline-start: var(--space-3);
+    font-size: var(--text-3xl);
+    line-height: 1;
+    color: var(--brand);
+    opacity: 0.4;
+}
+
 .admin-seller-motivation p {
-    font-size: var(--text-xs);
+    font-size: var(--text-sm);
     line-height: var(--leading-normal);
+    font-style: italic;
     color: var(--text-secondary);
     overflow-wrap: anywhere;
 }
@@ -617,7 +965,7 @@
     gap: var(--space-2);
     flex-wrap: wrap;
     margin-top: auto;
-    padding-top: var(--space-2);
+    padding-top: var(--space-4);
     border-top: 1px solid var(--border-subtle);
 }
 
@@ -628,19 +976,20 @@
     position: relative;
     display: flex;
     flex-direction: column;
-    gap: var(--space-5);
+    gap: var(--space-4);
     padding-left: var(--space-2);
 }
 
-/* Hilo vertical que une todas las decisiones */
+/* Hilo vertical continuo que une todas las decisiones */
 .admin-timeline::before {
     content: "";
     position: absolute;
-    left: calc(var(--space-2) + 15px);
-    top: var(--space-4);
-    bottom: var(--space-4);
+    left: calc(var(--space-2) + 17px);
+    top: var(--space-5);
+    bottom: var(--space-5);
     width: 2px;
-    background: var(--border-subtle);
+    border-radius: var(--radius-full);
+    background: var(--border-default);
 }
 
 .admin-timeline-item {
@@ -651,33 +1000,38 @@
     min-width: 0;
 }
 
+/* Marcador por tipo de acción: el anillo del color del fondo recorta el hilo
+   a su paso, de modo que la línea parece pasar por detrás de cada marca. */
 .admin-timeline-dot {
     position: relative;
     z-index: var(--z-base);
     display: grid;
     place-items: center;
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     flex-shrink: 0;
-    font-size: var(--text-xs);
+    font-size: var(--text-sm);
     font-weight: 700;
     border-radius: var(--radius-full);
-    border: 2px solid var(--bg-base);
+    border: 3px solid var(--bg-base);
 }
 
 .admin-timeline-item.is-approve .admin-timeline-dot {
     color: var(--success);
     background: var(--success-soft);
+    box-shadow: inset 0 0 0 1px var(--success);
 }
 
 .admin-timeline-item.is-reject .admin-timeline-dot {
     color: var(--danger);
     background: var(--danger-soft);
+    box-shadow: inset 0 0 0 1px var(--danger);
 }
 
 .admin-timeline-item.is-neutral .admin-timeline-dot {
     color: var(--text-muted);
     background: var(--bg-raised);
+    box-shadow: inset 0 0 0 1px var(--border-strong);
 }
 
 .admin-timeline-body {
@@ -686,11 +1040,14 @@
     padding: var(--space-3) var(--space-4);
     background: var(--bg-surface);
     border: 1px solid var(--border-subtle);
+    border-left-width: 3px;
     border-radius: var(--radius-md);
+    transition: border-color var(--duration-fast) var(--ease-out);
 }
 
-.admin-timeline-item.is-approve .admin-timeline-body { border-left: 3px solid var(--success); }
-.admin-timeline-item.is-reject .admin-timeline-body { border-left: 3px solid var(--danger); }
+.admin-timeline-item.is-approve .admin-timeline-body { border-left-color: var(--success); }
+.admin-timeline-item.is-reject .admin-timeline-body { border-left-color: var(--danger); }
+.admin-timeline-item:hover .admin-timeline-body { border-color: var(--border-strong); }
 
 .admin-timeline-text {
     font-size: var(--text-sm);
@@ -711,6 +1068,11 @@
 
 .admin-timeline-author { font-weight: 650; color: var(--text-secondary); }
 
+.admin-timeline-meta time {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
 .admin-timeline-link {
     color: var(--brand);
     font-weight: 650;
@@ -719,6 +1081,54 @@
 }
 
 .admin-timeline-link:hover { color: var(--brand-hover); }
+
+/* --------------------------------------------------------------------------
+   Estados vacíos
+   Una cola limpia es la buena noticia del día, no un error: se enmarca como
+   un remate de página, con el símbolo de la marca insinuado detrás.
+   -------------------------------------------------------------------------- */
+.admin-list > .empty-state,
+.admin-sellers > .empty-state,
+.admin-log > .empty-state {
+    position: relative;
+    isolation: isolate;
+    padding-block: var(--space-16);
+    background: var(--bg-surface);
+    background-image: var(--gradient-glow);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+}
+
+.admin-list > .empty-state::before,
+.admin-sellers > .empty-state::before,
+.admin-log > .empty-state::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
+    width: 260px;
+    height: 260px;
+    transform: translate(-50%, -50%);
+    background-color: var(--brand);
+    opacity: 0.06;
+    /* El símbolo hereda el color por `mask`, así que sirve en los dos temas */
+    -webkit-mask: url("../../img/logo-mark.svg") center / contain no-repeat;
+    mask: url("../../img/logo-mark.svg") center / contain no-repeat;
+    pointer-events: none;
+}
+
+.admin-panel .empty-icon {
+    width: 88px;
+    height: 88px;
+    font-size: var(--text-3xl);
+    background: var(--bg-raised);
+    border-color: var(--brand-ring);
+    box-shadow: var(--shadow-glow);
+}
+
+.admin-panel .empty-title { font-size: var(--text-xl); }
 
 /* --------------------------------------------------------------------------
    Diálogo de motivo de rechazo
@@ -769,31 +1179,34 @@
 .admin-preset:hover {
     color: var(--text-primary);
     background: var(--bg-hover);
-    border-color: var(--border-strong);
+    border-color: var(--brand);
 }
 
 /* --------------------------------------------------------------------------
    Adaptación a pantallas menores
    -------------------------------------------------------------------------- */
 @media (max-width: 1180px) {
-    .admin-metrics,
-    .admin-boot-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .admin-metrics-secondary { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .admin-metric-lead .admin-metric-value { font-size: var(--text-3xl); }
 }
 
 @media (max-width: 960px) {
     .admin-title { font-size: var(--text-2xl); }
     .admin-refresh { width: 100%; }
     .admin-sellers { grid-template-columns: minmax(0, 1fr); }
+
+    .admin-metrics-secondary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 720px) {
     .admin-page { padding: var(--space-5) var(--space-4) var(--space-12); }
 
-    .admin-metrics,
-    .admin-boot-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+    .admin-boot-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .admin-boot-card:nth-child(-n + 2) { grid-column: span 2; height: 140px; }
 
-    .admin-metric { padding: var(--space-4); }
-    .admin-metric-value { font-size: var(--text-xl); }
+    .admin-metrics-primary { grid-template-columns: minmax(0, 1fr); }
+    .admin-metric-lead { padding: var(--space-5); }
+    .admin-metric-lead .admin-metric-value { font-size: var(--text-3xl); }
 
     .admin-toolbar { align-items: stretch; }
     .admin-filters { width: 100%; }
@@ -802,29 +1215,66 @@
 
     /* La casilla pasa arriba para que la fila no se estreche */
     .admin-queue-item { align-items: flex-start; }
+    .admin-queue-item .post-row { padding: var(--space-4); gap: var(--space-4); }
+    .admin-queue-item .post-row-thumb { width: 72px; height: 72px; }
+
+    .admin-queue-head { position: static; }
 
     .admin-bulk {
-        position: static;
+        bottom: var(--space-3);
         flex-direction: column;
         align-items: stretch;
+        gap: var(--space-3);
     }
 
     .admin-bulk-actions > .btn { flex: 1 0 auto; }
 
     .admin-timeline::before { display: none; }
     .admin-timeline-item { gap: var(--space-3); }
-    .admin-timeline-dot { width: 26px; height: 26px; }
+    .admin-timeline-dot { width: 30px; height: 30px; border-width: 2px; }
+
+    .admin-list > .empty-state,
+    .admin-sellers > .empty-state,
+    .admin-log > .empty-state { padding-block: var(--space-12); }
+}
+
+@media (max-width: 520px) {
+    .admin-seller-head .avatar { width: 52px; height: 52px; font-size: var(--text-lg); }
+    .admin-seller-motivation { padding-left: var(--space-8); }
+
+    .admin-list > .empty-state::before,
+    .admin-sellers > .empty-state::before,
+    .admin-log > .empty-state::before { width: 180px; height: 180px; }
 }
 
 @media (max-width: 400px) {
     .admin-page { padding-inline: var(--space-3); }
 
-    .admin-metrics,
-    .admin-boot-metrics { grid-template-columns: minmax(0, 1fr); }
+    .admin-boot-metrics,
+    .admin-metrics-secondary { grid-template-columns: minmax(0, 1fr); }
+    .admin-boot-card:nth-child(-n + 2) { grid-column: span 1; }
 
+    .admin-metric-lead .admin-metric-value { font-size: var(--text-2xl); }
+
+    /* Los pares vuelven a apilarse: dos columnas no caben sin truncar */
     .admin-seller-facts { grid-template-columns: minmax(0, 1fr); }
-    .admin-seller-actions > .btn,
-    .admin-seller-actions > .btn-sm { width: 100%; }
+    .admin-fact-term { border-bottom: none; padding-bottom: 0; }
+    .admin-fact-value { text-align: left; padding-top: 0; }
+
+    .admin-seller-actions > .btn { width: 100%; }
 
     .admin-check { min-width: 36px; }
+}
+
+/* --------------------------------------------------------------------------
+   Movimiento reducido: se conserva el color, se quita el latido
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+    .admin-metric-pulse,
+    .admin-metric.is-warning .admin-metric-pulse,
+    .admin-metric.is-brand .admin-metric-pulse { animation: none; }
+
+    .admin-metric-action:hover { transform: none; }
+    .admin-metric-arrow { transition: none; }
+    .admin-metric-action:hover .admin-metric-arrow { transform: none; }
 }

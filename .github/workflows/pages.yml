@@ -63,6 +63,7 @@ jobs:
           node tests/integrity.test.mjs
           node tests/contract.test.mjs
           node tests/responsive.test.mjs
+          node tests/contrast.test.mjs
 
       # Solo se publica lo que el navegador necesita: las pruebas y la memoria
       # del proyecto no forman parte del sitio.

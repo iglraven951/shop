@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel de administración · DiscoveryShop</title>
     <meta name="description" content="Panel de moderación de DiscoveryShop: aprueba o rechaza las publicaciones pendientes y las solicitudes de cuenta de vendedor del foro de Arequipa.">
-    <meta name="theme-color" content="#08090c">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><text y='16' font-size='16'>🛍️</text></svg>">
+    <meta name="theme-color" content="#070c14">
+    <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
+    <link rel="apple-touch-icon" href="assets/img/logo.png">
     <link rel="manifest" href="site.webmanifest">
     <link rel="stylesheet" href="assets/css/tokens.css">
     <link rel="stylesheet" href="assets/css/base.css">
@@ -77,47 +78,76 @@
                     </button>
                 </header>
 
-                <!-- Métricas -->
+                <!-- Métricas
+                     Dos niveles deliberados: arriba lo que exige una decisión,
+                     abajo las cifras de contexto que solo se consultan. -->
                 <section class="admin-metrics" aria-label="Resumen de moderación" id="admin-metrics">
-                    <button class="admin-metric admin-metric-action is-warning" type="button"
-                            data-goto-tab="publicaciones" data-metric-card="posts-pending">
-                        <span class="admin-metric-icon" aria-hidden="true">⏳</span>
-                        <span class="admin-metric-value" data-metric="posts-pending">—</span>
-                        <span class="admin-metric-label">Publicaciones pendientes</span>
-                        <span class="admin-metric-hint">Ir a la cola</span>
-                    </button>
 
-                    <button class="admin-metric admin-metric-action is-brand" type="button"
-                            data-goto-tab="vendedores" data-metric-card="sellers-pending">
-                        <span class="admin-metric-icon" aria-hidden="true">🧑‍💼</span>
-                        <span class="admin-metric-value" data-metric="sellers-pending">—</span>
-                        <span class="admin-metric-label">Vendedores por aprobar</span>
-                        <span class="admin-metric-hint">Ir a las solicitudes</span>
-                    </button>
+                    <!-- Nivel 1: las dos colas de trabajo. Son botones: llevan a su pestaña. -->
+                    <div class="admin-metrics-primary">
+                        <button class="admin-metric admin-metric-lead admin-metric-action is-warning" type="button"
+                                data-goto-tab="publicaciones" data-metric-card="posts-pending">
+                            <span class="admin-metric-top">
+                                <span class="admin-metric-icon" aria-hidden="true">⏳</span>
+                                <span class="admin-metric-pulse" aria-hidden="true"></span>
+                            </span>
+                            <span class="admin-metric-value" data-metric="posts-pending">—</span>
+                            <span class="admin-metric-label">Publicaciones pendientes</span>
+                            <span class="admin-metric-hint">
+                                <span>Ir a la cola</span>
+                                <svg class="admin-metric-arrow" width="14" height="14" viewBox="0 0 16 16"
+                                     fill="none" stroke="currentColor" stroke-width="2"
+                                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M2.5 8h10"/><path d="m8.5 4 4 4-4 4"/>
+                                </svg>
+                            </span>
+                        </button>
 
-                    <div class="admin-metric">
-                        <span class="admin-metric-icon" aria-hidden="true">✅</span>
-                        <span class="admin-metric-value" data-metric="posts-approved">—</span>
-                        <span class="admin-metric-label">Publicaciones activas</span>
+                        <button class="admin-metric admin-metric-lead admin-metric-action is-brand" type="button"
+                                data-goto-tab="vendedores" data-metric-card="sellers-pending">
+                            <span class="admin-metric-top">
+                                <span class="admin-metric-icon" aria-hidden="true">🧑‍💼</span>
+                                <span class="admin-metric-pulse" aria-hidden="true"></span>
+                            </span>
+                            <span class="admin-metric-value" data-metric="sellers-pending">—</span>
+                            <span class="admin-metric-label">Vendedores por aprobar</span>
+                            <span class="admin-metric-hint">
+                                <span>Ir a las solicitudes</span>
+                                <svg class="admin-metric-arrow" width="14" height="14" viewBox="0 0 16 16"
+                                     fill="none" stroke="currentColor" stroke-width="2"
+                                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M2.5 8h10"/><path d="m8.5 4 4 4-4 4"/>
+                                </svg>
+                            </span>
+                        </button>
                     </div>
 
-                    <div class="admin-metric">
-                        <span class="admin-metric-icon" aria-hidden="true">🚫</span>
-                        <span class="admin-metric-value" data-metric="posts-rejected">—</span>
-                        <span class="admin-metric-label">Publicaciones rechazadas</span>
-                    </div>
+                    <!-- Nivel 2: contexto. Ni piden acción ni deben competir por la mirada. -->
+                    <div class="admin-metrics-secondary">
+                        <div class="admin-metric admin-metric-compact">
+                            <span class="admin-metric-icon" aria-hidden="true">✅</span>
+                            <span class="admin-metric-value" data-metric="posts-approved">—</span>
+                            <span class="admin-metric-label">Publicaciones activas</span>
+                        </div>
 
-                    <div class="admin-metric">
-                        <span class="admin-metric-icon" aria-hidden="true">👥</span>
-                        <span class="admin-metric-value" data-metric="users-total">—</span>
-                        <span class="admin-metric-label">Personas registradas</span>
-                    </div>
+                        <div class="admin-metric admin-metric-compact">
+                            <span class="admin-metric-icon" aria-hidden="true">🚫</span>
+                            <span class="admin-metric-value" data-metric="posts-rejected">—</span>
+                            <span class="admin-metric-label">Publicaciones rechazadas</span>
+                        </div>
 
-                    <div class="admin-metric">
-                        <span class="admin-metric-icon" aria-hidden="true">📈</span>
-                        <span class="admin-metric-value" data-metric="activity-total">—</span>
-                        <span class="admin-metric-label">Actividad del foro</span>
-                        <span class="admin-metric-hint" data-metric="activity-detail"></span>
+                        <div class="admin-metric admin-metric-compact">
+                            <span class="admin-metric-icon" aria-hidden="true">👥</span>
+                            <span class="admin-metric-value" data-metric="users-total">—</span>
+                            <span class="admin-metric-label">Personas registradas</span>
+                        </div>
+
+                        <div class="admin-metric admin-metric-compact">
+                            <span class="admin-metric-icon" aria-hidden="true">📈</span>
+                            <span class="admin-metric-value" data-metric="activity-total">—</span>
+                            <span class="admin-metric-label">Actividad del foro</span>
+                            <span class="admin-metric-hint" data-metric="activity-detail"></span>
+                        </div>
                     </div>
                 </section>
 
@@ -178,16 +208,6 @@
                         <kbd>R</kbd> para abrir el diálogo de rechazo.
                     </p>
 
-                    <div class="admin-bulk" id="admin-bulk" hidden aria-label="Acciones en lote">
-                        <p class="admin-bulk-count" id="admin-bulk-count">0 seleccionadas</p>
-                        <div class="admin-bulk-actions">
-                            <button class="btn btn-success btn-sm" type="button" data-bulk="approve">Aprobar todas</button>
-                            <button class="btn btn-danger btn-sm" type="button" data-bulk="reject">Rechazar todas</button>
-                            <button class="btn btn-ghost btn-sm" type="button" data-bulk="clear">Quitar selección</button>
-                        </div>
-                        <p class="admin-bulk-progress" id="admin-bulk-progress" role="status" hidden></p>
-                    </div>
-
                     <div class="admin-queue-head" id="admin-queue-head" hidden>
                         <label class="admin-check admin-check-all">
                             <input type="checkbox" id="admin-select-all">
@@ -197,6 +217,31 @@
                     </div>
 
                     <div class="admin-list" id="admin-post-list" aria-busy="true"></div>
+
+                    <!-- Barra de lote: va después de la lista porque `sticky` con `bottom`
+                         solo puede elevar un elemento desde su posición natural, nunca
+                         adelantarlo. Aquí queda anclada al pie mientras haya selección. -->
+                    <div class="admin-bulk" id="admin-bulk" hidden aria-label="Acciones en lote">
+                        <p class="admin-bulk-count" id="admin-bulk-count">0 seleccionadas</p>
+                        <div class="admin-bulk-actions">
+                            <button class="btn btn-success btn-sm admin-action-approve" type="button" data-bulk="approve">
+                                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                                     stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="m3 8.4 3.6 3.6L13 4.6"/>
+                                </svg>
+                                <span>Aprobar todas</span>
+                            </button>
+                            <button class="btn btn-danger btn-sm admin-action-reject" type="button" data-bulk="reject">
+                                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                                     stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M4.2 4.2 11.8 11.8"/><path d="M11.8 4.2 4.2 11.8"/>
+                                </svg>
+                                <span>Rechazar todas</span>
+                            </button>
+                            <button class="btn btn-ghost btn-sm" type="button" data-bulk="clear">Quitar selección</button>
+                        </div>
+                        <p class="admin-bulk-progress" id="admin-bulk-progress" role="status" hidden></p>
+                    </div>
                 </section>
 
                 <!-- Pestaña: Vendedores -->

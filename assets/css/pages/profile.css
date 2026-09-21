@@ -52,7 +52,7 @@
 .profile-hero {
     position: relative;
     overflow: hidden;
-    padding: var(--space-6);
+    padding: var(--space-8) var(--space-6) var(--space-6);
     background: var(--bg-surface);
     background-image: var(--gradient-glow);
     border: 1px solid var(--border-subtle);
@@ -107,15 +107,28 @@
 .profile-facts {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-2) var(--space-4);
-    margin-top: var(--space-3);
+    gap: var(--space-2);
+    margin-top: var(--space-4);
     list-style: none;
 }
 
+/* Distrito y antigüedad como fichas: los separa entre sí sin recurrir a un
+   punto medio, que con los emojis que los encabezan se leería como ruido. */
 .profile-fact {
-    font-size: var(--text-xs);
-    color: var(--text-muted);
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-full);
+    background: var(--bg-raised);
+    border: 1px solid var(--border-subtle);
+    font-size: var(--text-2xs);
+    line-height: var(--leading-snug);
+    color: var(--text-secondary);
 }
+
+/* Vacías hasta que el guion las rellena: sin esto se verían dos fichas huecas */
+.profile-fact:empty { display: none; }
 
 .profile-hero-actions {
     display: flex;
@@ -124,13 +137,15 @@
     gap: var(--space-2);
 }
 
-/* --- Métricas --- */
+/* --- Métricas ---
+   La cifra manda y la etiqueta se retira: lo que se lee de un vistazo es el
+   número, y el rótulo solo hace falta cuando ya lo estás mirando. */
 .profile-metrics {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: var(--space-3);
     margin-top: var(--space-6);
-    padding-top: var(--space-5);
+    padding-top: var(--space-6);
     border-top: 1px solid var(--border-subtle);
 }
 
@@ -141,9 +156,10 @@
     flex-direction: column-reverse;
     justify-content: center;
     min-width: 0;
-    padding: var(--space-4) var(--space-3);
+    padding: var(--space-5) var(--space-3);
     text-align: center;
     background: var(--bg-raised);
+    background-image: var(--gradient-surface);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-lg);
     transition: border-color var(--duration-base) var(--ease-out),
@@ -156,9 +172,10 @@
 }
 
 .profile-metric-value {
-    font-size: var(--text-xl);
+    font-size: var(--text-2xl);
     font-weight: 700;
     line-height: var(--leading-tight);
+    letter-spacing: var(--tracking-tight);
     color: var(--text-primary);
     font-variant-numeric: tabular-nums;
     overflow-wrap: anywhere;
@@ -175,25 +192,33 @@
 
 .profile-metric-label {
     margin-top: var(--space-2);
-    font-size: var(--text-2xs);
-    color: var(--text-muted);
+    font-size: var(--text-3xs);
+    font-weight: 600;
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    color: var(--text-secondary);
     line-height: var(--leading-snug);
 }
 
 /* --------------------------------------------------------------------------
    Estado de vendedor
-   El borde izquierdo grueso y el fondo suave distinguen las cinco variantes
-   sin necesidad de más color en el texto.
+   Es el corazón del modelo de permisos: hay que reconocer en qué estado
+   estás antes de leer una palabra. Cada variante aporta su color y el
+   bloque entero (borde, icono, cita) lo consume desde `--seller-tone`, así
+   que añadir un estado es declarar dos variables, no repetir cinco reglas.
    -------------------------------------------------------------------------- */
 .profile-seller {
+    --seller-tone: var(--text-muted);
+    --seller-wash: var(--bg-raised);
+
     display: flex;
     align-items: flex-start;
-    gap: var(--space-4);
+    gap: var(--space-5);
     margin-top: var(--space-5);
-    padding: var(--space-5);
-    background: var(--bg-surface);
+    padding: var(--space-5) var(--space-6);
+    background: var(--seller-wash);
     border: 1px solid var(--border-subtle);
-    border-left: 3px solid var(--border-default);
+    border-left: 4px solid var(--seller-tone);
     border-radius: var(--radius-lg);
     animation: fade-in var(--duration-base) var(--ease-out);
 }
@@ -204,41 +229,44 @@
 }
 
 .profile-seller.is-invite {
-    background: var(--brand-soft);
-    border-left-color: var(--brand);
+    --seller-tone: var(--brand);
+    --seller-wash: var(--brand-soft);
 }
 
 .profile-seller.is-pending {
-    background: var(--warning-soft);
-    border-left-color: var(--warning);
+    --seller-tone: var(--warning);
+    --seller-wash: var(--warning-soft);
 }
 
 .profile-seller.is-approved {
-    background: var(--success-soft);
-    border-left-color: var(--success);
+    --seller-tone: var(--success);
+    --seller-wash: var(--success-soft);
 }
 
 .profile-seller.is-rejected {
-    background: var(--danger-soft);
-    border-left-color: var(--danger);
+    --seller-tone: var(--danger);
+    --seller-wash: var(--danger-soft);
 }
 
+/* La administración no es un estado de venta: se distingue con el acento
+   en lugar de con uno de los tres colores de aprobación. */
 .profile-seller.is-admin {
-    background: var(--bg-raised);
-    border-left-color: var(--text-muted);
+    --seller-tone: var(--accent);
+    --seller-wash: var(--accent-soft);
 }
 
 .profile-seller-icon {
     flex-shrink: 0;
     display: grid;
     place-items: center;
-    width: 48px;
-    height: 48px;
-    font-size: var(--text-xl);
+    width: 52px;
+    height: 52px;
+    font-size: var(--text-2xl);
     line-height: 1;
     background: var(--bg-surface);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-md);
+    border: 1px solid var(--seller-tone);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
 }
 
 .profile-seller-text {
@@ -284,7 +312,7 @@
     margin-top: var(--space-3);
     padding: var(--space-3) var(--space-4);
     background: var(--bg-surface);
-    border-left: 2px solid var(--danger);
+    border-left: 2px solid var(--seller-tone);
     border-radius: var(--radius-sm);
     font-size: var(--text-sm);
     line-height: var(--leading-normal);
@@ -292,17 +320,25 @@
     overflow-wrap: anywhere;
 }
 
+/* La fecha de envío es un dato de seguimiento, no parte del mensaje: se
+   separa con una línea para que no se lea como una frase más. */
 .profile-seller-meta {
-    margin-top: var(--space-3);
+    margin-top: var(--space-4);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--border-subtle);
     font-size: var(--text-2xs);
-    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+    color: var(--text-secondary);
 }
 
+/* La acción se alinea con el titular, no con el final del texto: así se ve
+   a la misma altura que el estado al que responde. */
 .profile-seller-actions {
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
     gap: var(--space-2);
+    margin-top: var(--space-1);
 }
 
 /* --------------------------------------------------------------------------
@@ -394,7 +430,7 @@
 .profile-block-hint {
     margin-top: var(--space-1);
     font-size: var(--text-xs);
-    color: var(--text-muted);
+    color: var(--text-secondary);
     line-height: var(--leading-snug);
 }
 
@@ -421,7 +457,7 @@
     flex-shrink: 0;
     font-size: var(--text-2xs);
     font-variant-numeric: tabular-nums;
-    color: var(--text-muted);
+    color: var(--text-secondary);
 }
 
 .profile-form-actions {
@@ -460,7 +496,7 @@
 
 .profile-pref-hint {
     font-size: var(--text-2xs);
-    color: var(--text-muted);
+    color: var(--text-secondary);
     line-height: var(--leading-snug);
 }
 
@@ -514,7 +550,7 @@
     text-align: center;
     font-variant-numeric: tabular-nums;
     font-size: var(--text-3xs);
-    color: var(--text-muted);
+    color: var(--text-secondary);
     background: var(--bg-surface);
     border-radius: var(--radius-full);
 }
@@ -637,8 +673,8 @@
     .profile-hero-actions .btn { width: 100%; }
 
     /* El bloque de vendedor se apila: icono, texto y botón a lo ancho */
-    .profile-seller { flex-direction: column; }
-    .profile-seller-actions { width: 100%; }
+    .profile-seller { flex-direction: column; gap: var(--space-4); padding: var(--space-5); }
+    .profile-seller-actions { width: 100%; margin-top: 0; }
     .profile-seller-actions .btn { width: 100%; }
 
     .profile-tab { flex: 0 0 auto; }
@@ -665,11 +701,12 @@
     .profile-name { font-size: var(--text-xl); }
 
     .profile-metrics { gap: var(--space-2); }
-    .profile-metric { padding: var(--space-3) var(--space-2); }
-    .profile-metric-value { font-size: var(--text-lg); }
+    .profile-metric { padding: var(--space-4) var(--space-2); }
+    .profile-metric-value { font-size: var(--text-xl); }
 
     .profile-seller { padding: var(--space-4); }
     .profile-seller-title { font-size: var(--text-base); }
+    .profile-seller-icon { width: 46px; height: 46px; font-size: var(--text-xl); }
 
     .profile-edit-grid { grid-template-columns: minmax(0, 1fr); }
 

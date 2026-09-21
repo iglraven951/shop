@@ -309,6 +309,28 @@ pageCss.forEach((rel) => {
 });
 
 /* ----------------------------------------------------------------------
+   5b. La cabecera compartida cabe en móvil
+
+   Un desborde por acumulación no se detecta mirando declaraciones sueltas:
+   ningún ancho es excesivo, pero la suma de los controles de la cabecera
+   superaba los 328 px útiles de un móvil de 360. La regresión concreta fue
+   que `.menu-toggle` estaba en `display: none` sin ninguna regla que lo
+   mostrara, así que los iconos nunca se replegaban al menú.
+   ---------------------------------------------------------------------- */
+{
+    const layout = read('assets/css/layout.css');
+    const mobile = mobileOverrides(layout);
+
+    check('la cabecera muestra el botón de menú en móvil',
+        /\.menu-toggle\s*\{[^}]*display:\s*(?!none)/.test(mobile),
+        'el botón existe pero ninguna media query lo hace visible');
+
+    check('la cabecera repliega sus iconos en móvil',
+        /\.header-icon-btn[^{]*\{[^}]*display:\s*none|\.header-actions[^{]*\{[^}]*display:\s*none/.test(mobile),
+        'sin una regla que oculte los iconos, la fila desborda');
+}
+
+/* ----------------------------------------------------------------------
    6. El HTML declara el viewport y evita el zoom bloqueado
    ---------------------------------------------------------------------- */
 

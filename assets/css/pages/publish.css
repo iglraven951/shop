@@ -19,6 +19,18 @@
     margin-bottom: var(--space-8);
 }
 
+/* El símbolo de marca sustituye al emoji que había antes */
+.publish-eyebrow-mark {
+    display: inline-grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    color: var(--brand);
+}
+
+.publish-eyebrow-mark .brand-svg { width: 100%; height: 100%; }
+
 .publish-eyebrow {
     display: inline-flex;
     align-items: center;
@@ -83,34 +95,41 @@
 /* --------------------------------------------------------------------------
    Secciones del formulario
    -------------------------------------------------------------------------- */
+/* Cada paso es una tarjeta cerrada con su propia barra de título: separarlos
+   así evita que el formulario se lea como una lista larga de campos. */
 .publish-section {
     background: var(--bg-surface);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
     overflow: hidden;
     animation: fade-in-up var(--duration-base) var(--ease-out) backwards;
 }
 
 .publish-section-head {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: var(--space-4);
-    padding: var(--space-5);
-    background: var(--gradient-surface);
+    padding: var(--space-4) var(--space-5);
+    background: var(--bg-raised);
+    background-image: var(--gradient-surface);
     border-bottom: 1px solid var(--border-subtle);
 }
 
+/* Número relleno, no un fondo suave: es lo que ordena el formulario */
 .publish-section-step {
     display: grid;
     place-items: center;
     flex-shrink: 0;
-    width: 30px;
-    height: 30px;
-    background: var(--brand-soft);
+    width: 32px;
+    height: 32px;
+    background: var(--brand);
     border-radius: var(--radius-full);
     font-size: var(--text-sm);
     font-weight: 700;
-    color: var(--brand);
+    font-variant-numeric: tabular-nums;
+    color: var(--brand-contrast);
+    box-shadow: var(--shadow-sm);
 }
 
 .publish-section-text { min-width: 0; }
@@ -119,20 +138,21 @@
     font-size: var(--text-lg);
     font-weight: 650;
     letter-spacing: var(--tracking-tight);
+    line-height: var(--leading-snug);
 }
 
 .publish-section-hint {
     margin-top: var(--space-1);
     font-size: var(--text-xs);
-    color: var(--text-muted);
+    color: var(--text-secondary);
     line-height: var(--leading-snug);
 }
 
 .publish-section-body {
     display: flex;
     flex-direction: column;
-    gap: var(--space-5);
-    padding: var(--space-5);
+    gap: var(--space-6);
+    padding: var(--space-6) var(--space-5);
 }
 
 /* Dos campos por fila cuando hay sitio */
@@ -164,18 +184,40 @@
     gap: var(--space-3);
 }
 
+/* Mientras sobra margen el contador es un dato de fondo: texto tenue y sin
+   relleno. Solo cuando falta poco o ya se pasó toma cuerpo de etiqueta, que
+   es cuando realmente hay algo que mirar. */
 .publish-counter {
     flex-shrink: 0;
+    padding: 2px var(--space-2);
+    border-radius: var(--radius-full);
+    background: transparent;
     font-size: var(--text-3xs);
     font-variant-numeric: tabular-nums;
-    color: var(--text-muted);
-    transition: color var(--duration-fast) var(--ease-out);
+    line-height: var(--leading-snug);
+    color: var(--text-secondary);
+    transition: color var(--duration-fast) var(--ease-out),
+                background-color var(--duration-fast) var(--ease-out);
 }
 
-.publish-counter.is-warning { color: var(--warning); }
+.publish-counter.is-warning {
+    background: var(--warning-soft);
+    color: var(--warning);
+    font-weight: 600;
+}
+
 .publish-counter.is-error {
+    background: var(--danger-soft);
     color: var(--danger);
-    font-weight: 650;
+    font-weight: 700;
+}
+
+/* El icono elegido comparte clase con los contadores, pero no cuenta nada:
+   se muestra como la selección activa de la rejilla. */
+#publish-emoji-current:not(:empty) {
+    background: var(--brand-soft);
+    font-weight: 600;
+    color: var(--brand);
 }
 
 /* --------------------------------------------------------------------------
@@ -246,10 +288,16 @@
 /* --------------------------------------------------------------------------
    Rejilla de iconos
    -------------------------------------------------------------------------- */
+/* La rejilla va hundida dentro de un panel: así se lee como un selector
+   único y no como treinta botones sueltos flotando sobre la tarjeta. */
 .publish-emoji-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
     gap: var(--space-2);
+    padding: var(--space-3);
+    background: var(--bg-sunken);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
 }
 
 .publish-emoji {
@@ -259,26 +307,30 @@
     min-width: 44px;
     min-height: 44px;
     background: var(--bg-raised);
-    border: 1px solid var(--border-default);
+    border: 1px solid var(--border-subtle);
     border-radius: var(--radius-md);
-    font-size: var(--text-lg);
+    font-size: var(--text-xl);
     line-height: 1;
     cursor: pointer;
     transition: transform var(--duration-fast) var(--ease-out),
                 border-color var(--duration-fast) var(--ease-out),
+                box-shadow var(--duration-fast) var(--ease-out),
                 background-color var(--duration-fast) var(--ease-out);
 }
 
 .publish-emoji:hover {
-    border-color: var(--border-strong);
+    border-color: var(--brand-ring);
     background: var(--bg-hover);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
 }
 
+/* El borde interior engrosa la marca sin cambiar la caja: la rejilla no se
+   recoloca al elegir un icono. */
 .publish-emoji.is-selected {
     background: var(--brand-soft);
     border-color: var(--brand);
-    box-shadow: 0 0 0 1px var(--brand);
+    box-shadow: inset 0 0 0 1px var(--brand), var(--shadow-glow);
+    transform: translateY(-1px);
 }
 
 .publish-emoji:focus-visible {
@@ -372,33 +424,47 @@
    -------------------------------------------------------------------------- */
 .publish-preview-col { min-width: 0; }
 
+/* Marco discontinuo y hundido: la maqueta tiene que verse como maqueta.
+   Con un marco continuo, idéntico al de las tarjetas del foro, cualquiera
+   la confundiría con una publicación ya hecha. */
 .publish-preview-sticky {
     position: sticky;
     top: calc(var(--header-height) + var(--space-5));
     display: flex;
     flex-direction: column;
+    align-items: flex-start;
     gap: var(--space-2);
+    padding: var(--space-4);
+    background: var(--bg-sunken);
+    border: 1px dashed var(--brand-ring);
+    border-radius: var(--radius-xl);
 }
 
+/* El título hace de etiqueta del marco, no de encabezado de sección */
 .publish-preview-title {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: var(--space-2);
-    font-size: var(--text-sm);
-    font-weight: 650;
-    color: var(--text-secondary);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-full);
+    background: var(--brand-soft);
+    border: 1px solid var(--brand-ring);
+    font-size: var(--text-3xs);
+    font-weight: 700;
+    color: var(--brand);
     text-transform: uppercase;
     letter-spacing: var(--tracking-wide);
 }
 
 .publish-preview-hint {
-    margin-bottom: var(--space-2);
+    margin-bottom: var(--space-1);
     font-size: var(--text-2xs);
-    color: var(--text-muted);
+    color: var(--text-secondary);
     line-height: var(--leading-snug);
 }
 
 .publish-preview {
+    width: 100%;
     min-width: 0;
     border-radius: var(--radius-lg);
 }
@@ -427,34 +493,65 @@
 /* --------------------------------------------------------------------------
    Pantallas de bloqueo
    -------------------------------------------------------------------------- */
-.publish-gate {
+/* Las cuatro pantallas comparten caja para que se lean como la misma
+   página en distintos estados, no como cuatro errores distintos. La
+   variante solo aporta su color en `--gate-tone`. */
+.publish-gate,
+.publish-stage > .empty-state {
+    --gate-tone: var(--text-muted);
+    --gate-wash: var(--bg-raised);
+
     max-width: 620px;
     margin-inline: auto;
-    padding: var(--space-10) var(--space-6);
+    padding: var(--space-12) var(--space-8);
     background: var(--bg-surface);
+    background-image: var(--gradient-glow);
     border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-lg);
+    border-top: 3px solid var(--gate-tone);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
     text-align: center;
     animation: fade-in-up var(--duration-base) var(--ease-out) backwards;
+}
+
+/* Sin sesión la pantalla la fabrica `UI.loginGate`: es un estado vacío
+   genérico, así que aquí se le da el mismo trato que a las otras tres. */
+.publish-stage > .empty-state {
+    --gate-tone: var(--brand);
+    gap: var(--space-4);
+}
+
+.publish-stage > .empty-state .empty-icon {
+    width: 76px;
+    height: 76px;
+    background: var(--brand-soft);
+    border-color: var(--brand-ring);
+    border-radius: var(--radius-full);
+    font-size: var(--text-3xl);
 }
 
 .publish-gate-icon {
     display: grid;
     place-items: center;
-    width: 72px;
-    height: 72px;
-    margin: 0 auto var(--space-5);
+    width: 76px;
+    height: 76px;
+    margin: 0 auto var(--space-6);
     border-radius: var(--radius-full);
-    font-size: var(--text-2xl);
+    background: var(--gate-wash);
+    /* Anillo fino del color del estado más un halo del mismo tinte: se
+       reconoce de qué va la pantalla antes de leer el titular. */
+    box-shadow: inset 0 0 0 1px var(--gate-tone), 0 0 0 8px var(--gate-wash);
+    font-size: var(--text-3xl);
     line-height: 1;
 }
 
 .publish-gate-title {
     margin-bottom: var(--space-3);
-    font-size: var(--text-xl);
+    font-size: var(--text-2xl);
     font-weight: 700;
     letter-spacing: var(--tracking-tight);
     line-height: var(--leading-tight);
+    text-wrap: balance;
 }
 
 .publish-gate-message {
@@ -466,13 +563,17 @@
 }
 
 .publish-gate-meta {
-    margin-top: var(--space-4);
+    display: inline-block;
+    margin-top: var(--space-5);
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-full);
+    background: var(--gate-wash);
     font-size: var(--text-2xs);
-    color: var(--text-muted);
+    color: var(--text-secondary);
 }
 
 .publish-gate-note {
-    margin-top: var(--space-5);
+    margin-top: var(--space-6);
     text-align: left;
 }
 
@@ -481,29 +582,16 @@
     flex-wrap: wrap;
     justify-content: center;
     gap: var(--space-3);
-    margin-top: var(--space-6);
+    margin-top: var(--space-8);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--border-subtle);
 }
 
 /* Color semántico según el motivo del bloqueo */
-.publish-gate-info .publish-gate-icon {
-    background: var(--info-soft);
-    box-shadow: 0 0 0 1px var(--info-soft);
-}
-.publish-gate-info { border-top: 3px solid var(--info); }
-
-.publish-gate-warning .publish-gate-icon {
-    background: var(--warning-soft);
-    box-shadow: 0 0 0 1px var(--warning-soft);
-}
-.publish-gate-warning { border-top: 3px solid var(--warning); }
-
-.publish-gate-danger .publish-gate-icon {
-    background: var(--danger-soft);
-    box-shadow: 0 0 0 1px var(--danger-soft);
-}
-.publish-gate-danger { border-top: 3px solid var(--danger); }
-
-.publish-gate-neutral .publish-gate-icon { background: var(--bg-raised); }
+.publish-gate-info { --gate-tone: var(--info); --gate-wash: var(--info-soft); }
+.publish-gate-warning { --gate-tone: var(--warning); --gate-wash: var(--warning-soft); }
+.publish-gate-danger { --gate-tone: var(--danger); --gate-wash: var(--danger-soft); }
+.publish-gate-neutral { --gate-tone: var(--text-muted); --gate-wash: var(--bg-raised); }
 
 /* Los tres pasos hasta poder publicar */
 .publish-steps {
@@ -599,7 +687,14 @@
     .publish-actions .btn { width: 100%; }
     .publish-submit { min-width: 0; }
 
-    .publish-gate { padding: var(--space-8) var(--space-4); }
+    .publish-preview-sticky { padding: var(--space-3); }
+
+    .publish-gate,
+    .publish-stage > .empty-state { padding: var(--space-8) var(--space-4); }
+
+    .publish-gate-title { font-size: var(--text-xl); }
+    .publish-gate-icon { width: 64px; height: 64px; font-size: var(--text-2xl); }
+
     .publish-gate-actions { flex-direction: column; }
     .publish-gate-actions .btn { width: 100%; }
 
@@ -608,7 +703,11 @@
 }
 
 @media (max-width: 380px) {
-    .publish-emoji-grid { grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); }
+    .publish-emoji-grid {
+        grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+        padding: var(--space-2);
+    }
+
     .publish-eyebrow { font-size: var(--text-3xs); }
 }
 
@@ -616,7 +715,10 @@
 @media (prefers-reduced-motion: reduce) {
     .publish-section,
     .publish-gate,
+    .publish-stage > .empty-state,
     .publish-draft { animation: none; }
 
-    .publish-emoji:hover { transform: none; }
+    .publish-emoji,
+    .publish-emoji:hover,
+    .publish-emoji.is-selected { transform: none; }
 }

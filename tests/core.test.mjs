@@ -97,7 +97,12 @@ async function run() {
         `lat=${p.location.lat} lng=${p.location.lng}`);
     check('publicación tiene autor', typeof p.author.username === 'string');
     check('publicación tiene categoría', typeof p.category.name === 'string');
-    check('imagen es data URI', p.image_url.startsWith('data:image/svg+xml'));
+    // El catálogo usa fotos reales, pero nunca depende de la red: cada
+    // publicación lleva además un SVG generado como respaldo.
+    check('imagen es una foto real', /^https:\/\/images\.unsplash\.com\/photo-/.test(p.image_url),
+        p.image_url.slice(0, 60));
+    check('la foto pide tamaño y recorte', /[?&]w=\d+/.test(p.image_url) && /fit=crop/.test(p.image_url));
+    check('hay respaldo sin red', String(p.fallback_url || '').startsWith('data:image/svg+xml'));
     check('tiene contadores sociales',
         typeof p.likes_count === 'number'
         && typeof p.interested_count === 'number'
@@ -249,7 +254,10 @@ async function run() {
     check('publicación nace pendiente', created.data.post.status === 'pending');
     check('publicación recibe coordenadas del distrito',
         created.data.post.location.district === 'Cayma' && typeof created.data.post.location.lat === 'number');
-    check('publicación genera imagen', created.data.post.image_url.startsWith('data:image/svg+xml'));
+    // Quien publica no sube fotos, así que su publicación recibe el SVG
+    // generado a partir del título y el icono elegido.
+    check('publicación nueva genera su imagen',
+        created.data.post.image_url.startsWith('data:image/svg+xml'));
 
     const newPostId = created.data.post.id;
 

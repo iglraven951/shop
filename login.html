@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Iniciar sesión · DiscoveryShop</title>
     <meta name="description" content="Entra en tu cuenta de DiscoveryShop para seguir el foro de artículos de segunda mano de Arequipa, guardar publicaciones y escribirte con quien vende.">
-    <meta name="theme-color" content="#08090c">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><text y='16' font-size='16'>🛍️</text></svg>">
+    <meta name="theme-color" content="#070c14">
+    <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
+    <link rel="apple-touch-icon" href="assets/img/logo.png">
     <link rel="manifest" href="site.webmanifest">
     <link rel="stylesheet" href="assets/css/tokens.css">
     <link rel="stylesheet" href="assets/css/base.css">
@@ -26,7 +27,7 @@
             <aside class="auth-brand">
                 <div class="auth-brand-inner">
                     <p class="auth-brand-logo">
-                        <span class="auth-brand-mark" aria-hidden="true">🛍️</span>
+                        <span class="auth-brand-mark" aria-hidden="true"><svg class="brand-svg" viewBox="0 0 40 40" fill="none" aria-hidden="true" focusable="false"><path d="M13.4 10.6 9.1 29.4a1.1 1.1 0 0 0 1.07 1.35h3.23Z" fill="currentColor" opacity="0.5"/><path d="M16.6 11.2V9.4a4.6 4.6 0 0 1 9.2 0v1.8" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><mask id="login-mark-1"><rect width="40" height="40" fill="#fff"/><circle cx="21.3" cy="19.4" r="5.2" fill="none" stroke="#000" stroke-width="2.3"/><path d="m25.2 23.3 4.6 4.6" stroke="#000" stroke-width="2.5" stroke-linecap="round"/></mask><path d="M13.4 10.6h15.9a1.6 1.6 0 0 1 1.6 1.45l1.62 17.1a1.6 1.6 0 0 1-1.6 1.75H10.9a1.1 1.1 0 0 1-1.07-1.35Z" fill="currentColor" mask="url(#login-mark-1)"/></svg></span>
                         <span>DiscoveryShop</span>
                     </p>
 
@@ -85,7 +86,7 @@
             <div class="auth-panel">
                 <div class="auth-card">
                     <p class="auth-mobile-brand">
-                        <span class="auth-brand-mark" aria-hidden="true">🛍️</span>
+                        <span class="auth-brand-mark" aria-hidden="true"><svg class="brand-svg" viewBox="0 0 40 40" fill="none" aria-hidden="true" focusable="false"><path d="M13.4 10.6 9.1 29.4a1.1 1.1 0 0 0 1.07 1.35h3.23Z" fill="currentColor" opacity="0.5"/><path d="M16.6 11.2V9.4a4.6 4.6 0 0 1 9.2 0v1.8" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><mask id="login-mark-2"><rect width="40" height="40" fill="#fff"/><circle cx="21.3" cy="19.4" r="5.2" fill="none" stroke="#000" stroke-width="2.3"/><path d="m25.2 23.3 4.6 4.6" stroke="#000" stroke-width="2.5" stroke-linecap="round"/></mask><path d="M13.4 10.6h15.9a1.6 1.6 0 0 1 1.6 1.45l1.62 17.1a1.6 1.6 0 0 1-1.6 1.75H10.9a1.1 1.1 0 0 1-1.07-1.35Z" fill="currentColor" mask="url(#login-mark-2)"/></svg></span>
                         <span>DiscoveryShop</span>
                     </p>
 
@@ -169,10 +170,14 @@
                             </header>
 
                             <ul class="auth-demo-list" id="auth-demo-list">
-                                <li class="auth-demo-row">
+                                <!-- El rol encabeza cada fila y le da color: es lo que distingue
+                                     a una cuenta de otra, el correo solo la identifica. -->
+                                <li class="auth-demo-row is-admin">
+                                    <span class="auth-demo-avatar" aria-hidden="true">🛡️</span>
                                     <span class="auth-demo-account">
+                                        <span class="auth-demo-role">Administrador</span>
+                                        <span class="auth-demo-can">Aprueba o rechaza publicaciones y solicitudes.</span>
                                         <code class="auth-demo-email">admin@discoveryshop.pe</code>
-                                        <span class="auth-demo-role">Panel de administración</span>
                                     </span>
                                     <button class="btn btn-secondary btn-sm auth-demo-use" type="button"
                                             data-demo-email="admin@discoveryshop.pe"
@@ -180,10 +185,12 @@
                                         Usar esta cuenta
                                     </button>
                                 </li>
-                                <li class="auth-demo-row">
+                                <li class="auth-demo-row is-seller">
+                                    <span class="auth-demo-avatar" aria-hidden="true">🏷️</span>
                                     <span class="auth-demo-account">
+                                        <span class="auth-demo-role">Vendedor aprobado</span>
+                                        <span class="auth-demo-can">Puede publicar artículos en el foro.</span>
                                         <code class="auth-demo-email">juan@discoveryshop.pe</code>
-                                        <span class="auth-demo-role">Vendedor aprobado: puede publicar</span>
                                     </span>
                                     <button class="btn btn-secondary btn-sm auth-demo-use" type="button"
                                             data-demo-email="juan@discoveryshop.pe"
@@ -191,10 +198,12 @@
                                         Usar esta cuenta
                                     </button>
                                 </li>
-                                <li class="auth-demo-row">
+                                <li class="auth-demo-row is-pending">
+                                    <span class="auth-demo-avatar" aria-hidden="true">⏳</span>
                                     <span class="auth-demo-account">
+                                        <span class="auth-demo-role">Vendedor en revisión</span>
+                                        <span class="auth-demo-can">Usa el foro, pero todavía no puede publicar.</span>
                                         <code class="auth-demo-email">miguel@discoveryshop.pe</code>
-                                        <span class="auth-demo-role">Vendedor en revisión: no puede publicar</span>
                                     </span>
                                     <button class="btn btn-secondary btn-sm auth-demo-use" type="button"
                                             data-demo-email="miguel@discoveryshop.pe"
@@ -202,10 +211,12 @@
                                         Usar esta cuenta
                                     </button>
                                 </li>
-                                <li class="auth-demo-row">
+                                <li class="auth-demo-row is-buyer">
+                                    <span class="auth-demo-avatar" aria-hidden="true">🛍️</span>
                                     <span class="auth-demo-account">
+                                        <span class="auth-demo-role">Comprador</span>
+                                        <span class="auth-demo-can">Reacciona, guarda, comenta y escribe mensajes.</span>
                                         <code class="auth-demo-email">patricia@discoveryshop.pe</code>
-                                        <span class="auth-demo-role">Comprador normal</span>
                                     </span>
                                     <button class="btn btn-secondary btn-sm auth-demo-use" type="button"
                                             data-demo-email="patricia@discoveryshop.pe"

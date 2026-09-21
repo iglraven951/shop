@@ -1142,6 +1142,17 @@
 
     body { padding-top: 62px; }
 
+    /* La cabecera no cabe en móvil con todo dentro: a 360 px quedan 328 px
+       útiles y solo los iconos ya suman más. Se deja lo imprescindible —
+       menú, marca y cuenta— y el resto pasa al menú desplegable, que ya
+       enumera las mismas secciones. */
+    .menu-toggle { display: grid; }
+
+    .header-actions .header-icon-btn:not(#theme-toggle),
+    .header-publish {
+        display: none;
+    }
+
     .page-shell,
     .page-narrow { padding-inline: var(--space-4); }
 
@@ -1195,7 +1206,14 @@
 }
 
 /* Móvil pequeño */
-@media (max-width: 400px) {
+@media (max-width: 420px) {
+    /* Por debajo de este ancho el nombre compite con el botón de acceso.
+       El símbolo solo sigue identificando la marca sin ambigüedad. */
+    .brand-name,
+    .brand-tagline { display: none; }
+
+    .brand { gap: 0; }
+
     .post-tags { gap: var(--space-1); }
     .post-media { aspect-ratio: 4 / 3; }
 }

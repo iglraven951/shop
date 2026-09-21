@@ -47,12 +47,26 @@
             location: post.location || { district: 'Arequipa', city: 'Arequipa', country: 'Perú' },
             district: post.district || (post.location && post.location.district) || 'Arequipa',
             image_url: post.image_url || (post.images && post.images[0] && post.images[0].url) || '',
+            fallback_url: post.fallback_url || '',
             likes_count: Number(post.likes_count) || 0,
             interested_count: Number(post.interested_count) || 0,
             comment_count: Number(post.comment_count) || 0,
             saves_count: Number(post.saves_count) || 0,
             views: Number(post.views) || 0,
         };
+    }
+
+    /**
+     * Atributo de respaldo para una imagen.
+     *
+     * Las fotos del catálogo vienen de una red externa. Si alguna no carga,
+     * sin esto quedaría un hueco roto; así se sustituye por el SVG generado,
+     * que no necesita conexión. `onerror` se anula a sí mismo para que un
+     * respaldo que también fallara no entre en bucle.
+     */
+    function imageFallback(post) {
+        if (!post.fallback_url) return '';
+        return ` onerror="this.onerror=null;this.src='${escapeAttr(post.fallback_url)}'"`;
     }
 
     /* ----------------------------------------------------------------------
@@ -225,7 +239,7 @@
             <a class="post-media" href="${escapeAttr(href)}"
                aria-label="Ver «${escapeAttr(post.title)}»">
                 <img src="${escapeAttr(post.image_url)}" alt="${escapeAttr(post.title)}"
-                     loading="lazy" decoding="async">
+                     loading="lazy" decoding="async"${imageFallback(post)}>
             </a>
 
             <div class="post-footer">
@@ -283,7 +297,7 @@
         return `
         <article class="post-row" data-post-id="${escapeAttr(post.id)}">
             <img class="post-row-thumb" src="${escapeAttr(post.image_url)}"
-                 alt="" loading="lazy">
+                 alt="" loading="lazy"${imageFallback(post)}>
 
             <div class="post-row-body">
                 <a class="post-row-title" href="publicacion.html?id=${escapeAttr(post.id)}">

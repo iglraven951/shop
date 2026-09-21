@@ -1,11 +1,24 @@
 /* ==========================================================================
-   DiscoveryShop · Entrada cinematográfica
+   DiscoveryShop · Entrada
 
-   Se muestra solo en la portada y solo una vez por sesión. La secuencia está
-   escrita en CSS puro y se completa sola: si el JavaScript falla o está
-   desactivado, la capa termina retirándose igualmente. El JavaScript solo
-   añade la memoria de sesión y el poder saltarla.
+   Presentación breve de la marca y salida rápida al foro: contador de carga,
+   el nombre revelado tras una máscara y un telón que se levanta. Poco más de
+   un segundo y medio — lo justo para que se lea la marca sin estorbar a quien
+   viene a buscar algo.
+
+   La secuencia está en CSS y se completa sola, así que sigue funcionando sin
+   JavaScript. El script solo añade la memoria de sesión, el poder saltarla y
+   la precisión del contador.
    ========================================================================== */
+
+/* El contador se anima como número, no como texto: así el CSS puede llevarlo
+   de 0 a 100 sin JavaScript. Donde no se admita `@property`, el JavaScript
+   hace el mismo trabajo y, si tampoco lo hay, queda fijo en 100. */
+@property --intro-count {
+    syntax: "<integer>";
+    inherits: false;
+    initial-value: 0;
+}
 
 .intro {
     position: fixed;
@@ -13,68 +26,57 @@
     z-index: var(--z-intro);
     display: grid;
     place-items: center;
-    /* El azul profundo del logo, no el fondo del tema: la marca manda aquí */
-    background:
-        radial-gradient(120% 90% at 50% 40%,
-            var(--brand-700) 0%,
-            var(--brand-900) 45%,
-            #04101f 100%);
+    background: var(--brand-950);
     overflow: hidden;
-    /* La secuencia completa dura 2,6 s y termina apartándose sola */
-    animation: intro-exit 600ms var(--ease-cinema) 2200ms forwards;
+    /* Toda la secuencia ocupa 1,5 s; después el telón se levanta en 0,5 s */
+    animation: intro-exit 500ms var(--ease-cinema) 1500ms forwards;
 }
 
-/* Si el usuario salta o ya la vio, se retira de inmediato */
 .intro.is-done {
-    animation: intro-exit 380ms var(--ease-cinema) forwards;
+    animation: intro-exit 320ms var(--ease-cinema) forwards;
 }
 
+/* El telón sube: se va revelando la página desde abajo */
 @keyframes intro-exit {
     to {
+        clip-path: inset(0 0 100% 0);
         opacity: 0;
         visibility: hidden;
-        transform: scale(1.06);
     }
 }
 
 /* --------------------------------------------------------------------------
-   Ambiente: un halo que respira y una rejilla muy tenue
+   Ambiente
    -------------------------------------------------------------------------- */
+
+/* Dos halos que se cruzan y respiran: dan profundidad al fondo plano */
 .intro::before {
     content: "";
     position: absolute;
-    top: 50%;
-    left: 50%;
-    width: min(150vmin, 1100px);
-    aspect-ratio: 1;
-    transform: translate(-50%, -50%) scale(0.4);
-    background: radial-gradient(circle, rgba(132, 165, 200, 0.28) 0%, transparent 62%);
-    opacity: 0;
-    animation: intro-halo 2600ms var(--ease-cinema) forwards;
+    inset: -30%;
+    background:
+        radial-gradient(38% 38% at 28% 30%, rgba(34, 211, 238, 0.30), transparent 68%),
+        radial-gradient(45% 45% at 72% 68%, rgba(56, 136, 221, 0.38), transparent 70%);
+    animation: intro-drift 6s var(--ease-in-out) infinite alternate;
 }
 
-@keyframes intro-halo {
-    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.35); }
-    45% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-    100% { opacity: 0.55; transform: translate(-50%, -50%) scale(1.18); }
+@keyframes intro-drift {
+    from { transform: translate3d(-2%, -1%, 0) scale(1); }
+    to { transform: translate3d(2%, 1%, 0) scale(1.08); }
 }
 
-/* Textura sutil: sin ella el degradado se ve plano en pantallas grandes */
+/* Rejilla tenue, difuminada hacia los bordes */
 .intro::after {
     content: "";
     position: absolute;
     inset: 0;
     background-image:
-        linear-gradient(rgba(132, 165, 200, 0.055) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(132, 165, 200, 0.055) 1px, transparent 1px);
-    background-size: 64px 64px;
-    mask-image: radial-gradient(circle at 50% 45%, #000 0%, transparent 70%);
-    -webkit-mask-image: radial-gradient(circle at 50% 45%, #000 0%, transparent 70%);
-    opacity: 0;
-    animation: intro-fade-in 1400ms var(--ease-out) 200ms forwards;
+        linear-gradient(rgba(150, 193, 237, 0.07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(150, 193, 237, 0.07) 1px, transparent 1px);
+    background-size: 72px 72px;
+    mask-image: radial-gradient(circle at 50% 50%, #000 10%, transparent 72%);
+    -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 10%, transparent 72%);
 }
-
-@keyframes intro-fade-in { to { opacity: 1; } }
 
 /* --------------------------------------------------------------------------
    Composición
@@ -85,128 +87,120 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--space-6);
+    gap: var(--space-5);
     padding: var(--space-8);
     text-align: center;
 }
 
-/* --- El símbolo --- */
+/* --- Símbolo --- */
 .intro-mark {
     position: relative;
-    width: clamp(88px, 18vmin, 132px);
+    width: clamp(64px, 12vmin, 92px);
     aspect-ratio: 1;
     color: var(--on-navy);
     opacity: 0;
-    animation: intro-mark-in 1100ms var(--ease-cinema) 150ms forwards;
+    animation: intro-mark-in 700ms var(--ease-cinema) 80ms forwards;
 }
 
 @keyframes intro-mark-in {
-    0% { opacity: 0; transform: scale(0.74) translateY(14px); filter: blur(6px); }
-    60% { opacity: 1; filter: blur(0); }
-    100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
+    0% { opacity: 0; transform: scale(0.6) rotate(-12deg); }
+    100% { opacity: 1; transform: scale(1) rotate(0); }
 }
 
 .intro-mark svg { width: 100%; height: 100%; }
 
-/* El asa se dibuja trazo a trazo.
+/* El asa se dibuja de un trazo.
    El JavaScript mide la longitud exacta con getTotalLength() y la escribe en
-   `--len`. El valor por defecto (19) es esa longitud calculada a mano sobre el
-   viewBox de 40: media circunferencia de radio 4,6 más dos tramos de 1,8 ≈ 18,1.
-   Si se pusiera un número mucho mayor, sin JavaScript el trazo se completaría
-   en el primer instante y el resto de la animación no se vería. */
+   `--len`. El valor por defecto (19) es esa longitud calculada sobre el
+   viewBox de 40: media circunferencia de radio 4,6 más dos tramos de 1,8. */
 .intro-mark .draw {
     stroke-dasharray: var(--len, 19);
     stroke-dashoffset: var(--len, 19);
-    animation: intro-draw 900ms var(--ease-cinema) var(--delay, 500ms) forwards;
+    animation: intro-draw 600ms var(--ease-cinema) 200ms forwards;
 }
 
 @keyframes intro-draw { to { stroke-dashoffset: 0; } }
 
-/* El cuerpo de la bolsa aparece tras el trazo */
 .intro-mark .fill {
     opacity: 0;
-    animation: intro-fade-in 700ms var(--ease-out) 620ms forwards;
+    animation: intro-appear 450ms var(--ease-out) 320ms forwards;
 }
 
-/* Barrido de luz sobre el símbolo: el "escaneo" de la lupa */
-.intro-mark-sweep {
-    position: absolute;
-    inset: -12%;
-    background: linear-gradient(
-        105deg,
-        transparent 38%,
-        rgba(255, 255, 255, 0.55) 50%,
-        transparent 62%
-    );
-    mix-blend-mode: overlay;
-    opacity: 0;
-    transform: translateX(-120%);
-    animation: intro-sweep 1100ms var(--ease-cinema) 1000ms forwards;
-    pointer-events: none;
-}
+@keyframes intro-appear { to { opacity: 1; } }
 
-@keyframes intro-sweep {
-    0% { opacity: 0; transform: translateX(-120%); }
-    25% { opacity: 1; }
-    75% { opacity: 1; }
-    100% { opacity: 0; transform: translateX(120%); }
-}
-
-/* --- El nombre --- */
-.intro-wordmark {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-3);
-}
-
+/* --------------------------------------------------------------------------
+   El nombre: cada palabra sube desde detrás de una máscara
+   -------------------------------------------------------------------------- */
 .intro-name {
     display: flex;
-    font-size: clamp(2rem, 7vmin, 3.25rem);
-    font-weight: 700;
-    letter-spacing: -0.03em;
-    line-height: 1;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0 0.28em;
+    font-size: clamp(2.25rem, 9vmin, 5rem);
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    line-height: 0.98;
     color: var(--on-navy);
 }
 
-/* Cada letra entra por separado, escalonada desde el JavaScript */
-.intro-letter {
+/* Cada palabra vive en una ventana que recorta lo que aún no ha subido */
+.intro-word {
     display: inline-block;
-    opacity: 0;
-    animation: intro-letter-in 700ms var(--ease-cinema) forwards;
-    animation-delay: calc(900ms + var(--i, 0) * 38ms);
+    overflow: hidden;
+    /* Sitio para las colas de las letras; sin esto la «y» se corta */
+    padding-bottom: 0.12em;
+    margin-bottom: -0.12em;
 }
 
-@keyframes intro-letter-in {
-    0% { opacity: 0; transform: translateY(26px) rotateX(-55deg); }
-    100% { opacity: 1; transform: translateY(0) rotateX(0); }
+.intro-word span {
+    display: inline-block;
+    transform: translateY(105%);
+    animation: intro-rise 800ms var(--ease-cinema) forwards;
+    animation-delay: calc(360ms + var(--w, 0) * 110ms);
 }
 
-/* La segunda palabra hereda el azul claro del logo */
-.intro-name .intro-letter.is-accent { color: var(--brand-300); }
+@keyframes intro-rise { to { transform: translateY(0); } }
 
-/* --- La línea de SHOP, calcada del logo --- */
+/* La segunda palabra toma el cian del acento */
+.intro-word.is-accent span {
+    background: linear-gradient(100deg, var(--brand-200), var(--accent));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+/* Si el navegador no recorta el fondo al texto, el color plano lo sustituye:
+   sin esto la palabra quedaría invisible. */
+@supports not ((background-clip: text) or (-webkit-background-clip: text)) {
+    .intro-word.is-accent span {
+        background: none;
+        color: var(--accent);
+    }
+}
+
+/* --- Línea inferior --- */
 .intro-sub {
     display: flex;
     align-items: center;
     gap: var(--space-4);
     opacity: 0;
-    animation: intro-fade-in 800ms var(--ease-out) 1500ms forwards;
+    animation: intro-appear 500ms var(--ease-out) 900ms forwards;
 }
 
 .intro-sub-rule {
-    width: clamp(28px, 7vmin, 52px);
+    width: clamp(24px, 6vmin, 46px);
     height: 1px;
-    background: var(--brand-400);
+    background: linear-gradient(90deg, transparent, var(--brand-300));
     transform: scaleX(0);
-    transform-origin: center;
-    animation: intro-rule 700ms var(--ease-cinema) 1600ms forwards;
+    animation: intro-rule 600ms var(--ease-cinema) 950ms forwards;
 }
+
+.intro-sub-rule:last-of-type { background: linear-gradient(90deg, var(--brand-300), transparent); }
 
 @keyframes intro-rule { to { transform: scaleX(1); } }
 
 .intro-sub-text {
-    font-size: clamp(0.75rem, 2.2vmin, 0.95rem);
+    font-size: clamp(0.6875rem, 1.9vmin, 0.85rem);
     font-weight: 600;
     letter-spacing: var(--tracking-widest);
     text-transform: uppercase;
@@ -214,50 +208,90 @@
     white-space: nowrap;
 }
 
-/* --- Lema --- */
-.intro-tagline {
-    max-width: 30ch;
-    font-size: clamp(0.8125rem, 2.4vmin, 0.95rem);
-    line-height: var(--leading-snug);
-    color: rgba(209, 221, 234, 0.75);
+/* --------------------------------------------------------------------------
+   Contador de carga
+   -------------------------------------------------------------------------- */
+.intro-count {
+    position: absolute;
+    left: var(--space-8);
+    bottom: var(--space-8);
+    z-index: 2;
+    display: flex;
+    align-items: baseline;
+    font-size: clamp(2.5rem, 9vmin, 5.5rem);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    color: var(--on-navy);
+    font-variant-numeric: tabular-nums;
     opacity: 0;
-    animation: intro-tagline-in 900ms var(--ease-cinema) 1750ms forwards;
+    animation: intro-appear 300ms var(--ease-out) 120ms forwards;
 }
 
-@keyframes intro-tagline-in {
-    0% { opacity: 0; transform: translateY(12px); }
-    100% { opacity: 1; transform: translateY(0); }
+/* El número se pinta desde la variable animada, no desde el texto */
+.intro-count-value::after {
+    content: counter(intro-n);
+    counter-reset: intro-n var(--intro-count);
+    animation: intro-tick 1250ms var(--ease-out) 120ms forwards;
 }
+
+@keyframes intro-tick { to { --intro-count: 100; } }
+
+/* Cuando el JavaScript lleva la cuenta, escribe el número como texto y el
+   pseudoelemento se aparta para no duplicarlo. */
+.intro-count.is-scripted .intro-count-value::after { content: none; }
+
+.intro-count-unit {
+    margin-left: 0.08em;
+    font-size: 0.42em;
+    font-weight: 700;
+    color: var(--brand-300);
+}
+
+/* Barra de avance a lo ancho del pie */
+.intro-progress {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 3px;
+    width: 100%;
+    transform-origin: left;
+    transform: scaleX(0);
+    background: linear-gradient(90deg, var(--brand-600), var(--brand-300), var(--accent));
+    animation: intro-progress 1400ms var(--ease-out) forwards;
+}
+
+@keyframes intro-progress { to { transform: scaleX(1); } }
 
 /* --------------------------------------------------------------------------
    Saltar
    -------------------------------------------------------------------------- */
 .intro-skip {
     position: absolute;
-    right: var(--space-5);
-    bottom: var(--space-5);
+    right: var(--space-6);
+    bottom: var(--space-8);
     z-index: 2;
     display: inline-flex;
     align-items: center;
     gap: var(--space-2);
-    /* Área táctil cómoda desde el principio */
     min-height: 44px;
     padding: var(--space-2) var(--space-5);
-    background: rgba(255, 255, 255, 0.07);
-    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.18);
     border-radius: var(--radius-full);
-    color: rgba(255, 255, 255, 0.8);
+    color: rgba(255, 255, 255, 0.82);
     font-size: var(--text-xs);
     font-weight: 600;
+    letter-spacing: var(--tracking-wide);
     opacity: 0;
-    animation: intro-fade-in 500ms var(--ease-out) 700ms forwards;
+    animation: intro-appear 400ms var(--ease-out) 500ms forwards;
     transition: background-color var(--duration-fast) var(--ease-out),
                 color var(--duration-fast) var(--ease-out);
 }
 
 .intro-skip:hover {
-    background: rgba(255, 255, 255, 0.14);
-    color: #ffffff;
+    background: rgba(255, 255, 255, 0.16);
+    color: var(--on-navy);
 }
 
 .intro-skip:focus-visible {
@@ -265,26 +299,11 @@
     outline-offset: 3px;
 }
 
-/* Barra de progreso de la secuencia: indica que hay un final */
-.intro-progress {
-    position: absolute;
-    left: 0;
-    bottom: 0;
-    height: 2px;
-    width: 100%;
-    transform-origin: left;
-    transform: scaleX(0);
-    background: linear-gradient(90deg, var(--brand-700), var(--brand-300));
-    animation: intro-progress 2200ms linear forwards;
-}
-
-@keyframes intro-progress { to { transform: scaleX(1); } }
-
 /* --------------------------------------------------------------------------
-   Respeto por las preferencias del sistema
+   Preferencias del sistema
 
-   Con movimiento reducido no se anima nada: la capa aparece un instante y se
-   retira. Mantenerla visible sin animación sería peor que no mostrarla.
+   Con movimiento reducido la capa no aparece: mostrarla quieta sería peor que
+   no mostrarla, y el objetivo —llegar al foro— se cumple igual.
    -------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
     .intro,
@@ -299,11 +318,21 @@
 /* --------------------------------------------------------------------------
    Pantallas pequeñas
    -------------------------------------------------------------------------- */
-@media (max-width: 480px) {
-    .intro-stage { gap: var(--space-5); padding: var(--space-6); }
-    .intro-skip { right: 50%; transform: translateX(50%); bottom: var(--space-8); }
-    .intro::after { background-size: 40px 40px; }
+@media (max-width: 560px) {
+    .intro-stage { gap: var(--space-4); padding: var(--space-5); }
+
+    .intro-count {
+        left: var(--space-5);
+        bottom: var(--space-6);
+    }
+
+    .intro-skip {
+        right: var(--space-5);
+        bottom: var(--space-6);
+        padding-inline: var(--space-4);
+    }
+
+    .intro::after { background-size: 44px 44px; }
 }
 
-/* La capa no debe dejar rastro una vez terminada */
 .intro[hidden] { display: none !important; }

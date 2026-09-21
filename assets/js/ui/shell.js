@@ -563,13 +563,9 @@
         if (!toggle) return;
 
         toggle.addEventListener('click', () => {
-            // En páginas con filtros, el botón abre el panel lateral.
-            const panel = $('.filters-panel');
-            if (panel) {
-                global.DiscoveryShell.toggleFilters();
-                return;
-            }
-
+            // Antes, en el feed este botón abría los filtros y dejaba la
+            // navegación sin acceso en móvil. Los filtros ya tienen su propio
+            // botón flotante, así que este es siempre el menú.
             global.modal.open({
                 title: 'Navegación',
                 size: 'sm',

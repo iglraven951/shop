@@ -5,17 +5,69 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DiscoveryShop · Foro de artículos de segunda mano en Arequipa</title>
     <meta name="description" content="Foro arequipeño para promocionar artículos de segunda mano. Publica, comenta y conecta con vecinos de los 18 distritos. Sin comisiones ni pagos en la plataforma.">
-    <meta name="theme-color" content="#08090c">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><text y='16' font-size='16'>🛍️</text></svg>">
+    <meta name="theme-color" content="#070c14">
+    <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
+    <link rel="apple-touch-icon" href="assets/img/logo.png">
     <link rel="manifest" href="site.webmanifest">
     <link rel="stylesheet" href="assets/css/tokens.css">
     <link rel="stylesheet" href="assets/css/base.css">
     <link rel="stylesheet" href="assets/css/components.css">
     <link rel="stylesheet" href="assets/css/layout.css">
+    <link rel="stylesheet" href="assets/css/intro.css">
     <link rel="stylesheet" href="assets/css/pages/feed.css">
 </head>
 <body>
     <a class="skip-link" href="#main">Saltar al contenido</a>
+
+    <!-- ===================== Entrada cinematográfica =====================
+         Solo en la portada y solo una vez por sesión. La secuencia está en
+         CSS y se retira sola, así que sigue funcionando sin JavaScript.
+         `aria-hidden` la mantiene fuera del árbol de accesibilidad: es
+         decorativa, y el contenido real ya está debajo. -->
+    <div class="intro" id="intro" aria-hidden="true">
+        <div class="intro-stage">
+            <div class="intro-mark">
+                <svg viewBox="0 0 40 40" fill="none">
+                    <!-- Panel lateral -->
+                    <path class="fill" d="M13.4 10.6 9.1 29.4a1.1 1.1 0 0 0 1.07 1.35h3.23Z"
+                          fill="currentColor" opacity="0.45"/>
+
+                    <!-- Asa: se dibuja primero -->
+                    <path class="draw"
+                          d="M16.6 11.2V9.4a4.6 4.6 0 0 1 9.2 0v1.8"
+                          stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+
+                    <mask id="intro-lens">
+                        <rect width="40" height="40" fill="#fff"/>
+                        <circle cx="21.3" cy="19.4" r="5.2" fill="none" stroke="#000" stroke-width="2.1"/>
+                        <path d="m25.2 23.3 4.6 4.6" stroke="#000" stroke-width="2.3" stroke-linecap="round"/>
+                    </mask>
+
+                    <!-- Cuerpo con la lupa recortada -->
+                    <path class="fill"
+                          d="M13.4 10.6h15.9a1.6 1.6 0 0 1 1.6 1.45l1.62 17.1a1.6 1.6 0 0 1-1.6 1.75H10.9a1.1 1.1 0 0 1-1.07-1.35Z"
+                          fill="currentColor" mask="url(#intro-lens)"/>
+                </svg>
+            </div>
+
+            <!-- El script separa las palabras para subirlas por turnos.
+                 Se deja como una sola cadena para buscadores y lectores. -->
+            <p class="intro-name">Discovery Shop</p>
+
+            <p class="intro-sub">
+                <span class="intro-sub-rule"></span>
+                <span class="intro-sub-text">Arequipa · Perú</span>
+                <span class="intro-sub-rule"></span>
+            </p>
+        </div>
+
+        <p class="intro-count">
+            <span class="intro-count-value"></span><span class="intro-count-unit">%</span>
+        </p>
+
+        <button class="intro-skip" type="button">Saltar</button>
+        <span class="intro-progress"></span>
+    </div>
 
     <div id="app-header"></div>
 
@@ -26,9 +78,14 @@
              cuando alguien busca, lo que importa es el feed, no la portada. -->
         <section class="feed-hero" id="feed-hero" aria-labelledby="feed-hero-title">
             <div class="feed-hero-inner">
+                <!-- Las dos reglas y el texto en versalitas calcan la línea
+                     «Arequipa · Perú» de la entrada cinematográfica: al
+                     apartarse la intro, la portada la recoge donde la dejó. -->
                 <p class="feed-hero-eyebrow">
+                    <span class="feed-hero-rule" aria-hidden="true"></span>
                     <span class="feed-hero-dot" aria-hidden="true"></span>
-                    Foro vecinal · Arequipa, Perú
+                    <span class="feed-hero-eyebrow-text">Foro vecinal · Arequipa, Perú</span>
+                    <span class="feed-hero-rule" aria-hidden="true"></span>
                 </p>
 
                 <h1 class="feed-hero-title" id="feed-hero-title">
@@ -275,6 +332,8 @@
     <div id="app-footer"></div>
 
     <!-- Núcleo (este orden es obligatorio) -->
+    <!-- La intro va primero: en la segunda visita debe retirarse antes de verse -->
+    <script src="assets/js/ui/intro.js"></script>
     <script src="assets/js/core/seed.js"></script>
     <script src="assets/js/core/mock-api.js"></script>
     <script src="assets/js/core/store.js"></script>

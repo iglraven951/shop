@@ -9,25 +9,32 @@
        Escala de marca
        Tomada del logo: el triángulo lateral (400), el texto «SHOP» (500), el
        cuerpo de la bolsa (700), el asa (800) y el texto «Discovery» (900).
-       Los pasos intermedios se interpolaron entre esos anclajes.
+
+       Sobre esos anclajes se subió la saturación ×1,85 conservando matiz
+       (211-214°) y luminosidad. El azul original es elegante pero se percibe
+       apagado en pantalla; así sigue siendo el mismo azul de la marca, con
+       la fuerza que pide una interfaz. El contraste no cambia, porque solo
+       cambia la saturación: el paso 300 mantiene 7,48 sobre oscuro y el 700
+       llega a 10,27 sobre claro.
 
        Contraste medido sobre los fondos de cada tema:
-         300 → 7.65 sobre oscuro   (acento del tema oscuro)
-         700 → 10.58 sobre claro   (acento del tema claro)
+         300 → 7.48 sobre oscuro   (acento del tema oscuro)
+         700 → 10.27 sobre claro   (acento del tema claro)
        Los pasos 600-950 no alcanzan AA sobre fondo oscuro: no usarlos ahí
        para texto, solo como superficie o borde.
+       `tests/contrast.test.mjs` verifica todo esto en cada push.
        ---------------------------------------------------------------------- */
-    --brand-50:  #e4ebf3;
-    --brand-100: #d1ddea;
-    --brand-200: #aac1d9;
-    --brand-300: #84a5c8;
-    --brand-400: #5e89b7;
-    --brand-500: #537896;
-    --brand-600: #335c82;
-    --brand-700: #12406e;
-    --brand-800: #0d3962;
-    --brand-900: #092c5b;
-    --brand-950: #07244a;
+    --brand-50:  #deebf9;
+    --brand-100: #c6ddf5;
+    --brand-200: #96c1ed;
+    --brand-300: #67a4e5;
+    --brand-400: #3888dd;
+    --brand-500: #377bb2;
+    --brand-600: #115da4;
+    --brand-700: #004080;
+    --brand-800: #00396f;
+    --brand-900: #002b64;
+    --brand-950: #002351;
 
     /* --- Escala de grises (tema oscuro por defecto) ---
        Con un tinte azulado heredado de la marca: un gris neutro junto a un
@@ -40,25 +47,28 @@
     --bg-hover: #1d2942;
 
     /* --- Bordes --- */
-    --border-subtle: rgba(132, 165, 200, 0.10);
-    --border-default: rgba(132, 165, 200, 0.18);
-    --border-strong: rgba(132, 165, 200, 0.32);
+    --border-subtle: rgba(103, 164, 229, 0.12);
+    --border-default: rgba(103, 164, 229, 0.2);
+    --border-strong: rgba(103, 164, 229, 0.38);
 
     /* --- Texto --- */
     --text-primary: #eef3f9;
     --text-secondary: #a3b4ca;
-    --text-muted: #6a7c95;
+    /* Medido: con #6a7c95 el texto tenue se quedaba en 3,77 sobre --bg-overlay,
+       por debajo del 4,5 que exige AA. Este valor llega a 4,51 en la peor
+       superficie del tema. Ver tests/contrast.test.mjs. */
+    --text-muted: #7989a0;
     --text-inverse: #070c14;
 
     /* --- Marca aplicada --- */
     --brand: var(--brand-300);
     --brand-hover: var(--brand-200);
     --brand-active: var(--brand-400);
-    --brand-soft: rgba(132, 165, 200, 0.14);
-    --brand-ring: rgba(132, 165, 200, 0.45);
+    --brand-soft: rgba(103, 164, 229, 0.16);
+    --brand-ring: rgba(103, 164, 229, 0.5);
     /* Texto sobre un relleno de marca: en oscuro el acento es claro, así que
        encima va el azul más profundo del logo. */
-    --brand-contrast: #06203f;
+    --brand-contrast: #041d3d;
 
     /* Texto sobre el azul de marca cuando ese fondo NO cambia con el tema
        (el panel lateral de acceso, el símbolo de la cabecera, la intro).
@@ -66,23 +76,25 @@
     --on-navy: #ffffff;
     --on-navy-soft: rgba(255, 255, 255, 0.72);
 
-    --accent: #4fc3d9;
-    --accent-soft: rgba(79, 195, 217, 0.14);
+    /* Cian eléctrico: análogo al azul de marca, de ahí que combine, pero muy
+       saturado. Es el color que aporta la chispa que al azul solo le falta. */
+    --accent: #22d3ee;
+    --accent-soft: rgba(34, 211, 238, 0.16);
 
-    /* --- Semánticos --- */
-    --success: #48c79a;
-    --success-soft: rgba(72, 199, 154, 0.14);
-    --warning: #e9b44c;
-    --warning-soft: rgba(233, 180, 76, 0.14);
-    --danger: #ef7676;
-    --danger-soft: rgba(239, 118, 118, 0.14);
+    /* --- Semánticos, saturados para acompañar a la marca --- */
+    --success: #2ee8a5;
+    --success-soft: rgba(46, 232, 165, 0.16);
+    --warning: #fbbf24;
+    --warning-soft: rgba(251, 191, 36, 0.16);
+    --danger: #ff6b7a;
+    --danger-soft: rgba(255, 107, 122, 0.16);
     --info: var(--brand-300);
-    --info-soft: rgba(132, 165, 200, 0.14);
+    --info-soft: rgba(103, 164, 229, 0.16);
 
     /* --- Gradientes --- */
-    --gradient-brand: linear-gradient(135deg, #12406e 0%, #335c82 45%, #5e89b7 100%);
-    --gradient-surface: linear-gradient(180deg, rgba(132, 165, 200, 0.05), rgba(132, 165, 200, 0));
-    --gradient-glow: radial-gradient(60% 60% at 50% 0%, rgba(94, 137, 183, 0.20), transparent 70%);
+    --gradient-brand: linear-gradient(135deg, #004080 0%, #115da4 40%, #3888dd 78%, #22d3ee 100%);
+    --gradient-surface: linear-gradient(180deg, rgba(103, 164, 229, 0.06), rgba(103, 164, 229, 0));
+    --gradient-glow: radial-gradient(65% 65% at 50% 0%, rgba(56, 136, 221, 0.28), transparent 72%);
 
     /* --- Tipografía --- */
     --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -136,7 +148,7 @@
     --shadow-md: 0 4px 14px rgba(3, 8, 18, 0.55);
     --shadow-lg: 0 14px 36px rgba(3, 8, 18, 0.6);
     --shadow-xl: 0 26px 64px rgba(3, 8, 18, 0.7);
-    --shadow-glow: 0 0 0 1px var(--brand-ring), 0 10px 36px rgba(94, 137, 183, 0.28);
+    --shadow-glow: 0 0 0 1px var(--brand-ring), 0 10px 40px rgba(56, 136, 221, 0.4);
 
     /* --- Movimiento --- */
     --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
@@ -176,40 +188,47 @@
     --bg-overlay: #ffffff;
     --bg-hover: #eef3f9;
 
-    --border-subtle: rgba(9, 44, 91, 0.09);
-    --border-default: rgba(9, 44, 91, 0.16);
-    --border-strong: rgba(9, 44, 91, 0.28);
+    --border-subtle: rgba(0, 43, 100, 0.10);
+    --border-default: rgba(0, 43, 100, 0.18);
+    --border-strong: rgba(0, 43, 100, 0.30);
 
     --text-primary: #08203c;
     --text-secondary: #40597a;
-    --text-muted: #6f829c;
+    /* Igual que en oscuro: el valor anterior (#6f829c) caía a 3,36 sobre
+       --bg-sunken. Este alcanza 4,55 en la peor superficie. */
+    --text-muted: #5b6d85;
     --text-inverse: #ffffff;
 
     --brand: var(--brand-700);
     --brand-hover: var(--brand-800);
     --brand-active: var(--brand-900);
-    --brand-soft: rgba(18, 64, 110, 0.09);
-    --brand-ring: rgba(18, 64, 110, 0.38);
+    --brand-soft: rgba(0, 64, 128, 0.10);
+    --brand-ring: rgba(0, 64, 128, 0.42);
     --brand-contrast: #ffffff;
 
-    --accent: #0e7f97;
-    --accent-soft: rgba(14, 127, 151, 0.10);
+    /* Los cuatro semánticos se oscurecieron hasta alcanzar AA sobre la peor
+       superficie clara (--bg-sunken). Solo se movió la luminosidad, para no
+       desplazar el matiz. Los valores previos daban 3,7-4,4. */
+    --accent: #0d758b;
+    --accent-soft: rgba(13, 117, 139, 0.10);
 
-    --success: #0f8a63;
-    --success-soft: rgba(15, 138, 99, 0.10);
-    --warning: #a1660c;
-    --warning-soft: rgba(161, 102, 12, 0.10);
-    --danger: #c2413f;
-    --danger-soft: rgba(194, 65, 63, 0.10);
+    --success: #0d7a57;
+    --success-soft: rgba(13, 122, 87, 0.10);
+    --warning: #955e0b;
+    --warning-soft: rgba(149, 94, 11, 0.10);
+    /* #bf3f3d daba exactamente 4,4999: se queda en el filo del umbral.
+       Este deja un margen real (4,59). */
+    --danger: #bd3e3c;
+    --danger-soft: rgba(189, 62, 60, 0.10);
     --info: var(--brand-700);
     --info-soft: rgba(18, 64, 110, 0.09);
 
-    --gradient-surface: linear-gradient(180deg, rgba(9, 44, 91, 0.025), rgba(9, 44, 91, 0));
-    --gradient-glow: radial-gradient(60% 60% at 50% 0%, rgba(18, 64, 110, 0.10), transparent 70%);
+    --gradient-surface: linear-gradient(180deg, rgba(0, 43, 100, 0.03), rgba(0, 43, 100, 0));
+    --gradient-glow: radial-gradient(65% 65% at 50% 0%, rgba(0, 64, 128, 0.14), transparent 72%);
 
-    --shadow-sm: 0 1px 2px rgba(9, 44, 91, 0.07);
-    --shadow-md: 0 4px 14px rgba(9, 44, 91, 0.09);
-    --shadow-lg: 0 14px 36px rgba(9, 44, 91, 0.12);
-    --shadow-xl: 0 26px 64px rgba(9, 44, 91, 0.16);
-    --shadow-glow: 0 0 0 1px var(--brand-ring), 0 10px 36px rgba(18, 64, 110, 0.20);
+    --shadow-sm: 0 1px 2px rgba(0, 43, 100, 0.07);
+    --shadow-md: 0 4px 14px rgba(0, 43, 100, 0.09);
+    --shadow-lg: 0 14px 36px rgba(0, 43, 100, 0.12);
+    --shadow-xl: 0 26px 64px rgba(0, 43, 100, 0.16);
+    --shadow-glow: 0 0 0 1px var(--brand-ring), 0 10px 36px rgba(0, 64, 128, 0.24);
 }

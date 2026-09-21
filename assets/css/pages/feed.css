@@ -1,45 +1,109 @@
 /* ==========================================================================
    DiscoveryShop · Feed del foro
-   Solo lo propio de esta página: la portada compacta, sus cifras y el
-   rediseño del panel de filtros. La tarjeta de publicación, la columna del
-   feed, la paginación y el armazón del panel viven en layout.css.
+
+   Solo lo propio de esta página: la portada, sus cifras, el panel de filtros
+   y el afinado de la tarjeta de publicación cuando actúa de protagonista.
+   La tarjeta, la columna del feed, la paginación y el armazón del panel viven
+   en layout.css y desde aquí no se redefinen: se ajustan bajo `.feed-section`.
+
+   Movimiento: `--ease-cinema` para las entradas protagonistas (la portada, la
+   apertura de un grupo de filtros, el cajón lateral) y `--ease-out` para lo
+   pequeño (un hover, un cambio de color). Así el sitio tiene dos velocidades
+   en lugar de una sola, plana.
    ========================================================================== */
 
-/* --------------------------------------------------------------------------
-   Portada compacta
-   El feed es lo importante, así que la portada ocupa lo justo para explicar
-   qué es DiscoveryShop y dar dos salidas claras.
-   -------------------------------------------------------------------------- */
+/* ==========================================================================
+   1. Portada
+
+   La entrada cinematográfica termina sobre un azul profundo con un halo que
+   respira. Cuando se aparta, esto es lo primero que se ve: mismo halo, misma
+   rejilla tenue, misma curva de movimiento. No es una página nueva, es el
+   siguiente plano de la misma secuencia.
+   ========================================================================== */
 .feed-hero {
     position: relative;
     isolation: isolate;
-    padding: var(--space-12) var(--space-5) var(--space-10);
+    /* Encuadre generoso: la primera pantalla necesita aire para respirar */
+    padding:
+        clamp(var(--space-12), 9vw, var(--space-20))
+        var(--space-5)
+        clamp(var(--space-10), 6vw, var(--space-16));
     background: var(--gradient-glow);
     border-bottom: 1px solid var(--border-subtle);
     text-align: center;
     overflow: hidden;
 }
 
-.feed-hero-inner {
-    max-width: 720px;
-    margin-inline: auto;
-    animation: fade-in-up var(--duration-slow) var(--ease-out) both;
+/* Segundo halo, más ancho y más bajo que el del token: prolonga el resplandor
+   con el que se despide la intro en lugar de cortarlo en seco. */
+.feed-hero::before {
+    content: "";
+    position: absolute;
+    inset: -40% 0 auto;
+    z-index: -2;
+    height: 150%;
+    background: radial-gradient(
+        50% 50% at 50% 38%,
+        color-mix(in srgb, var(--brand) 16%, transparent) 0%,
+        transparent 72%);
+    pointer-events: none;
 }
 
+/* La misma rejilla de la intro, desvanecida hacia los bordes. Sin ella el
+   degradado se ve plano en pantallas grandes. */
+.feed-hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background-image:
+        linear-gradient(color-mix(in srgb, var(--brand) 13%, transparent) 1px, transparent 1px),
+        linear-gradient(90deg, color-mix(in srgb, var(--brand) 13%, transparent) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(56% 72% at 50% 16%, var(--bg-base) 0%, transparent 74%);
+    -webkit-mask-image: radial-gradient(56% 72% at 50% 16%, var(--bg-base) 0%, transparent 74%);
+    opacity: 0.65;
+    pointer-events: none;
+}
+
+.feed-hero-inner {
+    position: relative;
+    max-width: 760px;
+    margin-inline: auto;
+}
+
+/* --------------------------------------------------------------------------
+   Antetítulo: la línea «Arequipa · Perú» de la intro, recogida aquí
+   -------------------------------------------------------------------------- */
 .feed-hero-eyebrow {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: var(--space-2);
-    max-width: 100%;
-    margin-bottom: var(--space-4);
-    padding: var(--space-2) var(--space-4);
-    background: var(--bg-surface);
-    border: 1px solid var(--border-default);
-    border-radius: var(--radius-full);
+    justify-content: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-5);
     color: var(--text-secondary);
     font-size: var(--text-2xs);
     font-weight: 600;
+    letter-spacing: var(--tracking-widest);
+    text-transform: uppercase;
     line-height: var(--leading-snug);
+}
+
+.feed-hero-eyebrow-text {
+    min-width: 0;
+    overflow-wrap: break-word;
+}
+
+/* Las reglas se desvanecen hacia fuera para que el texto quede centrado en
+   un trazo, no encerrado entre dos palos. */
+.feed-hero-rule {
+    flex: 0 1 clamp(20px, 6vw, 56px);
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--brand-ring));
+}
+
+.feed-hero-rule:last-child {
+    background: linear-gradient(90deg, var(--brand-ring), transparent);
 }
 
 .feed-hero-dot {
@@ -52,30 +116,48 @@
     animation: pulse-soft 2.4s var(--ease-in-out) infinite;
 }
 
+/* --------------------------------------------------------------------------
+   Titular y subtítulo
+   -------------------------------------------------------------------------- */
 .feed-hero-title {
     /* clamp evita que el titular desborde en pantallas estrechas */
-    font-size: clamp(var(--text-2xl), 6.4vw, var(--text-3xl));
+    font-size: clamp(var(--text-2xl), 6.2vw, var(--text-4xl));
     line-height: var(--leading-tight);
     letter-spacing: var(--tracking-tight);
     text-wrap: balance;
-    margin-bottom: var(--space-3);
+    margin-bottom: var(--space-4);
 }
 
+/* El degradado se construye con los tokens del tema, no con los colores fijos
+   del logo: sobre fondo oscuro el azul profundo del logo no llega a AA, y la
+   mitad de la frase quedaría ilegible. Con `--brand-hover → --brand-active`
+   los tres pasos alcanzan contraste suficiente en ambos temas. */
 .feed-hero-highlight {
     display: inline-block;
-    background: var(--gradient-brand);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    /* Respaldo si el navegador no recorta el fondo al texto */
-    -webkit-text-fill-color: transparent;
+    color: var(--brand);
+    background-image: linear-gradient(
+        100deg,
+        var(--brand-hover) 0%,
+        var(--brand) 48%,
+        var(--brand-active) 100%);
+}
+
+/* El color transparente solo se aplica si el navegador sabe recortar el fondo
+   al texto; de lo contrario la frase desaparecería. */
+@supports (background-clip: text) or (-webkit-background-clip: text) {
+    .feed-hero-highlight {
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        -webkit-text-fill-color: transparent;
+    }
 }
 
 .feed-hero-subtitle {
-    max-width: 62ch;
-    margin: 0 auto var(--space-6);
+    max-width: 58ch;
+    margin: 0 auto clamp(var(--space-6), 3vw, var(--space-8));
     color: var(--text-secondary);
-    font-size: var(--text-sm);
+    font-size: clamp(var(--text-sm), 1.4vw, var(--text-base));
     line-height: var(--leading-normal);
     text-wrap: pretty;
 }
@@ -85,28 +167,40 @@
     flex-wrap: wrap;
     justify-content: center;
     gap: var(--space-3);
-    margin-bottom: var(--space-8);
+    margin-bottom: clamp(var(--space-8), 5vw, var(--space-12));
 }
 
-/* --- Cifras vivas --- */
+/* --------------------------------------------------------------------------
+   Cifras vivas
+
+   Antes eran tres cajas pequeñas que competían con los botones. Ahora son tres
+   cifras con peso, separadas por una línea fina: el número manda y la etiqueta
+   lo acompaña en versalitas, como la línea «SHOP» del logo.
+   -------------------------------------------------------------------------- */
 .feed-stats {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: var(--space-3);
-    max-width: 560px;
+    max-width: 620px;
     margin-inline: auto;
+    padding-top: clamp(var(--space-5), 3vw, var(--space-8));
+    border-top: 1px solid var(--border-subtle);
 }
 
 .feed-stat {
+    /* El marcado va etiqueta → valor, como exige un `<dl>`; el orden visual se
+       invierte aquí para que la cifra encabece sin tocar la semántica. */
     display: flex;
     flex-direction: column-reverse;
     align-items: center;
-    gap: var(--space-1);
+    justify-content: flex-end;
+    gap: var(--space-2);
     min-width: 0;
-    padding: var(--space-3) var(--space-2);
-    background: var(--bg-surface);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-md);
+    padding-inline: var(--space-3);
+}
+
+/* Separador sutil entre cifras: una línea, no una caja por número */
+.feed-stat + .feed-stat {
+    border-left: 1px solid var(--border-subtle);
 }
 
 .feed-stat-label {
@@ -116,21 +210,59 @@
     letter-spacing: var(--tracking-wide);
     text-transform: uppercase;
     text-align: center;
+    text-wrap: balance;
     line-height: var(--leading-snug);
 }
 
 .feed-stat-value {
     margin: 0;
     color: var(--text-primary);
-    font-size: var(--text-xl);
-    font-weight: 700;
+    font-size: clamp(var(--text-2xl), 4.2vw, var(--text-3xl));
+    font-weight: 750;
+    /* Cifras de ancho fijo: al actualizarse no dan un salto lateral */
     font-variant-numeric: tabular-nums;
+    letter-spacing: var(--tracking-tight);
     line-height: 1;
 }
 
 /* --------------------------------------------------------------------------
-   Columna de resultados
+   Entrada escalonada
+
+   El desenfoque inicial es el mismo recurso que usa el símbolo de la intro al
+   aparecer: enfoca al llegar, en lugar de solo desplazarse.
    -------------------------------------------------------------------------- */
+@keyframes feed-hero-rise {
+    from { opacity: 0; transform: translateY(20px); filter: blur(6px); }
+    to   { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+.feed-hero-eyebrow,
+.feed-hero-title,
+.feed-hero-subtitle,
+.feed-hero-actions {
+    animation: feed-hero-rise 760ms var(--ease-cinema) backwards;
+}
+
+.feed-hero-eyebrow { animation-delay: 60ms; }
+.feed-hero-title { animation-delay: 150ms; }
+.feed-hero-subtitle { animation-delay: 240ms; }
+.feed-hero-actions { animation-delay: 330ms; }
+
+/* Las cifras entran una tras otra. El retardo va por posición y no desde el
+   JavaScript porque el feed no es dueño de este archivo: con tres hijos fijos,
+   `nth-child` basta y no añade ni una línea de código. */
+.feed-stat {
+    animation: feed-hero-rise 640ms var(--ease-cinema) backwards;
+}
+
+.feed-stat:nth-child(1) { animation-delay: 430ms; }
+.feed-stat:nth-child(2) { animation-delay: 510ms; }
+.feed-stat:nth-child(3) { animation-delay: 590ms; }
+
+/* ==========================================================================
+   2. Columna de resultados
+   ========================================================================== */
+
 /* El foro es una columna de lectura: sin este tope, la cabecera y la
    paginación quedarían mucho más anchas que las publicaciones. */
 .feed-section .page-shell { max-width: 1080px; }
@@ -146,6 +278,19 @@
 
 .feed-results-heading { min-width: 0; }
 
+/* Una línea fina cierra la cabecera y separa el recuento de los resultados.
+   Solo se tocan `padding` y `border`: la alineación la sigue gobernando
+   layout.css, que en móvil la cambia a `flex-start`. */
+.feed-section .results-header {
+    padding-bottom: var(--space-4);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.feed-section .results-title {
+    letter-spacing: var(--tracking-tight);
+    text-wrap: balance;
+}
+
 /* Aviso de «viendo solo a esta persona», con salida a un clic */
 .feed-author-note {
     display: flex;
@@ -158,6 +303,7 @@
     background: var(--brand-soft);
     border: 1px solid var(--brand-ring);
     border-radius: var(--radius-md);
+    animation: fade-in-up var(--duration-base) var(--ease-cinema);
 }
 
 .feed-author-note-text {
@@ -169,20 +315,38 @@
 
 .feed-author-note-text strong { color: var(--text-primary); }
 
-/* --------------------------------------------------------------------------
-   Panel de filtros rediseñado
-   Cada grupo es un <details> plegable con un resumen del valor elegido a la
-   derecha: se ve de un vistazo qué está aplicado sin abrir nada.
-   -------------------------------------------------------------------------- */
+/* ==========================================================================
+   3. Panel de filtros
 
-/* Pastilla con el número de filtros activos, junto al título del panel */
+   Cada grupo es un `<details>` plegable con el valor aplicado a la derecha: se
+   ve de un vistazo qué está filtrando sin abrir nada. El problema no era el
+   funcionamiento, era la densidad: todo pesaba lo mismo y costaba encontrar el
+   nombre del grupo entre el resumen y el chevron.
+   ========================================================================== */
+
+/* Solo `padding`: el radio y la posición del cajón deslizante los fija
+   layout.css en su media query y aquí ganaríamos por especificidad. */
+.feed-section .filters-panel {
+    padding: var(--space-5) var(--space-4) var(--space-6);
+}
+
+/* La cabecera se separa del primer grupo con una línea, no con un hueco */
+.feed-section .filters-header {
+    margin-bottom: var(--space-4);
+    padding-bottom: var(--space-4);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+/* Pastilla con el número de filtros activos: el color de marca y un halo de
+   marca la sacan del gris del título. */
 .filters-count {
     display: grid;
     place-items: center;
-    min-width: 20px;
-    height: 20px;
-    padding-inline: 6px;
+    min-width: 22px;
+    height: 22px;
+    padding-inline: var(--space-2);
     background: var(--brand);
+    box-shadow: 0 0 0 3px var(--brand-soft);
     border-radius: var(--radius-full);
     color: var(--brand-contrast);
     font-size: var(--text-3xs);
@@ -216,15 +380,24 @@
     color: var(--text-primary);
 }
 
-/* --- Cabecera plegable de cada grupo --- */
+.filters-close:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   Cabecera plegable de cada grupo
+   -------------------------------------------------------------------------- */
 .filter-summary {
     display: flex;
     align-items: center;
-    gap: var(--space-2);
-    min-height: 44px;
-    padding: var(--space-2) var(--space-2);
-    margin-inline: calc(var(--space-2) * -1);
-    border-radius: var(--radius-sm);
+    gap: var(--space-3);
+    min-height: 46px;
+    padding: var(--space-2) var(--space-3);
+    /* Los márgenes negativos hacen que el fondo del hover llegue al borde del
+       panel, en lugar de dejar dos franjas muertas a los lados. */
+    margin-inline: calc(var(--space-3) * -1);
+    border-radius: var(--radius-md);
     cursor: pointer;
     user-select: none;
     transition: background-color var(--duration-fast) var(--ease-out);
@@ -242,42 +415,68 @@
     outline-offset: 2px;
 }
 
-/* El nombre cede primero y se parte en dos líneas si hace falta: así el
-   resumen de la derecha nunca se recorta en un panel estrecho. */
+/* El nombre es lo primero que se lee: tamaño de cuerpo y color principal. Cede
+   primero y se parte en dos líneas si hace falta, para que el resumen de la
+   derecha nunca se recorte en un panel estrecho. */
 .filter-summary-name {
     flex: 1 1 auto;
     min-width: 0;
     color: var(--text-primary);
-    font-size: var(--text-xs);
-    font-weight: 700;
+    font-size: var(--text-sm);
+    font-weight: 650;
+    letter-spacing: var(--tracking-tight);
     line-height: var(--leading-snug);
 }
 
-/* Tope del 60 %: «José Luis Bustamante y Rivero» no puede desbordar */
+/* El resumen es información secundaria: va en pastilla, no en texto suelto,
+   para leerse como «lo que hay puesto» y no como parte del nombre.
+   Tope del 56 %: «José Luis Bustamante y Rivero» no puede desbordar. */
 .filter-summary-value {
     flex: 0 0 auto;
     min-width: 0;
-    max-width: 60%;
+    max-width: 56%;
+    padding: 3px var(--space-2);
+    border-radius: var(--radius-full);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     text-align: right;
     color: var(--text-muted);
     font-size: var(--text-2xs);
-    font-variant-numeric: tabular-nums;
-}
-
-.filter-summary-value.is-active {
-    color: var(--brand);
     font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    transition: background-color var(--duration-fast) var(--ease-out),
+                color var(--duration-fast) var(--ease-out);
 }
 
+/* Con filtro puesto la pastilla se enciende en color de marca: es la señal de
+   que ese grupo está acotando los resultados. */
+.filter-summary-value.is-active {
+    background: var(--brand-soft);
+    color: var(--brand);
+}
+
+/* El chevron vive en su propio carril circular: siempre en el mismo sitio,
+   pase lo que pase con el largo del nombre o del resumen. El relleno va en
+   `--bg-hover` y no en `--bg-raised` porque en tema claro este último es
+   blanco, el mismo del panel, y el carril desaparecería. */
 .filter-chevron {
     display: grid;
     place-items: center;
     flex-shrink: 0;
-    color: var(--text-muted);
-    transition: transform var(--duration-base) var(--ease-out);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--bg-hover);
+    color: var(--text-secondary);
+    transition: transform var(--duration-base) var(--ease-cinema),
+                background-color var(--duration-fast) var(--ease-out),
+                color var(--duration-fast) var(--ease-out);
+}
+
+.filter-summary:hover .filter-chevron {
+    background: var(--brand-soft);
+    color: var(--brand);
 }
 
 .filter-group[open] > .filter-summary > .filter-chevron { transform: rotate(180deg); }
@@ -286,13 +485,31 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
-    padding-top: var(--space-3);
-    animation: fade-in var(--duration-fast) var(--ease-out);
+    padding-top: var(--space-4);
+}
+
+/* Abrir un grupo es un movimiento protagonista dentro del panel: se despliega
+   con la curva larga, no con la rápida de los hovers. */
+.filter-group[open] > .filter-body {
+    animation: filter-body-in var(--duration-slow) var(--ease-cinema);
+}
+
+@keyframes filter-body-in {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Las opciones dejan de ir pegadas: 4 px entre filas bastan para que la
+   casilla marcada se lea como una unidad y no como una franja continua. */
+.feed-section .filter-options {
+    gap: var(--space-1);
+    max-height: 264px;
+    padding-right: var(--space-2);
 }
 
 /* Buscador propio de un grupo (los 18 distritos) */
 .filter-finder .input {
-    min-height: 38px;
+    min-height: 40px;
     font-size: var(--text-xs);
 }
 
@@ -303,8 +520,10 @@
     line-height: var(--leading-snug);
 }
 
-/* --- Atajos de precio --- */
-.feed-price-apply { min-height: 38px; }
+/* --------------------------------------------------------------------------
+   Precio
+   -------------------------------------------------------------------------- */
+.feed-price-apply { min-height: 40px; }
 
 .price-presets {
     display: grid;
@@ -313,11 +532,13 @@
 }
 
 .price-preset {
-    min-height: 34px;
+    min-height: 36px;
     /* Poco relleno lateral: «Más de S/ 1500» debe caber en dos columnas */
     padding: var(--space-2) var(--space-1);
-    background: var(--bg-raised);
-    border: 1px solid var(--border-subtle);
+    /* `--bg-raised` es blanco en tema claro, el mismo del panel: los atajos
+       quedarían sin caja. `--bg-hover` se despega del fondo en los dos temas. */
+    background: var(--bg-hover);
+    border: 1px solid var(--border-default);
     border-radius: var(--radius-full);
     color: var(--text-secondary);
     font-size: var(--text-3xs);
@@ -345,50 +566,178 @@
 .filters-fab-count {
     display: grid;
     place-items: center;
-    min-width: 20px;
-    height: 20px;
-    padding-inline: 6px;
+    min-width: 22px;
+    height: 22px;
+    padding-inline: var(--space-2);
     background: var(--brand-contrast);
     border-radius: var(--radius-full);
-    color: var(--brand-active);
+    color: var(--brand);
     font-size: var(--text-3xs);
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     line-height: 1;
 }
 
-/* --------------------------------------------------------------------------
-   Responsive
-   -------------------------------------------------------------------------- */
+/* ==========================================================================
+   4. Afinado de la tarjeta de publicación
+
+   `.post-card` y su familia viven en layout.css y las comparten el perfil, los
+   guardados y el panel de administración, donde son filas de un listado. En el
+   foro son el contenido, así que se les da más aire, más presencia al precio y
+   estados de reacción más rotundos.
+
+   Todo cuelga de `.feed-section` por dos razones: no se redefine el componente
+   compartido (los demás listados siguen intactos) y la especificidad (0,2,0)
+   gana a la de layout.css sin recurrir a `!important`.
+
+   Contrapartida: ganar por especificidad también gana dentro de las media
+   queries de layout.css, así que cada propiedad que se toca aquí se vuelve a
+   declarar más abajo para móvil. Lo que no se toca sigue gobernado por
+   layout.css y no hace falta repetirlo.
+   ========================================================================== */
+.feed-section .post-card {
+    transition: border-color var(--duration-base) var(--ease-out),
+                box-shadow var(--duration-base) var(--ease-out),
+                transform var(--duration-base) var(--ease-out);
+    /* El retardo escalonado lo pone el feed en el atributo `style`, que manda
+       sobre esta hoja: aquí solo se cambia la curva. */
+    animation: fade-in-up var(--duration-slow) var(--ease-cinema) backwards;
+}
+
+@media (hover: hover) {
+    /* El realce solo con ratón: en pantalla táctil el hover se queda pegado
+       tras el toque y la tarjeta quedaría levantada sin motivo. */
+    .feed-section .post-card:hover {
+        border-color: var(--border-default);
+        box-shadow: var(--shadow-lg);
+        transform: translateY(-2px);
+    }
+}
+
+/* --- Respiración interna --- */
+.feed-section .post-header { padding: var(--space-4) var(--space-5) var(--space-3); }
+
+.feed-section .post-body {
+    gap: var(--space-3);
+    padding: 0 var(--space-5) var(--space-4);
+}
+
+.feed-section .post-footer { padding: 0 var(--space-5) var(--space-3); }
+
+/* La imagen deja de tocar el borde de la tarjeta: enmarcada se lee como una
+   pieza propia y comparte el margen del texto, así que la tarjeta entera
+   queda alineada en una sola retícula. */
+.feed-section .post-media {
+    margin: 0 var(--space-5) var(--space-4);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+}
+
+/* --- El precio, con más presencia --- */
+/* Es el dato que se busca primero: más cuerpo, cifras de ancho fijo y un aro
+   propio que lo despega de las etiquetas con las que comparte fila. */
+.feed-section .post-price-tag {
+    padding: var(--space-1) var(--space-4);
+    font-size: var(--text-lg);
+    font-weight: 750;
+    letter-spacing: var(--tracking-tight);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--success) 30%, transparent);
+}
+
+/* --- Reacciones --- */
+.feed-section .post-actions {
+    gap: var(--space-2);
+    padding-top: var(--space-2);
+}
+
+.feed-section .post-action {
+    min-height: 44px;
+    border-radius: var(--radius-md);
+}
+
+/* Una reacción activa se distinguía solo por el color del texto, que obliga a
+   comparar botones entre sí. Ahora además se rellena y recibe un aro de su
+   propia familia: se reconoce sin mirar los otros tres. */
+.feed-section .post-action.is-active { font-weight: 700; }
+
+.feed-section .post-action.is-active.is-like {
+    background: var(--danger-soft);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 34%, transparent);
+}
+
+.feed-section .post-action.is-active.is-interest {
+    background: var(--warning-soft);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--warning) 34%, transparent);
+}
+
+.feed-section .post-action.is-active.is-save {
+    background: var(--brand-soft);
+    box-shadow: inset 0 0 0 1px var(--brand-ring);
+}
+
+/* ==========================================================================
+   5. Responsive
+   ========================================================================== */
 @media (max-width: 960px) {
-    .feed-hero { padding: var(--space-10) var(--space-5) var(--space-8); }
+    .feed-hero { padding-block: var(--space-10) var(--space-8); }
 
     /* En el cajón deslizante hace falta una salida visible, no solo la capa */
     .filters-close { display: grid; }
+
+    /* El cajón entra con la curva larga: es el movimiento más grande de la
+       página en móvil y merece la misma cadencia que la portada. */
+    .feed-section .filters-panel {
+        transition: transform var(--duration-slow) var(--ease-cinema);
+    }
 }
 
 @media (max-width: 720px) {
     .feed-hero {
-        padding: var(--space-8) var(--space-4) var(--space-8);
+        padding: var(--space-10) var(--space-4) var(--space-8);
         text-align: left;
     }
 
     .feed-hero-inner { margin-inline: 0; }
 
+    .feed-hero-eyebrow { justify-content: flex-start; }
+
+    /* A la izquierda, una regla antes del texto solo estorba */
+    .feed-hero-eyebrow .feed-hero-rule:first-child { display: none; }
+
     .feed-hero-actions {
         justify-content: flex-start;
-        margin-bottom: var(--space-6);
+        margin-bottom: var(--space-8);
     }
 
     .feed-stats { margin-inline: 0; }
 
-    .feed-stat { padding: var(--space-3) var(--space-1); }
+    .feed-stat { padding-inline: var(--space-2); }
 
-    .feed-stat-value { font-size: var(--text-lg); }
+    .feed-stat:first-child { padding-left: 0; }
+
+    /* Réplica de las medidas compactas de layout.css: las reglas de arriba
+       ganan por especificidad también aquí, así que hay que repetirlas. */
+    .feed-section .post-header { padding: var(--space-3) var(--space-3) var(--space-2); }
+
+    .feed-section .post-body { padding: 0 var(--space-3) var(--space-3); }
+
+    .feed-section .post-footer { padding: 0 var(--space-3) var(--space-1); }
+
+    .feed-section .post-media { margin: 0 var(--space-3) var(--space-3); }
+
+    .feed-section .post-price-tag {
+        padding: var(--space-1) var(--space-3);
+        font-size: var(--text-base);
+    }
+
+    .feed-section .post-actions { gap: var(--space-1); }
+
+    .feed-section .results-header { padding-bottom: var(--space-3); }
 }
 
-/* Los botones del héroe llevan `white-space: nowrap`: apilarlos es la única
-   forma de garantizar que no provoquen scroll horizontal en pantallas finas. */
+/* Los botones de la portada llevan `white-space: nowrap`: apilarlos es la
+   única forma de garantizar que no provoquen scroll horizontal en pantallas
+   finas. */
 @media (max-width: 480px) {
     .feed-hero-actions {
         flex-direction: column;
@@ -400,16 +749,55 @@
 
 /* Móvil pequeño: tres cifras no caben en fila a 360 px */
 @media (max-width: 420px) {
-    .feed-stats { grid-template-columns: 1fr; }
+    .feed-stats { grid-template-columns: minmax(0, 1fr); }
 
     .feed-stat {
         flex-direction: row-reverse;
+        align-items: center;
         justify-content: space-between;
         gap: var(--space-3);
-        padding: var(--space-2) var(--space-3);
+        padding: var(--space-3) 0;
+    }
+
+    .feed-stat:first-child { padding-top: var(--space-4); }
+
+    /* Apiladas, el separador pasa de vertical a horizontal */
+    .feed-stat + .feed-stat {
+        border-left: 0;
+        border-top: 1px solid var(--border-subtle);
     }
 
     .feed-stat-label { text-align: left; }
 
-    .price-presets { grid-template-columns: 1fr; }
+    .feed-stat-value { font-size: var(--text-2xl); }
+
+    .price-presets { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ==========================================================================
+   6. Movimiento reducido
+
+   base.css ya recorta la duración de toda animación, pero no el retardo: con
+   una entrada escalonada eso dejaría el titular invisible medio segundo. Aquí
+   se retiran las animaciones por completo.
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+    .feed-hero-eyebrow,
+    .feed-hero-title,
+    .feed-hero-subtitle,
+    .feed-hero-actions,
+    .feed-stat,
+    .feed-hero-dot,
+    .feed-author-note,
+    .filter-group[open] > .filter-body {
+        animation: none;
+    }
+
+    .filter-chevron,
+    .feed-section .post-card,
+    .feed-section .filters-panel {
+        transition: none;
+    }
+
+    .feed-section .post-card:hover { transform: none; }
 }

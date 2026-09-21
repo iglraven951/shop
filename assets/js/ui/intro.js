@@ -1,21 +1,23 @@
 /**
- * DiscoveryShop · Entrada cinematográfica
+ * DiscoveryShop · Entrada
  *
- * La animación vive en CSS y se completa sola, así que esta capa solo aporta
- * lo que el CSS no puede: recordar que ya se mostró en esta sesión, permitir
- * saltarla y devolver el foco al contenido cuando termina.
+ * La secuencia vive en CSS y se completa sola, así que esto solo aporta lo
+ * que el CSS no puede: recordar que ya se mostró en esta sesión, permitir
+ * saltarla, medir el trazo con precisión y llevar el contador incluso donde
+ * `@property` no está disponible.
  *
- * Se ejecuta lo antes posible —no espera a DOMContentLoaded— para que la capa
- * desaparezca de inmediato en las visitas siguientes, sin un parpadeo.
+ * Se ejecuta cuanto antes para que, en la segunda visita, la capa desaparezca
+ * antes de llegar a verse.
  */
 (function (global) {
     'use strict';
 
     const SESSION_KEY = 'discoveryshop:intro-seen';
-    /* Debe coincidir con el retraso + duración de `intro-exit` en intro.css */
-    const TOTAL_MS = 2800;
+    /* Debe cubrir el retraso más la duración de `intro-exit` en intro.css */
+    const TOTAL_MS = 2100;
+    const COUNT_MS = 1250;
 
-    /** El almacenamiento puede fallar en ventana privada: nunca debe romper la página. */
+    /** El almacenamiento falla en ventana privada: nunca debe romper la página. */
     function alreadySeen() {
         try {
             return sessionStorage.getItem(SESSION_KEY) === '1';
@@ -28,7 +30,7 @@
         try {
             sessionStorage.setItem(SESSION_KEY, '1');
         } catch (error) {
-            /* sin memoria: volverá a verse, que es preferible a fallar */
+            /* sin memoria: volverá a verse, preferible a fallar */
         }
     }
 
@@ -37,13 +39,12 @@
             && global.matchMedia('(prefers-reduced-motion: reduce)').matches;
     }
 
-    /** Retira la capa del documento y libera el scroll. */
+    /** Retira la capa y deja la página libre. */
     function dismiss(intro, immediate) {
         if (!intro || intro.dataset.dismissed === 'true') return;
         intro.dataset.dismissed = 'true';
 
         remember();
-        document.documentElement.classList.remove('has-intro');
 
         if (immediate) {
             intro.remove();
@@ -51,36 +52,65 @@
         }
 
         intro.classList.add('is-done');
-        // La animación de salida dura 380 ms; se limpia al acabar.
         intro.addEventListener('animationend', () => intro.remove(), { once: true });
-        setTimeout(() => intro.remove(), 600);
+        setTimeout(() => intro.remove(), 500);
     }
 
     /**
-     * Parte el nombre en letras para poder escalonarlas. Se hace desde aquí y
-     * no en el HTML para que el texto siga siendo una sola cadena legible por
-     * buscadores y lectores de pantalla.
+     * Lleva el contador de 0 a 100 con la misma curva que usa el CSS.
+     * Se hace aquí además de en CSS porque `@property` todavía no está en
+     * todos los navegadores, y un contador congelado en 0 parece un fallo.
      */
-    function splitName(node) {
+    function runCounter(intro) {
+        const box = intro.querySelector('.intro-count');
+        const value = intro.querySelector('.intro-count-value');
+        if (!box || !value) return;
+
+        box.classList.add('is-scripted');
+        value.textContent = '0';
+
+        const start = performance.now();
+
+        const step = (now) => {
+            const t = Math.min(1, (now - start) / COUNT_MS);
+            // Misma sensación que --ease-out: rápido al principio, frena al final
+            const eased = 1 - (1 - t) ** 3;
+
+            value.textContent = String(Math.round(eased * 100));
+
+            if (t < 1 && intro.dataset.dismissed !== 'true') {
+                requestAnimationFrame(step);
+            }
+        };
+
+        requestAnimationFrame(step);
+    }
+
+    /**
+     * Envuelve cada palabra del nombre para poder subirlas por separado.
+     * Se hace desde aquí y no en el marcado para que el texto siga siendo una
+     * cadena legible por buscadores y lectores de pantalla.
+     */
+    function splitWords(node) {
         if (!node) return;
 
         const text = node.textContent.trim();
-        const accentFrom = text.toLowerCase().indexOf('shop');
-
         node.setAttribute('aria-label', text);
         node.textContent = '';
 
-        [...text].forEach((char, index) => {
-            const span = document.createElement('span');
-            span.className = 'intro-letter';
-            if (accentFrom !== -1 && index >= accentFrom) {
-                span.classList.add('is-accent');
-            }
-            span.style.setProperty('--i', String(index));
-            span.setAttribute('aria-hidden', 'true');
-            // El espacio necesita un carácter que no colapse
-            span.textContent = char === ' ' ? ' ' : char;
-            node.appendChild(span);
+        text.split(/\s+/).forEach((word, index) => {
+            const wrapper = document.createElement('span');
+            wrapper.className = 'intro-word';
+            wrapper.style.setProperty('--w', String(index));
+            wrapper.setAttribute('aria-hidden', 'true');
+
+            // La segunda palabra lleva el degradado de acento
+            if (index > 0) wrapper.classList.add('is-accent');
+
+            const inner = document.createElement('span');
+            inner.textContent = word;
+            wrapper.appendChild(inner);
+            node.appendChild(wrapper);
         });
     }
 
@@ -89,10 +119,9 @@
         intro.querySelectorAll('.draw').forEach((path) => {
             if (typeof path.getTotalLength !== 'function') return;
             try {
-                const length = path.getTotalLength();
-                path.style.setProperty('--len', String(Math.ceil(length)));
+                path.style.setProperty('--len', String(Math.ceil(path.getTotalLength())));
             } catch (error) {
-                /* SVG no medible: el valor por defecto del CSS sirve igual */
+                /* SVG no medible: el valor del CSS sirve igual */
             }
         });
     }
@@ -101,39 +130,29 @@
         const intro = document.getElementById('intro');
         if (!intro) return;
 
-        // Ya vista en esta sesión, o el usuario pidió menos movimiento
         if (alreadySeen() || prefersReducedMotion()) {
             dismiss(intro, true);
             return;
         }
 
-        document.documentElement.classList.add('has-intro');
-
         prepareStrokes(intro);
-        splitName(intro.querySelector('.intro-name'));
+        splitWords(intro.querySelector('.intro-name'));
+        runCounter(intro);
 
         const skip = intro.querySelector('.intro-skip');
-        if (skip) {
-            skip.addEventListener('click', () => dismiss(intro));
-        }
+        if (skip) skip.addEventListener('click', () => dismiss(intro));
 
         // Cualquier intención de interactuar la salta: nadie debe sentirse atrapado
-        const escape = (event) => {
-            if (event.type === 'keydown' && !['Escape', 'Enter', ' '].includes(event.key)) return;
-            dismiss(intro);
-        };
+        document.addEventListener('keydown', (event) => {
+            if (['Escape', 'Enter', ' '].includes(event.key)) dismiss(intro);
+        }, { once: true });
 
-        document.addEventListener('keydown', escape, { once: true });
-        intro.addEventListener('click', (event) => {
-            if (event.target === intro || event.target.closest('.intro-stage')) dismiss(intro);
-        });
+        intro.addEventListener('click', () => dismiss(intro));
 
-        // Red de seguridad: si alguna animación no dispara su evento, se retira igual
+        // Red de seguridad por si alguna animación no dispara su evento
         setTimeout(() => dismiss(intro), TOTAL_MS);
     }
 
-    // Sin esperar a DOMContentLoaded: en la segunda visita la capa debe
-    // desaparecer antes de que llegue a verse.
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {

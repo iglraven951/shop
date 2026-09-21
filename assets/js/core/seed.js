@@ -219,6 +219,53 @@
      * Construye el estado inicial completo.
      * @returns {{users, posts, categories, districts}}
      */
+    /* ----------------------------------------------------------------------
+       Fotografías
+
+       Fotos reales de Unsplash, una por publicación y en el mismo orden que
+       RAW_POSTS. Su licencia permite uso comercial sin atribución. Se guardan
+       solo los identificadores: el tamaño y la calidad se piden por parámetro,
+       así la misma lista sirve para la miniatura del feed y para la ficha.
+
+       Cada URL se comprobó con una petición HEAD: las 40 responden 200 con
+       un tipo de contenido de imagen. Aun así, la interfaz nunca depende de
+       la red: si una foto no carga, el atributo `onerror` la sustituye por el
+       SVG generado, que no necesita conexión y siempre está disponible.
+       ---------------------------------------------------------------------- */
+    const PHOTOS = [
+        'photo-1511707171634-5f897ff02aa9', 'photo-1592890288564-76628a30a657',
+        'photo-1598327105666-5b89351aff97', 'photo-1499678329028-101435549a4e',
+        'photo-1773332598414-44a45e364d85', 'photo-1527443224154-c4a3942d3acf',
+        'photo-1587829741301-dc798b83add3', 'photo-1648737966636-2fc3a5fffc8a',
+        'photo-1505740420928-5e560c06d30e', 'photo-1627931539006-d5c4677e05ea',
+        'photo-1572569511254-d8f925fe2cbb', 'photo-1618609377864-68609b857e90',
+        'photo-1493711662062-fa541adb3fc8', 'photo-1612036781124-847f8939b154',
+        'photo-1509198397868-475647b2a1e5', 'photo-1612372606404-0ab33e7187ee',
+        'photo-1779896412176-45c509bbee35', 'photo-1484506399805-c273b8e91dce',
+        'photo-1576299090369-9067e4adca28', 'photo-1447933601403-0c6688de566e',
+        'photo-1527515637462-cff94eecc1ac', 'photo-1484154218962-a197022b5858',
+        'photo-1509281373149-e957c6296406', 'photo-1595950653106-6c9ebd614d3a',
+        'photo-1521223890158-f9f7c3d5d504', 'photo-1523170335258-f5ed11844a49',
+        'photo-1622560480654-d96214fdc887', 'photo-1485965120184-e220f721d03e',
+        'photo-1638536532686-d610adfc8e5c', 'photo-1565300480288-deb407e6ae15',
+        'photo-1564186763535-ebb21ef5277f', 'photo-1520523839897-bd0b52f945a0',
+        'photo-1708961465136-e24550f3acd5', 'photo-1610116306796-6fea9f4fae38',
+        'photo-1694730750153-8b66cf3dd014', 'photo-1714392512700-4cab9e51710b',
+        'photo-1607322851003-f5a88dc5b960', 'photo-1611004061856-ccc3cbe944b2',
+        'photo-1571335746824-742511d49bce', 'photo-1609630875171-b1321377ee65',
+    ];
+
+    /**
+     * URL de una foto del catálogo al tamaño pedido.
+     * @param {number} index - Posición de la publicación.
+     * @param {number} [w] - Ancho en píxeles; el alto mantiene 4:3.
+     */
+    function photoUrl(index, w = 640) {
+        const id = PHOTOS[index % PHOTOS.length];
+        const h = Math.round(w * 0.75);
+        return `https://images.unsplash.com/${id}?w=${w}&h=${h}&fit=crop&q=75&fm=jpg`;
+    }
+
     function build() {
         const now = Date.now();
         const hour = 3600000;
@@ -290,8 +337,12 @@
                 price,
                 condition,
                 emoji,
-                image_url: createImage(title, emoji),
-                images: [{ id: `img-${index}`, url: createImage(title, emoji), order: 0, is_primary: true }],
+                image_url: photoUrl(index, 640),
+                // Respaldo sin red: la interfaz cambia a esto si la foto falla
+                fallback_url: createImage(title, emoji),
+                images: [
+                    { id: `img-${index}`, url: photoUrl(index, 1200), order: 0, is_primary: true },
+                ],
                 category: { id: category.id, name: category.name, icon: category.icon },
                 author: {
                     id: author.id,

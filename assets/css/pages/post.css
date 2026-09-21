@@ -1,16 +1,24 @@
 /* ==========================================================================
    DiscoveryShop · Ficha de publicación
-   Solo lo propio de esta página: migas de pan, ficha de datos, tarjeta de
-   quien publica y el mapa del distrito. La publicación, los comentarios y el
-   compositor viven en layout.css y aquí únicamente se ajustan.
+
+   Es la pieza noble del sitio: aquí se decide si alguien escribe o se va. Todo
+   lo propio de esta página vive aquí — migas de pan, galería, ficha de datos,
+   conversación, tarjeta de quien publica y mapa del distrito.
+
+   La publicación, los comentarios y el compositor son componentes compartidos
+   (layout.css). No se redefinen: se ajustan bajo `.post-detail-page`, de modo
+   que el perfil, los guardados y el panel de administración siguen intactos.
+
+   Movimiento: `--ease-cinema` para lo que entra en escena (cada bloque de la
+   ficha) y `--ease-out` para lo pequeño (hovers, cambios de color).
    ========================================================================== */
 
-/* --------------------------------------------------------------------------
-   Estructura de la página
-   -------------------------------------------------------------------------- */
+/* ==========================================================================
+   1. Estructura de la página
+   ========================================================================== */
 .post-detail-page {
     width: 100%;
-    max-width: 1100px;
+    max-width: 1120px;
     margin-inline: auto;
     padding: var(--space-6) var(--space-5) var(--space-16);
 }
@@ -40,8 +48,34 @@
 }
 
 /* --------------------------------------------------------------------------
-   Carga y error
+   Entrada de la ficha
+
+   El contenido llega de golpe cuando responde la API. Escalonar los bloques
+   con la curva larga convierte ese salto en una composición que se arma sola,
+   en lugar de en un parpadeo.
    -------------------------------------------------------------------------- */
+@keyframes post-section-in {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.post-detail-main > *,
+.post-detail-side > * {
+    animation: post-section-in 680ms var(--ease-cinema) backwards;
+}
+
+.post-detail-main > *:nth-child(1) { animation-delay: 40ms; }
+.post-detail-main > *:nth-child(2) { animation-delay: 110ms; }
+.post-detail-main > *:nth-child(3) { animation-delay: 190ms; }
+.post-detail-main > *:nth-child(4) { animation-delay: 270ms; }
+
+.post-detail-side > *:nth-child(1) { animation-delay: 150ms; }
+.post-detail-side > *:nth-child(2) { animation-delay: 230ms; }
+.post-detail-side > *:nth-child(3) { animation-delay: 310ms; }
+
+/* ==========================================================================
+   2. Carga y error
+   ========================================================================== */
 .post-detail-boot {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 340px;
@@ -57,7 +91,7 @@
     min-width: 0;
 }
 
-.post-detail-boot-card { height: 420px; border-radius: var(--radius-lg); }
+.post-detail-boot-card { height: 440px; border-radius: var(--radius-lg); }
 .post-detail-boot-block { height: 200px; border-radius: var(--radius-lg); }
 .post-detail-boot-map { height: 300px; border-radius: var(--radius-lg); }
 
@@ -65,9 +99,9 @@
     padding-block: var(--space-10);
 }
 
-/* --------------------------------------------------------------------------
-   Migas de pan
-   -------------------------------------------------------------------------- */
+/* ==========================================================================
+   3. Migas de pan
+   ========================================================================== */
 .breadcrumb {
     min-width: 0;
 }
@@ -98,11 +132,19 @@
 }
 
 .breadcrumb-item a {
+    padding-block: var(--space-1);
     color: var(--text-secondary);
+    font-weight: 600;
     transition: color var(--duration-fast) var(--ease-out);
 }
 
 .breadcrumb-item a:hover { color: var(--brand); }
+
+.breadcrumb-item a:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+    border-radius: var(--radius-xs);
+}
 
 .breadcrumb-current {
     min-width: 0;
@@ -116,9 +158,9 @@
     vertical-align: bottom;
 }
 
-/* --------------------------------------------------------------------------
-   Títulos de sección
-   -------------------------------------------------------------------------- */
+/* ==========================================================================
+   4. Títulos de sección
+   ========================================================================== */
 .post-detail-section-title {
     display: flex;
     align-items: center;
@@ -128,6 +170,16 @@
     font-weight: 700;
     letter-spacing: var(--tracking-tight);
     color: var(--text-primary);
+}
+
+/* Marca fina delante del título: firma la sección sin robarle peso al texto */
+.post-detail-section-title::before {
+    content: "";
+    flex-shrink: 0;
+    width: 3px;
+    height: 1.1em;
+    border-radius: var(--radius-full);
+    background: var(--gradient-brand);
 }
 
 .post-detail-count {
@@ -150,86 +202,241 @@
     line-height: var(--leading-snug);
 }
 
-/* --------------------------------------------------------------------------
-   La publicación en detalle
-   Hereda la tarjeta del feed; aquí se suelta el recorte del texto.
-   -------------------------------------------------------------------------- */
+/* ==========================================================================
+   5. La publicación en detalle
+
+   Hereda la tarjeta del feed. Aquí no es una entrada de una lista: es el
+   contenido, así que recibe más aire, un borde más presente y una galería con
+   afordancia propia.
+   ========================================================================== */
+.post-detail {
+    border-color: var(--border-default);
+    box-shadow: var(--shadow-md);
+    /* No entra como las tarjetas del feed: su bloque ya se anima arriba */
+    animation: none;
+}
+
+/* La tarjeta no es un enlace aquí, así que no se levanta al pasar por encima:
+   solo la imagen responde, que sí lleva a algún sitio. */
+.post-detail-page .post-card:hover {
+    border-color: var(--border-default);
+    box-shadow: var(--shadow-md);
+}
+
+.post-detail-page .post-header { padding: var(--space-5) var(--space-5) var(--space-4); }
+
+.post-detail-page .post-body {
+    gap: var(--space-4);
+    padding: 0 var(--space-5) var(--space-5);
+}
+
+.post-detail-page .post-footer { padding: 0 var(--space-5) var(--space-3); }
+
 .post-detail .post-text {
     display: block;
     -webkit-line-clamp: unset;
     line-clamp: unset;
     overflow: visible;
+    overflow-wrap: break-word;
+    color: var(--text-secondary);
     font-size: var(--text-base);
+    line-height: var(--leading-normal);
     /* Respeta los saltos de línea que escribió quien publica */
     white-space: pre-line;
+    text-wrap: pretty;
 }
 
 .post-detail-title {
     font-size: var(--text-2xl);
     font-weight: 750;
+    letter-spacing: var(--tracking-tight);
     color: var(--text-primary);
+    text-wrap: balance;
 }
 
-/* La imagen es un botón que abre el visor: hay que anular el estilo nativo */
+/* El precio es el dato que se busca primero: aquí manda de verdad */
+.post-detail-page .post-price-tag {
+    padding: var(--space-2) var(--space-5);
+    font-size: var(--text-xl);
+    font-weight: 750;
+    letter-spacing: var(--tracking-tight);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--success) 32%, transparent);
+}
+
+/* --- Reacciones ---
+   Mismo tratamiento que en el foro, para que la barra se comporte igual esté
+   donde esté: la reacción activa no se distingue solo por el color del texto
+   —que obliga a comparar botones entre sí— sino con relleno y aro propios. */
+.post-detail-page .post-actions {
+    gap: var(--space-2);
+    padding-top: var(--space-2);
+}
+
+.post-detail-page .post-action {
+    min-height: 44px;
+    border-radius: var(--radius-md);
+}
+
+.post-detail-page .post-action.is-active { font-weight: 700; }
+
+.post-detail-page .post-action.is-active.is-like {
+    background: var(--danger-soft);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 34%, transparent);
+}
+
+.post-detail-page .post-action.is-active.is-interest {
+    background: var(--warning-soft);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--warning) 34%, transparent);
+}
+
+.post-detail-page .post-action.is-active.is-save {
+    background: var(--brand-soft);
+    box-shadow: inset 0 0 0 1px var(--brand-ring);
+}
+
+/* --------------------------------------------------------------------------
+   Galería
+
+   Una sola imagen, pero es la que decide: se enmarca en lugar de sangrar hasta
+   el borde y anuncia por sí misma que se puede ampliar.
+   -------------------------------------------------------------------------- */
 .post-detail-media {
-    width: 100%;
+    position: relative;
+    /* Estira al ancho de la tarjeta menos sus márgenes: la anchura la da el
+       `align-items: stretch` de `.post-card`, no un `width: 100%` que sumaría
+       los márgenes al ancho y desbordaría. */
+    margin: 0 var(--space-5) var(--space-5);
     padding: 0;
-    border: 0;
+    background: var(--bg-raised);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
     cursor: zoom-in;
+    transition: border-color var(--duration-base) var(--ease-out),
+                box-shadow var(--duration-base) var(--ease-out);
+}
+
+.post-detail-media:hover {
+    border-color: var(--brand-ring);
+    box-shadow: var(--shadow-glow);
 }
 
 .post-detail-media:focus-visible {
     outline: 2px solid var(--brand);
-    outline-offset: -2px;
+    outline-offset: 3px;
 }
 
-/* La ficha no se anima al aparecer como las tarjetas del feed */
-.post-detail { animation: none; }
+/* Pista de que la imagen se amplía. Es decorativa: el nombre accesible del
+   botón lo fija su `aria-label`, así que este texto no se anuncia dos veces.
+   Va siempre visible, no solo al pasar el ratón, porque en pantalla táctil el
+   hover no existe y la afordancia se perdería justo donde más falta hace. */
+.post-detail-media::after {
+    content: "Ampliar";
+    position: absolute;
+    right: var(--space-3);
+    bottom: var(--space-3);
+    padding: var(--space-2) var(--space-4);
+    background: color-mix(in srgb, var(--bg-base) 86%, transparent);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-full);
+    color: var(--text-primary);
+    font-size: var(--text-2xs);
+    font-weight: 650;
+    line-height: 1;
+    opacity: 0.9;
+    transition: opacity var(--duration-fast) var(--ease-out),
+                transform var(--duration-base) var(--ease-cinema);
+    pointer-events: none;
+}
 
-/* --------------------------------------------------------------------------
-   Ficha de datos
-   -------------------------------------------------------------------------- */
+.post-detail-media:hover::after {
+    opacity: 1;
+    transform: translateY(-2px);
+}
+
+/* ==========================================================================
+   6. Ficha de datos
+
+   Seis datos apilados en una columna obligaban a recorrer toda la lista para
+   encontrar uno. En rejilla se leen de un vistazo, y el término pasa a
+   versalitas para que el valor sea lo que destaca.
+   ========================================================================== */
 .post-detail-dl {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
     background: var(--bg-surface);
-    border: 1px solid var(--border-subtle);
+    border: 1px solid var(--border-default);
     border-radius: var(--radius-lg);
     overflow: hidden;
 }
 
 .post-detail-row {
-    display: grid;
-    grid-template-columns: minmax(110px, 36%) minmax(0, 1fr);
-    gap: var(--space-4);
-    align-items: baseline;
-    padding: var(--space-3) var(--space-4);
-}
-
-.post-detail-row + .post-detail-row {
-    border-top: 1px solid var(--border-subtle);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-width: 0;
+    padding: var(--space-4);
+    background: var(--bg-surface);
+    /* La retícula se dibuja con dos sombras interiores por celda, no con huecos
+       sobre un fondo de color: si el número de datos deja la última fila a
+       medias, el hueco se vería como un rectángulo pintado. Tienen que ir por
+       dentro (`inset`) porque las celdas se tocan y el fondo de la siguiente
+       taparía una sombra exterior. Se usa el borde más tenue para que las
+       divisiones pesen menos que el marco del recuadro. */
+    box-shadow: inset -1px 0 0 var(--border-subtle),
+                inset 0 -1px 0 var(--border-subtle);
 }
 
 .post-detail-term {
-    font-size: var(--text-2xs);
     color: var(--text-muted);
+    font-size: var(--text-3xs);
+    font-weight: 600;
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    line-height: var(--leading-snug);
 }
 
 .post-detail-desc {
     min-width: 0;
+    color: var(--text-primary);
     font-size: var(--text-sm);
     font-weight: 650;
-    color: var(--text-primary);
+    line-height: var(--leading-snug);
     overflow-wrap: break-word;
 }
 
-/* --------------------------------------------------------------------------
-   Comentarios
-   -------------------------------------------------------------------------- */
+/* ==========================================================================
+   7. Conversación
+
+   Se hunde respecto de la página para leerse como un espacio aparte. El fondo
+   va en `--bg-sunken` y no en `--bg-surface` porque en tema claro las burbujas
+   son blancas: sobre una superficie blanca desaparecerían.
+   ========================================================================== */
 .post-detail-comments {
+    padding: clamp(var(--space-4), 2vw, var(--space-6));
+    background: var(--bg-sunken);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
     scroll-margin-top: calc(var(--header-height) + var(--space-5));
 }
 
 .post-detail-comment-list {
     margin-top: var(--space-5);
+}
+
+.post-detail-page .comment-bubble {
+    padding: var(--space-3) var(--space-4);
+    background: var(--bg-raised);
+    border: 1px solid var(--border-subtle);
+}
+
+.post-detail-page .comment-text { color: var(--text-secondary); }
+
+/* El compositor abre la conversación, justo bajo el título: la línea lo separa
+   del encabezado y lo presenta como el sitio donde se escribe. */
+.post-detail-page .comment-composer {
+    margin-top: var(--space-5);
+    padding-top: var(--space-5);
+    border-top: 1px solid var(--border-default);
 }
 
 /* Comentario pintado de forma optimista: aún sin confirmar por el servidor */
@@ -238,7 +445,7 @@
 }
 
 .comment.is-pending .comment-bubble {
-    border: 1px dashed var(--border-default);
+    border: 1px dashed var(--border-strong);
 }
 
 .comment.is-leaving {
@@ -252,17 +459,28 @@
     }
 }
 
-/* --------------------------------------------------------------------------
-   Tarjeta de quien publica
-   -------------------------------------------------------------------------- */
+/* ==========================================================================
+   8. Tarjeta de quien publica
+
+   Es donde se decide el contacto, así que lleva el azul del logo. La banda usa
+   los pasos 700-900 de la escala: sobre ellos el blanco alcanza casi 10 de
+   contraste, mientras que el extremo claro de `--gradient-brand` se queda en
+   3,6 y no llegaría a AA para texto normal.
+
+   Sobre un fondo de marca que NO cambia con el tema el texto va en `--on-navy`,
+   nunca en `--text-primary`: este último se invierte y en tema claro escribiría
+   azul oscuro sobre azul oscuro.
+   ========================================================================== */
 .seller-card {
     display: flex;
     flex-direction: column;
-    gap: var(--space-5);
-    padding: var(--space-5);
+    /* Cada bloque trae su propio relleno para que la banda llegue al borde */
+    padding: 0;
     background: var(--bg-surface);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
 }
 
 .seller-card-head {
@@ -270,6 +488,21 @@
     align-items: center;
     gap: var(--space-4);
     min-width: 0;
+    padding: var(--space-5);
+    /* Eco del fondo de la entrada cinematográfica, en horizontal */
+    background: radial-gradient(
+        130% 150% at 12% 0%,
+        var(--brand-700) 0%,
+        var(--brand-900) 72%);
+    color: var(--on-navy);
+}
+
+/* El avatar comparte degradado con la banda y se perdería dentro de ella: se
+   pasa a cristal, como el botón «Saltar» de la entrada. */
+.seller-card-head .avatar {
+    background: color-mix(in srgb, var(--on-navy) 20%, transparent);
+    box-shadow: 0 0 0 1px var(--on-navy-soft);
+    color: var(--on-navy);
 }
 
 .seller-card-identity {
@@ -284,9 +517,10 @@
     align-items: center;
     gap: var(--space-2);
     min-width: 0;
+    color: var(--on-navy);
     font-size: var(--text-base);
     font-weight: 700;
-    color: var(--text-primary);
+    letter-spacing: var(--tracking-tight);
 }
 
 .seller-card-district {
@@ -294,35 +528,64 @@
     align-items: center;
     gap: var(--space-1);
     min-width: 0;
+    color: var(--on-navy-soft);
     font-size: var(--text-2xs);
-    color: var(--text-muted);
 }
 
+/* La insignia invierte sus colores: blanco fijo de fondo y el azul del logo
+   encima. Al ser el fondo fijo, el par funciona en los dos temas. */
+.seller-card-head .verified-badge {
+    background: var(--on-navy);
+    color: var(--brand-700);
+}
+
+.seller-card-head .rating-value { color: var(--on-navy); }
+.seller-card-head .rating-count { color: var(--on-navy-soft); }
+.seller-card-head .rating { color: var(--on-navy-soft); }
+
+.seller-card-head .rating-stars {
+    color: color-mix(in srgb, var(--on-navy) 30%, transparent);
+}
+
+/* Las estrellas llenas se aclaran hacia el blanco para despegarse del azul */
+.seller-card-head .rating-stars::before {
+    color: color-mix(in srgb, var(--warning) 62%, var(--on-navy));
+}
+
+/* --- Cifras del vendedor ---
+   Aquí las celdas son siempre dos, así que la fila nunca queda a medias y el
+   hueco de 1px sobre un fondo de borde basta para separarlas. */
 .seller-card-stats {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-3);
+    gap: 1px;
+    background: var(--border-default);
+    border-bottom: 1px solid var(--border-default);
 }
 
 .seller-card-stat {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--space-1);
     min-width: 0;
-    padding: var(--space-3);
-    background: var(--bg-raised);
-    border-radius: var(--radius-md);
+    padding: var(--space-4);
+    background: var(--bg-surface);
 }
 
 .seller-card-stat-label {
-    font-size: var(--text-3xs);
     color: var(--text-muted);
+    font-size: var(--text-3xs);
+    font-weight: 600;
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    line-height: var(--leading-snug);
 }
 
 .seller-card-stat-value {
+    color: var(--text-primary);
     font-size: var(--text-sm);
     font-weight: 650;
-    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
     overflow-wrap: break-word;
 }
 
@@ -330,6 +593,7 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
+    padding: var(--space-5);
 }
 
 .seller-card-own {
@@ -341,26 +605,36 @@
     line-height: var(--leading-snug);
 }
 
-/* --------------------------------------------------------------------------
-   Mapa del distrito
-   -------------------------------------------------------------------------- */
+/* ==========================================================================
+   9. Mapa del distrito
+   ========================================================================== */
 .post-map-card {
     display: flex;
     flex-direction: column;
-    gap: var(--space-3);
+    gap: var(--space-4);
     padding: var(--space-5);
     background: var(--bg-surface);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.post-map-head {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
 }
 
 .post-map-head .post-detail-section-title {
-    margin-bottom: var(--space-1);
+    margin-bottom: 0;
 }
 
+/* El distrito es el dato del bloque: va en color de marca, no en gris */
 .post-map-district {
-    font-size: var(--text-2xs);
-    color: var(--text-muted);
+    color: var(--brand);
+    font-size: var(--text-xs);
+    font-weight: 650;
+    letter-spacing: var(--tracking-tight);
     overflow-wrap: break-word;
 }
 
@@ -370,11 +644,52 @@
     position: relative;
     z-index: 0;
     isolation: isolate;
-    height: 300px;
+    height: clamp(250px, 32vh, 320px);
     background: var(--bg-raised);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
     overflow: hidden;
+    /* Aro interior de marca: enmarca la cartografía sin ensuciarla */
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 12%, transparent);
+}
+
+/* --- Leyenda ---
+   El punto del mapa necesita explicarse junto a su símbolo. La muestra repite
+   exactamente el marcador para que la relación sea evidente sin leer. */
+.post-map-legend {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    /* Hundida respecto de la tarjeta: `--bg-raised` es blanco en tema claro,
+       el mismo del recuadro, y la leyenda perdería su caja. */
+    background: var(--bg-sunken);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    font-size: var(--text-2xs);
+    color: var(--text-secondary);
+    line-height: var(--leading-snug);
+}
+
+.post-map-legend-dot {
+    flex-shrink: 0;
+    width: 12px;
+    height: 12px;
+    margin-top: 3px;
+    background: var(--brand);
+    border: 2px solid var(--brand-contrast);
+    border-radius: 50%;
+    box-shadow: 0 0 0 3px var(--brand-soft);
+}
+
+.post-map-legend-text {
+    min-width: 0;
+    overflow-wrap: break-word;
+}
+
+.post-map-legend-text strong {
+    color: var(--text-primary);
+    font-weight: 650;
 }
 
 .post-map-note {
@@ -543,11 +858,12 @@
     box-shadow: var(--shadow-md);
 }
 
-/* --------------------------------------------------------------------------
-   Publicaciones relacionadas
-   La fila compacta vive en layout.css; en una columna estrecha el precio
-   pasa a su propia línea para que ningún texto se recorte.
-   -------------------------------------------------------------------------- */
+/* ==========================================================================
+   10. Publicaciones relacionadas
+
+   La fila compacta vive en layout.css; en una columna estrecha el precio pasa
+   a su propia línea para que ningún texto se recorte.
+   ========================================================================== */
 .post-detail-related-list {
     display: flex;
     flex-direction: column;
@@ -577,7 +893,7 @@
 }
 
 /* ==========================================================================
-   Adaptación a pantallas pequeñas
+   11. Adaptación a pantallas pequeñas
    ========================================================================== */
 @media (max-width: 960px) {
     .post-detail-layout,
@@ -592,6 +908,12 @@
     }
 
     .post-detail-main { gap: var(--space-6); }
+
+    /* En una sola columna el lateral va detrás: su entrada debe ir después de
+       la del contenido principal, no solaparse con ella. */
+    .post-detail-side > *:nth-child(1) { animation-delay: 310ms; }
+    .post-detail-side > *:nth-child(2) { animation-delay: 380ms; }
+    .post-detail-side > *:nth-child(3) { animation-delay: 450ms; }
 }
 
 @media (max-width: 720px) {
@@ -603,8 +925,26 @@
 
     .post-detail-section-title { font-size: var(--text-base); }
 
-    .seller-card,
+    /* Réplica de las medidas compactas de layout.css: las reglas de arriba
+       ganan por especificidad también dentro de sus media queries. */
+    .post-detail-page .post-header { padding: var(--space-3) var(--space-3) var(--space-2); }
+
+    .post-detail-page .post-body { padding: 0 var(--space-3) var(--space-3); }
+
+    .post-detail-page .post-footer { padding: 0 var(--space-3) var(--space-1); }
+
+    .post-detail-media { margin: 0 var(--space-3) var(--space-3); }
+
+    .post-detail-page .post-price-tag {
+        padding: var(--space-1) var(--space-4);
+        font-size: var(--text-lg);
+    }
+
+    .seller-card-head,
+    .seller-card-actions,
     .post-map-card { padding: var(--space-4); }
+
+    .seller-card-stat { padding: var(--space-3); }
 
     .post-map { height: 260px; }
 
@@ -616,11 +956,7 @@
         padding-inline: var(--space-3);
     }
 
-    /* Término y valor se apilan: en 360 px no caben en dos columnas */
-    .post-detail-row {
-        grid-template-columns: minmax(0, 1fr);
-        gap: var(--space-1);
-    }
+    .post-detail-row { padding: var(--space-3); }
 
     .seller-card-stats {
         grid-template-columns: minmax(0, 1fr);
@@ -630,4 +966,29 @@
         width: 52px;
         height: 52px;
     }
+
+    /* «Ampliar» roba demasiado a una imagen pequeña: basta el cursor y el
+       `aria-label`, que siguen anunciando lo mismo. */
+    .post-detail-media::after { display: none; }
+}
+
+/* ==========================================================================
+   12. Movimiento reducido
+
+   base.css ya recorta la duración de toda animación, pero no el retardo: con
+   una entrada escalonada eso dejaría media ficha invisible medio segundo.
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+    .post-detail-main > *,
+    .post-detail-side > *,
+    .post-map-pin-dot::after {
+        animation: none;
+    }
+
+    .post-detail-media,
+    .post-detail-media::after {
+        transition: none;
+    }
+
+    .post-detail-media:hover::after { transform: none; }
 }

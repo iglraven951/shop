@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Publicación · DiscoveryShop</title>
     <meta name="description" content="Mira el detalle del artículo, conversa con quien lo publica y descubre en un mapa real el distrito de Arequipa donde se encuentra.">
-    <meta name="theme-color" content="#08090c">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><text y='16' font-size='16'>🛍️</text></svg>">
+    <meta name="theme-color" content="#070c14">
+    <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
+    <link rel="apple-touch-icon" href="assets/img/logo.png">
     <link rel="manifest" href="site.webmanifest">
 
     <!-- Leaflet: única librería externa del proyecto, solo para el mapa.
@@ -94,8 +95,20 @@
 
                         <div class="post-map" id="post-map" role="region" aria-label="Mapa del distrito donde está el artículo"></div>
 
+                        <!-- Leyenda junto al símbolo, no una nota suelta al pie:
+                             quien mira el mapa necesita saber qué significa ese
+                             punto antes de sacar conclusiones de dónde está. -->
+                        <p class="post-map-legend">
+                            <span class="post-map-legend-dot" aria-hidden="true"></span>
+                            <span class="post-map-legend-text">
+                                El punto marca el <strong>centro del distrito</strong>,
+                                no la dirección del artículo.
+                            </span>
+                        </p>
+
                         <p class="post-map-note">
-                            La ubicación es aproximada al distrito, por privacidad de quien publica.
+                            La ubicación exacta nunca se muestra: así quien publica
+                            conserva su privacidad.
                         </p>
 
                         <a class="btn btn-secondary btn-block" id="post-map-link" href="mapa.html">
