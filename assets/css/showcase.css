@@ -1,54 +1,75 @@
 /* ==========================================================================
-   DiscoveryShop · Cinta de productos
+   DiscoveryShop · Muro de fotos de la portada
 
-   Banda continua de fotos del catálogo bajo la portada. Enseña qué se publica
-   aquí antes de que nadie haga scroll.
+   Dos hileras de fotos del catálogo pasando en sentidos contrarios, detrás
+   del texto de la portada. No es una galería: es textura. Se ve de qué va el
+   sitio sin que ninguna foto reclame la mirada, y sin títulos ni precios que
+   compitan con el titular.
+
+   Todo el trabajo de legibilidad está en dos capas: las fotos van muy
+   atenuadas y encima hay un velo. Las cifras del pie de la portada usan
+   --text-muted, el color más apagado que se permite sobre el fondo, así que
+   el conjunto está calculado para que el peor píxel posible —una foto blanca
+   justo detrás de una cifra— siga dejando ese texto por encima de 4,5:1.
+   Si se sube la opacidad de las fotos, hay que bajar en la misma medida la
+   transparencia del velo. tests/contrast.test.mjs lo comprueba.
    ========================================================================== */
 
 .showcase {
-    position: relative;
-    padding-block: var(--space-6);
+    position: absolute;
+    inset: 0;
+    /* Por debajo del halo y de la rejilla de la portada, que así rematan el
+       apagado; .feed-hero-inner queda por encima de las tres capas. */
+    z-index: -3;
+    display: flex;
+    flex-direction: column;
+    gap: var(--showcase-gap);
     overflow: hidden;
-    /* Se oculta sola si no hay bastantes publicaciones para llenarla */
-    border-block: 1px solid var(--border-subtle);
-    background: var(--bg-sunken);
+    /* Decoración: el ratón la atraviesa y llega a los botones */
+    pointer-events: none;
+
+    --showcase-gap: 6px;
+    /* Cuánto se deja ver de cada foto. Ver la nota de la cabecera. */
+    --showcase-photo: 0.18;
+    /* Cuánto tapa el velo que va encima */
+    --showcase-veil: 0.7;
 }
 
 .showcase[hidden] { display: none !important; }
 
-/* Los bordes se desvanecen: sin esto las tarjetas aparecen y desaparecen de
-   golpe contra el filo de la pantalla y se ve como un corte. */
-.showcase::before,
+/* El velo. Cubre las dos hileras por igual: el texto de la portada ocupa
+   casi todo el ancho en un móvil, así que aclararlo por los lados dejaría
+   las cifras sobre foto viva justo donde la pantalla es más estrecha. */
 .showcase::after {
     content: "";
     position: absolute;
-    top: 0;
-    bottom: 0;
-    width: clamp(40px, 10vw, 140px);
-    z-index: 2;
-    pointer-events: none;
-}
-
-.showcase::before {
-    left: 0;
-    background: linear-gradient(90deg, var(--bg-sunken), transparent);
-}
-
-.showcase::after {
-    right: 0;
-    background: linear-gradient(270deg, var(--bg-sunken), transparent);
+    inset: 0;
+    z-index: 1;
+    background: var(--bg-base);
+    opacity: var(--showcase-veil);
 }
 
 /* --------------------------------------------------------------------------
-   La cinta
+   Las hileras
    -------------------------------------------------------------------------- */
 .showcase-track {
     display: flex;
-    gap: var(--space-4);
+    flex: 1;
+    gap: var(--showcase-gap);
     width: max-content;
+    min-height: 0;
+    opacity: var(--showcase-photo);
     /* La lista va duplicada, de ahí el -50 %: al terminar, la segunda copia
        está exactamente donde empezaba la primera y el bucle no se nota. */
-    animation: showcase-scroll var(--showcase-duration, 60s) linear infinite;
+    animation: showcase-scroll var(--showcase-duration, 70s) linear infinite;
+}
+
+/* La hilera de abajo va al revés y algo más despacio. Dos hileras en el mismo
+   sentido y a la misma velocidad se leen como un solo bloque deslizándose;
+   en sentidos contrarios se leen como textura, que es lo que se busca. */
+.showcase-track-back {
+    animation-direction: reverse;
+    animation-duration: calc(var(--showcase-duration, 70s) * 1.35);
 }
 
 @keyframes showcase-scroll {
@@ -56,95 +77,48 @@
     to { transform: translate3d(-50%, 0, 0); }
 }
 
-/* Al pasar el cursor se frena, para poder mirar y pulsar algo concreto */
-@media (hover: hover) {
-    .showcase:hover .showcase-track {
-        animation-play-state: paused;
-    }
-}
-
 /* --------------------------------------------------------------------------
-   Cada tarjeta
+   Cada foto
    -------------------------------------------------------------------------- */
 .showcase-item {
-    position: relative;
     flex-shrink: 0;
-    width: clamp(150px, 22vw, 230px);
-    aspect-ratio: 4 / 3;
-    border-radius: var(--radius-md);
+    height: 100%;
+    width: clamp(120px, 15vw, 200px);
+    border-radius: var(--radius-sm);
     overflow: hidden;
+    /* Mientras la foto carga, un rectángulo del color del fondo en lugar de
+       un hueco claro que daría un parpadeo a contraluz. */
     background: var(--bg-raised);
-    border: 1px solid var(--border-subtle);
-    transition: transform var(--duration-base) var(--ease-out),
-                border-color var(--duration-base) var(--ease-out);
-}
-
-.showcase-item:hover {
-    transform: translateY(-4px);
-    border-color: var(--brand-ring);
 }
 
 .showcase-item img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform var(--duration-slow) var(--ease-out);
-}
-
-.showcase-item:hover img { transform: scale(1.06); }
-
-/* Título y precio sobre un velo, para que se lean sobre cualquier foto */
-.showcase-info {
-    position: absolute;
-    inset: auto 0 0 0;
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: var(--space-2);
-    padding: var(--space-5) var(--space-3) var(--space-3);
-    background: linear-gradient(to top, rgba(0, 20, 45, 0.92), transparent);
-    color: var(--on-navy);
-}
-
-.showcase-title {
-    flex: 1;
-    min-width: 0;
-    font-size: var(--text-2xs);
-    font-weight: 600;
-    line-height: var(--leading-snug);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.showcase-price {
-    flex-shrink: 0;
-    font-size: var(--text-2xs);
-    font-weight: 750;
-    color: var(--brand-200);
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
+    /* Un desenfoque corto quita el detalle y deja el color y la forma: es lo
+       que convierte una tira de fotos en un fondo. */
+    filter: blur(1.5px) saturate(0.9);
 }
 
 /* --------------------------------------------------------------------------
    Preferencias y tamaños
    -------------------------------------------------------------------------- */
 
-/* Una banda que no para es justo lo que molesta a quien pide menos
-   movimiento. Se queda quieta y se puede recorrer a mano. */
+/* Un fondo que no para es justo lo que molesta a quien pide menos
+   movimiento. El muro se queda quieto: sigue siendo un fondo bonito. */
 @media (prefers-reduced-motion: reduce) {
     .showcase-track {
         animation: none;
+        /* Sin animación no hace falta desbordar: basta con llenar el ancho */
         width: 100%;
-        overflow-x: auto;
-        scroll-snap-type: x mandatory;
-        padding-inline: var(--space-4);
     }
-
-    .showcase-item { scroll-snap-align: start; }
 }
 
 @media (max-width: 720px) {
-    .showcase { padding-block: var(--space-4); }
-    .showcase-track { gap: var(--space-3); }
+    .showcase {
+        --showcase-gap: 4px;
+        /* En una pantalla estrecha el texto pasa por encima de casi todo el
+           muro, así que las fotos se apagan un poco más. */
+        --showcase-photo: 0.15;
+    }
 }

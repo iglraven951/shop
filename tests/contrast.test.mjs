@@ -194,6 +194,69 @@ console.log('\nAUDITORÍA DE CONTRASTE DE TOKENS\n' + '='.repeat(58));
 });
 
 /* ----------------------------------------------------------------------
+   El muro de fotos de la portada
+
+   Detrás del texto de la portada pasan fotos del catálogo. Una foto es una
+   superficie que no se controla: puede ser negra o puede ser blanca, y si es
+   blanca, levanta el fondo bajo el texto y el contraste cae.
+
+   Lo que sí se controla son dos números de showcase.css: cuánto se deja ver
+   de la foto y cuánto tapa el velo que va encima. Aquí se toma el peor caso
+   posible —una foto enteramente blanca— y se exige que aun así todo el texto
+   de la portada siga cumpliendo. Si alguien sube la opacidad de las fotos
+   porque se ven poco, esto salta antes de que llegue a producción.
+   ---------------------------------------------------------------------- */
+{
+    const wall = fs.readFileSync(path.join(ROOT, 'assets/css/showcase.css'), 'utf8');
+
+    /** Todos los valores que el archivo da a una variable, en cualquier corte. */
+    const valores = (nombre) => [...wall.matchAll(new RegExp(`${nombre}:\\s*([\\d.]+)`, 'g'))]
+        .map((m) => Number(m[1]))
+        .filter((n) => !Number.isNaN(n));
+
+    const fotos = valores('--showcase-photo');
+    const velos = valores('--showcase-veil');
+
+    check('showcase.css: declara la opacidad de las fotos', fotos.length, 1);
+    check('showcase.css: declara la opacidad del velo', velos.length, 1);
+
+    // El texto de la portada, con el umbral que le corresponde por tamaño
+    const TEXTO_PORTADA = [
+        ['--text-primary', AA_TEXT, 'titular y cifras'],
+        ['--text-secondary', AA_TEXT, 'párrafo de entrada'],
+        ['--text-muted', AA_TEXT, 'etiquetas de las cifras'],
+        // El titular resaltado se pinta con --brand, que cambia de tono con
+        // el tema: claro sobre fondo oscuro y oscuro sobre fondo claro.
+        ['--brand', AA_TEXT, 'texto resaltado del titular'],
+    ];
+
+    const BLANCO = { r: 255, g: 255, b: 255, a: 1 };
+
+    if (fotos.length && velos.length) {
+        // La combinación más exigente de las declaradas
+        const foto = Math.max(...fotos);
+        const velo = Math.min(...velos);
+
+        [['oscuro', darkTokens], ['claro', lightTokens]].forEach(([themeName, tokens]) => {
+            const base = resolve(tokens, '--bg-base');
+            if (!base) return;
+
+            // Foto blanca atenuada sobre el fondo, y el velo encima
+            const conFoto = flatten({ ...BLANCO, a: foto }, base);
+            const fondo = flatten({ ...base, a: velo }, conFoto);
+
+            TEXTO_PORTADA.forEach(([textName, threshold, papel]) => {
+                const raw = resolve(tokens, textName);
+                if (!raw) return;
+
+                const value = contrast(flatten(raw, fondo), fondo);
+                check(`${themeName}: ${papel} sobre una foto blanca del muro`, value, threshold);
+            });
+        });
+    }
+}
+
+/* ----------------------------------------------------------------------
    Resultado
    ---------------------------------------------------------------------- */
 

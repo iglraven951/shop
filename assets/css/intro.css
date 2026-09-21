@@ -424,63 +424,134 @@
 /* --------------------------------------------------------------------------
    Preferencias del sistema
 
-   Antes, con movimiento reducido, la capa no aparecía en absoluto. Era una
-   decisión equivocada: en un móvil el ahorro de batería activa esa preferencia
-   por su cuenta, así que la entrada desaparecía para mucha gente que nunca la
-   pidió —y quien la tiene puesta a propósito pide que nada se mueva, no que se
-   le oculte la marca.
+   Esta preferencia ha pasado por dos versiones equivocadas antes de esta.
+   Primero la entrada no aparecía; luego aparecía quieta, sin secuencia. Las
+   dos partían de leer la preferencia como «no quiero ver esto», y no es eso
+   lo que dice: dice «no quiero que se mueva».
 
-   Así que aquí la secuencia se queda quieta: todo llega ya colocado, se
-   sostiene un momento y se funde. No hay desplazamientos, ni giros, ni zoom,
-   ni barridos, ni contador —que es justo lo que molesta—, pero la entrada
-   existe.
+   Importa porque en un móvil no la elige casi nadie. Chrome en Android la
+   enciende solo en cuanto entra el ahorro de batería, así que la entrada
+   desaparecía para gente que jamás la pidió.
+
+   Aquí se representa la misma secuencia, con los mismos actos, los mismos
+   retrasos y la misma duración —4400 ms más el telón—, pero cada pieza entra
+   fundiéndose en vez de desplazándose. El resultado se ve igual que en un
+   escritorio; lo único que falta es lo que esta preferencia existe para
+   evitar: recorridos largos, giros, zoom y el latido continuo del símbolo.
+
+   Lo que se conserva tal cual: el trazo del asa —un dibujo que se revela, no
+   un objeto que viaja— y el contador, que solo cambia de cifra.
    -------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
-    .intro,
-    .intro *,
-    .intro::before,
-    .intro::after,
-    .intro-mark::before,
-    .intro-stage::after {
-        animation: none !important;
-        transition: none !important;
+
+    /* La barra del pie es lo único cuya razón de ser es crecer. Se retira: el
+       contador de al lado ya dice lo mismo sin moverse. */
+    .intro-progress { display: none; }
+
+
+    /* --- Acto 1 · El símbolo --------------------------------------------- */
+
+    /* Sin escala, sin giro, sin desenfoque de entrada. Y sin la respiración
+       lenta de después: un movimiento que no para es justo lo que sobra. */
+    .intro-mark {
+        animation: intro-appear 1100ms var(--ease-cinema) 120ms forwards;
     }
 
-    /* Lo que la secuencia habría construido, ya construido */
-    .intro-mark,
-    .intro-mark .fill,
-    .intro-sub,
-    .intro-tagline,
-    .intro-skip {
-        opacity: 1;
+    /* El aro se abría creciendo. Ahora late en sitio, con el mismo compás. */
+    .intro-mark::before {
+        transform: scale(1.12);
+        animation: intro-ring-fade 2200ms var(--ease-cinema) 700ms forwards;
+    }
+
+    @keyframes intro-ring-fade {
+        0% { opacity: 0; }
+        40% { opacity: 1; }
+        100% { opacity: 0; }
+    }
+
+    /* --- Acto 2 · El barrido de la lupa ---------------------------------- */
+
+    /* La banda de luz recorría el símbolo de lado a lado. Ahora el mismo
+       destello se enciende y se apaga sobre él, en el mismo momento. */
+    .intro-mark-sweep {
+        inset: -10%;
         transform: none;
-        filter: none;
+        background: radial-gradient(60% 60% at 50% 45%, rgba(255, 255, 255, 0.55), transparent 70%);
+        animation: intro-sweep-fade 1200ms var(--ease-cinema) 1000ms forwards;
     }
 
-    .intro-word span { transform: none; }
-    .intro-mark .draw { stroke-dashoffset: 0; }
-    .intro-sub-rule { transform: scaleX(1); }
+    @keyframes intro-sweep-fade {
+        0%, 100% { opacity: 0; }
+        45%, 60% { opacity: 1; }
+    }
 
-    /* Piezas que solo existen para moverse */
-    .intro-mark::before,
-    .intro-mark-sweep,
-    .intro-count,
-    .intro-progress,
-    .intro::after,
+    /* --- Acto 3 · El nombre ---------------------------------------------- */
+
+    /* Las palabras subían desde detrás de una máscara. Ahora aparecen en el
+       sitio, una tras otra, con el mismo escalonado. */
+    .intro-word span {
+        transform: none;
+        opacity: 0;
+        animation: intro-appear 1000ms var(--ease-cinema) forwards;
+        animation-delay: calc(1400ms + var(--w, 0) * 190ms);
+    }
+
+    /* --- Acto 4 · Lugar y lema ------------------------------------------- */
+
+    /* La regla crecía a lo ancho; ahora se descubre entera. */
+    .intro-sub-rule {
+        transform: scaleX(1);
+        opacity: 0;
+        animation: intro-appear 900ms var(--ease-cinema) 2450ms forwards;
+    }
+
+    /* El lema llegaba subiendo y desenfocado. */
+    .intro-tagline {
+        animation: intro-appear 900ms var(--ease-cinema) 2800ms forwards;
+    }
+
+    /* --- Acto final · El destello ---------------------------------------- */
+
+    /* El resplandor se abría hacia fuera y la composición avanzaba un paso.
+       Ahora es solo un golpe de luz, sin crecimiento y sin avance. */
     .intro-stage::after {
-        display: none;
+        width: 60%;
+        height: 40%;
+        border-radius: 50%;
+        box-shadow: none;
+        background: radial-gradient(closest-side, rgba(255, 255, 255, 0.5), transparent);
+        animation: intro-bloom-fade 900ms var(--ease-cinema) 3900ms forwards;
     }
 
-    /* Un reposo y un fundido. Un cambio de opacidad no desplaza nada, que es
-       lo que esta preferencia pide evitar. */
-    .intro { animation: intro-exit-quiet 500ms linear 1700ms forwards !important; }
+    @keyframes intro-bloom-fade {
+        0%, 100% { opacity: 0; }
+        35% { opacity: 1; }
+    }
 
-    @keyframes intro-exit-quiet {
+    .intro-stage { animation: none; }
+
+    /* --- El telón --------------------------------------------------------- */
+
+    /* Se iba recortando de abajo arriba. Ahora se funde, en el mismo momento
+       y durante el mismo tiempo, para que la salida dure lo mismo. */
+    .intro { animation: intro-exit-fade 800ms var(--ease-cinema) 4400ms forwards; }
+    .intro.is-done { animation: intro-exit-fade 320ms var(--ease-cinema) forwards; }
+
+    @keyframes intro-exit-fade {
         to { opacity: 0; visibility: hidden; }
     }
 
-    /* Al tocar la pantalla se va sin esperar */
-    .intro.is-done { opacity: 0; visibility: hidden; }
+    /* --- Fondo ------------------------------------------------------------ */
+
+    /* Los halos derivan sin parar y la rejilla se abre desde el centro: las
+       dos son movimiento de fondo, que es el que peor se lleva. Se quedan
+       donde están, pintadas. */
+    .intro::before { animation: none; }
+
+    .intro::after {
+        --grid: 32%;
+        animation: none;
+    }
 }
 
 /* --------------------------------------------------------------------------

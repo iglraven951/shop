@@ -83,6 +83,20 @@
              El script la oculta con [hidden] en cuanto hay un filtro activo:
              cuando alguien busca, lo que importa es el feed, no la portada. -->
         <section class="feed-hero" id="feed-hero" aria-labelledby="feed-hero-title">
+
+            <!-- ---------------- Muro de fotos del fondo ----------------
+                 Dos hileras de fotos del catálogo que pasan en sentidos
+                 contrarios, muy atenuadas y tras un velo, detrás del texto de
+                 la portada. Enseñan de qué va el sitio sin pedir atención.
+                 El script las llena con lo último publicado y retira el muro
+                 si no hay suficientes. Es decoración pura: sin enlaces, sin
+                 títulos ni precios, fuera del árbol de accesibilidad y sin
+                 recoger el ratón, para que no estorbe a los botones. -->
+            <div class="showcase" id="showcase" aria-hidden="true" hidden>
+                <div class="showcase-track" id="showcase-track"></div>
+                <div class="showcase-track showcase-track-back" id="showcase-track-2"></div>
+            </div>
+
             <div class="feed-hero-inner">
                 <!-- Las dos reglas y el texto en versalitas calcan la línea
                      «Arequipa · Perú» de la entrada cinematográfica: al
@@ -129,16 +143,6 @@
                     </div>
                 </dl>
             </div>
-        </section>
-
-        <!-- ===================== Cinta de productos =====================
-             Muestra viva de lo que se publica, en movimiento continuo. El
-             script la llena con las publicaciones reales más recientes y la
-             oculta si no hay suficientes. Es decorativa: sus tarjetas quedan
-             fuera del recorrido de teclado y del árbol de accesibilidad,
-             porque el feed de abajo ya ofrece lo mismo de forma navegable. -->
-        <section class="showcase" id="showcase" aria-hidden="true" hidden>
-            <div class="showcase-track" id="showcase-track"></div>
         </section>
 
         <!-- ===================== Feed del foro ===================== -->

@@ -226,43 +226,67 @@ pageScripts.forEach((file) => {
     }
 });
 
-/* === 3c. La cinta de productos de la portada ===
+/* === 3c. El muro de fotos de la portada ===
 
    Las tres piezas —marcado, hoja y script— solo sirven juntas. Si alguien
-   quita una, la sección queda como un hueco vacío o como una columna de
-   fotos sin animar, y ninguna de las dos cosas da un error visible. */
+   quita una, queda un hueco o una columna de fotos sin animar, y ninguna de
+   las dos cosas da un error visible.
+
+   Y el muro tiene que estar DENTRO de la portada: es su fondo. Fuera de ella
+   vuelve a ser una banda aparte, que es de donde viene. */
 {
     const home = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
     const piezas = [
-        ['marcado', 'id="showcase-track"'],
+        ['hilera 1', 'id="showcase-track"'],
+        ['hilera 2', 'id="showcase-track-2"'],
         ['hoja', 'assets/css/showcase.css'],
         ['script', 'assets/js/ui/showcase.js'],
     ];
-    const presentes = piezas.filter(([, aguja]) => home.includes(aguja));
-    check('index.html: la cinta lleva marcado, hoja y script',
-        presentes.length === piezas.length,
-        presentes.length === piezas.length ? ''
-            : `falta: ${piezas.filter(([, a]) => !home.includes(a)).map(([n]) => n).join(', ')}`);
+    const faltan = piezas.filter(([, aguja]) => !home.includes(aguja));
+    check('index.html: el muro lleva sus dos hileras, hoja y script',
+        faltan.length === 0,
+        faltan.length ? `falta: ${faltan.map(([n]) => n).join(', ')}` : '');
 
     check('existe assets/css/showcase.css', exists('assets/css/showcase.css'));
     check('existe assets/js/ui/showcase.js', exists('assets/js/ui/showcase.js'));
 
+    // Dentro de la portada, no antes ni después
+    const abre = home.indexOf('<section class="feed-hero"');
+    const cierra = home.indexOf('</section>', abre);
+    const muro = home.indexOf('id="showcase"');
+    check('index.html: el muro está dentro de la portada',
+        abre !== -1 && muro > abre && muro < cierra);
+
+    // Y por debajo del texto: si el marcado fuera después de .feed-hero-inner,
+    // quedaría encima y taparía el titular en cuanto alguien tocase el z-index.
+    check('index.html: el muro va antes del texto de la portada',
+        muro < home.indexOf('feed-hero-inner'));
+
+    // Decoración pura: ni títulos, ni precios, ni enlaces
+    const js = read('assets/js/ui/showcase.js');
+    check('showcase.js: el muro no pinta títulos ni precios',
+        !js.includes('showcase-title') && !js.includes('showcase-price'));
+    check('showcase.js: las fotos del muro no son enlaces', !/<a\s/.test(js));
+
     // El script se apoya en el shell para el tema y en api para los datos
     const posShell = home.indexOf('assets/js/ui/shell.js');
-    const posCinta = home.indexOf('assets/js/ui/showcase.js');
-    check('index.html: la cinta carga tras el shell', posCinta > posShell && posShell !== -1);
+    const posMuro = home.indexOf('assets/js/ui/showcase.js');
+    check('index.html: el muro carga tras el shell', posMuro > posShell && posShell !== -1);
 }
 
 /* === 3d. La entrada con movimiento reducido ===
 
-   La secuencia construye la composición desde la nada: casi cada pieza parte
-   de opacity:0 o desplazada y llega a su sitio por animación. Con movimiento
-   reducido no hay animaciones, así que la variante quieta tiene que dejarlas
-   ya colocadas — o esconder las que solo existen para moverse.
+   intro.css representa la secuencia dos veces: con desplazamientos y, bajo
+   `prefers-reduced-motion`, con fundidos. La segunda tiene que verse igual
+   que la primera —mismos actos, mismos retrasos, misma duración—, porque en
+   un móvil Chrome enciende esa preferencia solo en cuanto entra el ahorro de
+   batería, y la entrada desaparecía para gente que nunca la pidió.
 
-   Sin esto, un acto nuevo en la entrada quedaría invisible en cualquier móvil
-   con ahorro de batería, que es donde el navegador activa esa preferencia por
-   su cuenta. Y no daría ningún error: simplemente faltaría. */
+   El invariante que se mide aquí: ninguna pieza puede quedarse con una
+   animación que la desplace, la gire o la escale. Cada fotograma que mueve
+   algo obliga a que su selector esté reescrito —o retirado— en el bloque de
+   movimiento reducido. Añadir un acto nuevo con un translate y olvidarse de
+   su equivalente salta aquí, y no en el teléfono de alguien. */
 {
     // Fuera los comentarios primero: si no, el que precede a una regla se lee
     // como parte de su selector.
@@ -284,39 +308,70 @@ pageScripts.forEach((file) => {
         }
 
         const secuencia = css.slice(0, inicio);
-        const quieto = css.slice(inicio, fin);
+        const suave = css.slice(inicio, fin);
 
-        const invisibles = [...secuencia.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
-            .map(([, sel, cuerpo]) => ({ sel: sel.trim().replace(/\s+/g, ' '), cuerpo }))
-            .filter(({ sel }) => sel.startsWith('.intro') && !sel.includes('%') && !sel.includes('@'))
-            .filter(({ cuerpo }) => /opacity:\s*0\s*[;}]?/.test(cuerpo)
-                || /transform:\s*[^;]*(translate|scale[XY]?\(0|rotate)/.test(cuerpo)
-                || /stroke-dashoffset:\s*var\(--len/.test(cuerpo));
+        /* Qué fotogramas mueven algo de sitio.
 
-        check('intro.css: hay piezas que nacen invisibles', invisibles.length >= 8,
-            `encontradas ${invisibles.length}`);
-
-        invisibles.forEach(({ sel }) => {
-            // Basta con que el bloque quieto lo nombre: o lo recoloca, o lo
-            // esconde por ser puro movimiento. Las dos cosas son correctas.
-            const cubierto = sel.split(',').every((uno) => quieto.includes(uno.trim()));
-            check(`intro.css: ${sel} se ve sin movimiento`, cubierto);
+           El cuerpo se delimita contando llaves, no con una expresión no
+           codiciosa: un @keyframes escrito en una sola línea no termina en
+           "\n}", así que la búsqueda seguiría hasta el cierre del siguiente
+           y le atribuiría sus transformaciones. */
+        const mueven = new Set();
+        [...secuencia.matchAll(/@keyframes\s+([\w-]+)\s*\{/g)].forEach((m) => {
+            let nivel = 0;
+            let corte = m.index;
+            for (let n = m.index + m[0].length - 1; n < secuencia.length; n += 1) {
+                if (secuencia[n] === '{') nivel += 1;
+                else if (secuencia[n] === '}') {
+                    nivel -= 1;
+                    if (nivel === 0) { corte = n; break; }
+                }
+            }
+            const cuerpo = secuencia.slice(m.index + m[0].length, corte);
+            if (/transform:\s*[^;]*(translate|scale|rotate)/.test(cuerpo)) mueven.add(m[1]);
         });
 
-        // La capa entera no puede desaparecer: ese era el fallo corregido.
+        check('intro.css: la secuencia tiene fotogramas con movimiento', mueven.size >= 6,
+            `encontrados ${mueven.size}`);
+
+        // Y qué selectores los usan
+        [...secuencia.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+            .map(([, sel, cuerpo]) => ({ sel: sel.trim().replace(/\s+/g, ' '), cuerpo }))
+            .filter(({ sel }) => sel.startsWith('.intro'))
+            .forEach(({ sel, cuerpo }) => {
+                const usa = [...cuerpo.matchAll(/animation:\s*([\w-]+)/g)].map((m) => m[1])
+                    .filter((nombre) => mueven.has(nombre));
+                if (!usa.length) return;
+
+                // Reescrito o retirado: las dos cosas valen
+                const atendido = sel.split(',').every((uno) => suave.includes(uno.trim()));
+                check(`intro.css: ${sel} no se desplaza sin movimiento`, atendido,
+                    atendido ? '' : `usa ${usa.join(', ')}`);
+            });
+
+        // La capa entera no puede desaparecer: ese fue el primer fallo.
         check('intro.css: la entrada no se oculta del todo',
-            !/\.intro\s*\{[^}]*display:\s*none/.test(quieto));
-        check('intro.css: la variante quieta tiene su propia salida',
-            quieto.includes('intro-exit-quiet'));
+            !/\.intro\s*\{[^}]*display:\s*none/.test(suave));
+
+        // Ni quedarse quieta sin secuencia: ese fue el segundo. La salida debe
+        // arrancar cuando arranca la normal, para que dure lo mismo que en PC.
+        const salidaNormal = secuencia.match(/animation:\s*intro-exit\s[^;]*?(\d+)ms\s+forwards/);
+        const salidaSuave = suave.match(/animation:\s*intro-exit-fade\s[^;]*?(\d+)ms\s+forwards/);
+        check('intro.css: la versión con fundidos tiene su propia salida', !!salidaSuave);
+        if (salidaNormal && salidaSuave) {
+            check('intro.css: las dos versiones duran lo mismo',
+                salidaNormal[1] === salidaSuave[1],
+                `normal ${salidaNormal[1]}ms, fundida ${salidaSuave[1]}ms`);
+        }
     }
 
-    // Y el script debe acompañarla, no retirarla de golpe
+    // El script no debe decidir nada sobre esto: lo resuelve el CSS entero.
     const js = read('assets/js/ui/intro.js');
     check('intro.js: el movimiento reducido ya no la descarta',
-        !/alreadySeen\(\)\s*\|\|\s*prefersReducedMotion\(\)/.test(js));
-    check('intro.js: la variante quieta tiene su propia duración', js.includes('QUIET_MS'));
+        !js.includes('prefersReducedMotion'));
     check('intro.js: ?intro permite volver a verla', js.includes('replayRequested'));
 }
+
 
 /* === 4b. Los IDs que busca cada script existen en su página === */
 // Detecta el desajuste clásico al repartir HTML y JS en archivos distintos.

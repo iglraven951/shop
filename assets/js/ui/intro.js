@@ -17,9 +17,6 @@
        4400 ms de secuencia + 800 ms de telón, con holgura. */
     const TOTAL_MS = 5600;
     const COUNT_MS = 4100;
-    /* La variante sin movimiento dura mucho menos: no hay nada que ver
-       ocurrir, solo la marca sostenida. 1700 ms de reposo + 500 de fundido. */
-    const QUIET_MS = 2400;
 
     /** El almacenamiento falla en ventana privada: nunca debe romper la página. */
     function alreadySeen() {
@@ -50,11 +47,6 @@
         } catch (error) {
             return false;
         }
-    }
-
-    function prefersReducedMotion() {
-        return global.matchMedia
-            && global.matchMedia('(prefers-reduced-motion: reduce)').matches;
     }
 
     /** Retira la capa y deja la página libre. */
@@ -153,14 +145,14 @@
             return;
         }
 
-        /* Con movimiento reducido la entrada sigue apareciendo, pero quieta:
-           el CSS la deja ya colocada y solo la funde. Aquí se omite lo que
-           únicamente aporta movimiento. */
-        const quiet = prefersReducedMotion();
-
+        /* El movimiento reducido ya no se decide aquí: intro.css representa la
+           misma secuencia con fundidos en vez de desplazamientos, con los
+           mismos retrasos y la misma duración. Desde este lado, las dos
+           versiones son la misma —y el contador, que solo cambia de cifra,
+           corre en ambas. */
         prepareStrokes(intro);
         splitWords(intro.querySelector('.intro-name'));
-        if (!quiet) runCounter(intro);
+        runCounter(intro);
 
         const skip = intro.querySelector('.intro-skip');
         if (skip) skip.addEventListener('click', () => dismiss(intro));
@@ -173,7 +165,7 @@
         intro.addEventListener('click', () => dismiss(intro));
 
         // Red de seguridad por si alguna animación no dispara su evento
-        setTimeout(() => dismiss(intro), quiet ? QUIET_MS : TOTAL_MS);
+        setTimeout(() => dismiss(intro), TOTAL_MS);
     }
 
     if (document.readyState === 'loading') {
