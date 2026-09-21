@@ -1,1 +1,0 @@
-"""DiscoveryShop Application Package."""
