@@ -26,6 +26,17 @@ node tests/integrity.test.mjs
 
 Expected: `765 comprobaciones correctas, 0 problemas`.
 
+## Layer contract
+Loads the real core in a simulated DOM and asserts that every method the page
+scripts invoke actually exists. A call left over from an older model compiles
+fine and only fails when someone opens that page; this catches it.
+
+```bash
+node tests/contract.test.mjs
+```
+
+Expected: `63 comprobaciones correctas, 0 problemas`.
+
 ## JavaScript syntax check
 ```bash
 for f in assets/js/core/*.js assets/js/ui/*.js assets/js/pages/*.js; do node --check "$f"; done
