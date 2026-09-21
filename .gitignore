@@ -1,3 +1,6 @@
+# Notas internas de trabajo: útiles en local, fuera del repositorio
+.claude/
+
 # Volcados de fallo de Git Bash: ruido, no forman parte del proyecto
 *.stackdump
 
