@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guardados · DiscoveryShop</title>
+    <meta name="description" content="Tus publicaciones guardadas en DiscoveryShop: vuelve a los artículos de segunda mano que te interesan y escribe a quien los publica cuando quieras.">
+    <meta name="theme-color" content="#08090c">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><text y='16' font-size='16'>🛍️</text></svg>">
+    <link rel="manifest" href="site.webmanifest">
+    <link rel="stylesheet" href="assets/css/tokens.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+    <link rel="stylesheet" href="assets/css/layout.css">
+    <link rel="stylesheet" href="assets/css/pages/saved.css">
+</head>
+<body>
+    <a class="skip-link" href="#main">Saltar al contenido</a>
+
+    <div id="app-header"></div>
+
+    <main id="main">
+        <div class="saved-page" id="saved-page">
+
+            <!-- Invitación a iniciar sesión: la rellena saved.js si no hay usuario -->
+            <section class="saved-gate" id="saved-gate" hidden aria-label="Sesión requerida"></section>
+
+            <div class="saved-shell" id="saved-shell" hidden>
+
+                <header class="results-header">
+                    <div class="saved-heading">
+                        <h1 class="saved-title">
+                            <span class="saved-title-icon" aria-hidden="true">🔖</span>
+                            Guardados
+                        </h1>
+                        <p class="results-count" id="saved-count" aria-live="polite" aria-atomic="true">
+                            Cargando tus guardados…
+                        </p>
+                    </div>
+
+                    <div class="results-tools">
+                        <div class="sort-control">
+                            <label class="label" for="saved-sort">Ordenar</label>
+                            <select class="select" id="saved-sort" aria-label="Ordenar las publicaciones guardadas">
+                                <option value="recent">Guardados recientes</option>
+                                <option value="price_asc">Precio: menor a mayor</option>
+                                <option value="price_desc">Precio: mayor a menor</option>
+                                <option value="commented">Más comentados</option>
+                            </select>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- Solo aparece cuando hay algo que vaciar -->
+                <div class="saved-actions" id="saved-actions" hidden>
+                    <p class="saved-hint">
+                        Quitar una publicación de aquí no la borra del foro: seguirá disponible para todos.
+                    </p>
+                    <button class="btn btn-secondary btn-sm saved-clear" id="saved-clear" type="button">
+                        Vaciar guardados
+                    </button>
+                </div>
+
+                <p class="saved-progress" id="saved-progress" hidden role="status" aria-live="polite"></p>
+
+                <div class="post-feed" id="saved-feed" aria-busy="true" aria-label="Publicaciones guardadas"></div>
+
+                <!-- Estado vacío y errores viven fuera del listado, para que el
+                     listado vuelva a verse intacto en cuanto haya contenido. -->
+                <div id="saved-state"></div>
+            </div>
+        </div>
+    </main>
+
+    <div id="app-footer"></div>
+
+    <!-- Núcleo (este orden es obligatorio) -->
+    <script src="assets/js/core/seed.js"></script>
+    <script src="assets/js/core/mock-api.js"></script>
+    <script src="assets/js/core/store.js"></script>
+    <script src="assets/js/core/api.js"></script>
+    <script src="assets/js/ui/toast.js"></script>
+    <script src="assets/js/ui/modal.js"></script>
+    <script src="assets/js/ui/components.js"></script>
+    <script src="assets/js/ui/shell.js"></script>
+    <!-- Página -->
+    <script src="assets/js/pages/saved.js"></script>
+</body>
+</html>

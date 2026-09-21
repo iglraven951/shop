@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DiscoveryShop · Foro de artículos de segunda mano en Arequipa</title>
+    <meta name="description" content="Foro arequipeño para promocionar artículos de segunda mano. Publica, comenta y conecta con vecinos de los 18 distritos. Sin comisiones ni pagos en la plataforma.">
+    <meta name="theme-color" content="#08090c">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><text y='16' font-size='16'>🛍️</text></svg>">
+    <link rel="manifest" href="site.webmanifest">
+    <link rel="stylesheet" href="assets/css/tokens.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+    <link rel="stylesheet" href="assets/css/layout.css">
+    <link rel="stylesheet" href="assets/css/pages/feed.css">
+</head>
+<body>
+    <a class="skip-link" href="#main">Saltar al contenido</a>
+
+    <div id="app-header"></div>
+
+    <main id="main">
+
+        <!-- ===================== Portada compacta =====================
+             El script la oculta con [hidden] en cuanto hay un filtro activo:
+             cuando alguien busca, lo que importa es el feed, no la portada. -->
+        <section class="feed-hero" id="feed-hero" aria-labelledby="feed-hero-title">
+            <div class="feed-hero-inner">
+                <p class="feed-hero-eyebrow">
+                    <span class="feed-hero-dot" aria-hidden="true"></span>
+                    Foro vecinal · Arequipa, Perú
+                </p>
+
+                <h1 class="feed-hero-title" id="feed-hero-title">
+                    Lo que ya no usas,
+                    <span class="feed-hero-highlight">alguien lo está buscando</span>
+                </h1>
+
+                <p class="feed-hero-subtitle">
+                    DiscoveryShop es un foro para promocionar artículos de segunda mano de
+                    Arequipa. Aquí no se vende ni se paga nada: publicas, la gente reacciona y
+                    comenta, y el trato lo cierran ustedes por mensaje directo.
+                </p>
+
+                <div class="feed-hero-actions">
+                    <button class="btn btn-primary btn-lg" type="button" data-action="scroll-feed">
+                        Ver publicaciones
+                    </button>
+                    <a class="btn btn-secondary btn-lg" href="publicar.html">
+                        Quiero publicar
+                    </a>
+                </div>
+
+                <dl class="feed-stats">
+                    <div class="feed-stat">
+                        <dt class="feed-stat-label">Publicaciones activas</dt>
+                        <dd class="feed-stat-value" id="stat-posts">—</dd>
+                    </div>
+                    <div class="feed-stat">
+                        <dt class="feed-stat-label">Vendedores verificados</dt>
+                        <dd class="feed-stat-value" id="stat-sellers">—</dd>
+                    </div>
+                    <div class="feed-stat">
+                        <dt class="feed-stat-label">Distritos cubiertos</dt>
+                        <dd class="feed-stat-value" id="stat-districts">—</dd>
+                    </div>
+                </dl>
+            </div>
+        </section>
+
+        <!-- ===================== Feed del foro ===================== -->
+        <section id="feed" class="feed-section" aria-label="Publicaciones del foro">
+            <div class="page-shell">
+
+                <!-- ---------------- Panel de filtros ----------------
+                     Cada grupo es un bloque plegable: de un vistazo se ve qué
+                     está aplicado y se puede cerrar lo que no interesa. -->
+                <aside class="filters-panel" id="filters-panel" aria-label="Filtros del foro">
+                    <div class="filters-header">
+                        <h2 class="filters-title">
+                            Filtros
+                            <span class="filters-count" id="filters-count" hidden></span>
+                        </h2>
+
+                        <div class="filters-header-actions">
+                            <button class="btn btn-ghost btn-sm" type="button"
+                                    data-action="clear-filters">Limpiar</button>
+                            <button class="filters-close" type="button" data-action="close-filters"
+                                    aria-label="Cerrar el panel de filtros">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Buscar -->
+                    <details class="filter-group" id="group-search" open>
+                        <summary class="filter-summary">
+                            <span class="filter-summary-name">Buscar</span>
+                            <span class="filter-summary-value" id="summary-search">Todo</span>
+                            <span class="filter-chevron" aria-hidden="true">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 5.5 3 3 3-3"/></svg>
+                            </span>
+                        </summary>
+
+                        <div class="filter-body">
+                            <div class="input-group">
+                                <span class="input-icon" aria-hidden="true">
+                                    <svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="7.5" cy="7.5" r="5"/><path d="m11.5 11.5 4 4"/></svg>
+                                </span>
+                                <input class="input" type="search" id="filter-search" autocomplete="off"
+                                       maxlength="120" placeholder="Artículo, marca o vendedor…"
+                                       aria-label="Buscar publicaciones en el foro">
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- Categoría -->
+                    <details class="filter-group" id="group-category" open>
+                        <summary class="filter-summary">
+                            <span class="filter-summary-name">Categoría</span>
+                            <span class="filter-summary-value" id="summary-category">Todas</span>
+                            <span class="filter-chevron" aria-hidden="true">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 5.5 3 3 3-3"/></svg>
+                            </span>
+                        </summary>
+
+                        <div class="filter-body">
+                            <div class="filter-options" id="filter-categories" aria-busy="true">
+                                <div class="skeleton skeleton-text w-90"></div>
+                                <div class="skeleton skeleton-text w-70"></div>
+                                <div class="skeleton skeleton-text w-90"></div>
+                                <div class="skeleton skeleton-text w-50"></div>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- Distrito -->
+                    <details class="filter-group" id="group-district" open>
+                        <summary class="filter-summary">
+                            <span class="filter-summary-name">Distrito</span>
+                            <span class="filter-summary-value" id="summary-district">Todos</span>
+                            <span class="filter-chevron" aria-hidden="true">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 5.5 3 3 3-3"/></svg>
+                            </span>
+                        </summary>
+
+                        <div class="filter-body">
+                            <!-- Son 18 distritos: un buscador propio evita el scroll a ciegas -->
+                            <div class="input-group filter-finder">
+                                <span class="input-icon" aria-hidden="true">
+                                    <svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="7.5" cy="7.5" r="5"/><path d="m11.5 11.5 4 4"/></svg>
+                                </span>
+                                <input class="input" type="search" id="district-finder" autocomplete="off"
+                                       placeholder="Filtrar distritos…"
+                                       aria-label="Buscar un distrito en la lista">
+                            </div>
+
+                            <div class="filter-options" id="filter-districts" aria-busy="true">
+                                <div class="skeleton skeleton-text w-70"></div>
+                                <div class="skeleton skeleton-text w-90"></div>
+                                <div class="skeleton skeleton-text w-50"></div>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- Precio -->
+                    <details class="filter-group" id="group-price" open>
+                        <summary class="filter-summary">
+                            <span class="filter-summary-name">Precio</span>
+                            <span class="filter-summary-value" id="summary-price">Cualquiera</span>
+                            <span class="filter-chevron" aria-hidden="true">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 5.5 3 3 3-3"/></svg>
+                            </span>
+                        </summary>
+
+                        <div class="filter-body">
+                            <div class="price-inputs">
+                                <input class="input" type="number" id="filter-min-price" min="0" step="10"
+                                       inputmode="numeric" placeholder="Mín." aria-label="Precio mínimo en soles">
+                                <span class="price-separator" aria-hidden="true">—</span>
+                                <input class="input" type="number" id="filter-max-price" min="0" step="10"
+                                       inputmode="numeric" placeholder="Máx." aria-label="Precio máximo en soles">
+                            </div>
+
+                            <button class="btn btn-secondary btn-sm btn-block feed-price-apply" type="button"
+                                    data-action="apply-price">Aplicar precio</button>
+
+                            <div class="price-presets" role="group" aria-label="Rangos de precio rápidos">
+                                <button class="price-preset" type="button" data-min="" data-max="200">Hasta S/ 200</button>
+                                <button class="price-preset" type="button" data-min="200" data-max="500">S/ 200 – 500</button>
+                                <button class="price-preset" type="button" data-min="500" data-max="1500">S/ 500 – 1500</button>
+                                <button class="price-preset" type="button" data-min="1500" data-max="">Más de S/ 1500</button>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- Estado del artículo -->
+                    <details class="filter-group" id="group-condition" open>
+                        <summary class="filter-summary">
+                            <span class="filter-summary-name">Estado del artículo</span>
+                            <span class="filter-summary-value" id="summary-condition">Cualquiera</span>
+                            <span class="filter-chevron" aria-hidden="true">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 5.5 3 3 3-3"/></svg>
+                            </span>
+                        </summary>
+
+                        <div class="filter-body">
+                            <div class="filter-options">
+                                <label class="choice">
+                                    <input type="checkbox" name="condition" value="Nuevo">
+                                    <span class="choice-text">Nuevo</span>
+                                </label>
+                                <label class="choice">
+                                    <input type="checkbox" name="condition" value="Como nuevo">
+                                    <span class="choice-text">Como nuevo</span>
+                                </label>
+                                <label class="choice">
+                                    <input type="checkbox" name="condition" value="Buen estado">
+                                    <span class="choice-text">Buen estado</span>
+                                </label>
+                            </div>
+                        </div>
+                    </details>
+                </aside>
+
+                <!-- ------------------ Resultados ------------------ -->
+                <div class="feed-results">
+                    <div class="results-header">
+                        <div class="feed-results-heading">
+                            <h2 class="results-title" id="results-title">Todas las publicaciones</h2>
+                            <p class="results-count" id="results-count" aria-live="polite" aria-atomic="true">
+                                Cargando publicaciones…
+                            </p>
+                        </div>
+
+                        <div class="results-tools">
+                            <div class="sort-control">
+                                <label class="label" for="sort-select">Ordenar</label>
+                                <select class="select" id="sort-select" aria-label="Ordenar publicaciones">
+                                    <option value="recent">Más recientes</option>
+                                    <option value="price_asc">Precio: menor a mayor</option>
+                                    <option value="price_desc">Precio: mayor a menor</option>
+                                    <option value="popular">Más populares</option>
+                                    <option value="interest">Más interesados</option>
+                                    <option value="commented">Más comentados</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Aviso de «publicaciones de X»: lo rellena el script -->
+                    <div id="author-notice"></div>
+
+                    <div class="active-filters" id="active-filters"></div>
+
+                    <div class="post-feed" id="post-feed" aria-busy="true"></div>
+
+                    <!-- Los estados vacío y de error viven fuera del feed:
+                         así el feed vuelve a verse solo al limpiar los filtros. -->
+                    <div id="feed-state"></div>
+
+                    <div id="pagination-slot"></div>
+                </div>
+            </div>
+        </section>
+
+        <button class="btn btn-primary filters-fab" type="button" id="filters-fab"
+                aria-controls="filters-panel" aria-label="Abrir el panel de filtros">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M2 4h12M4.5 8h7M7 12h2"/></svg>
+            <span>Filtros</span>
+            <span class="filters-fab-count" id="filters-fab-count" hidden></span>
+        </button>
+    </main>
+
+    <div id="app-footer"></div>
+
+    <!-- Núcleo (este orden es obligatorio) -->
+    <script src="assets/js/core/seed.js"></script>
+    <script src="assets/js/core/mock-api.js"></script>
+    <script src="assets/js/core/store.js"></script>
+    <script src="assets/js/core/api.js"></script>
+    <script src="assets/js/ui/toast.js"></script>
+    <script src="assets/js/ui/modal.js"></script>
+    <script src="assets/js/ui/components.js"></script>
+    <script src="assets/js/ui/shell.js"></script>
+    <!-- Página -->
+    <script src="assets/js/pages/feed.js"></script>
+</body>
+</html>

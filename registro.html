@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear cuenta · DiscoveryShop</title>
+    <meta name="description" content="Crea tu cuenta gratuita en el foro de artículos de segunda mano de Arequipa. Elige si quieres comprar o vender y empieza en menos de un minuto.">
+    <meta name="theme-color" content="#08090c">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><text y='16' font-size='16'>🛍️</text></svg>">
+    <link rel="manifest" href="site.webmanifest">
+    <link rel="stylesheet" href="assets/css/tokens.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+    <link rel="stylesheet" href="assets/css/layout.css">
+    <link rel="stylesheet" href="assets/css/pages/auth.css">
+</head>
+<body>
+    <a class="skip-link" href="#main">Saltar al contenido</a>
+
+    <div id="app-header"></div>
+
+    <main id="main">
+        <section class="auth-layout">
+
+            <!-- Panel de marca (se oculta por debajo de 900 px) -->
+            <aside class="auth-brand">
+                <div class="auth-brand-inner">
+                    <p class="auth-brand-logo">
+                        <span class="auth-brand-mark" aria-hidden="true">🛍️</span>
+                        <span>DiscoveryShop</span>
+                    </p>
+
+                    <h2 class="auth-brand-title">El foro de segunda mano de Arequipa</h2>
+                    <p class="auth-brand-text">
+                        Lo que ya no usas le sirve a alguien más. Crear tu cuenta es gratis
+                        y solo necesitas un correo electrónico.
+                    </p>
+
+                    <ul class="auth-points">
+                        <li class="auth-point">
+                            <span class="auth-point-icon" aria-hidden="true">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 16.5 4.2 11a3.4 3.4 0 0 1 4.8-4.8l1 1 1-1A3.4 3.4 0 0 1 15.8 11L10 16.5Z"/></svg>
+                            </span>
+                            <span class="auth-point-body">
+                                <span class="auth-point-title">Participa desde el primer día</span>
+                                <span class="auth-point-text">Reacciona, guarda y comenta las publicaciones que te interesen.</span>
+                            </span>
+                        </li>
+                        <li class="auth-point">
+                            <span class="auth-point-icon" aria-hidden="true">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 11.5a2.5 2.5 0 0 1-2.5 2.5H7l-4 3V5a2.5 2.5 0 0 1 2.5-2.5h9A2.5 2.5 0 0 1 17 5v6.5Z"/></svg>
+                            </span>
+                            <span class="auth-point-body">
+                                <span class="auth-point-title">Habla directamente</span>
+                                <span class="auth-point-text">Escríbete con quien publica y acuerden dónde encontrarse.</span>
+                            </span>
+                        </li>
+                        <li class="auth-point">
+                            <span class="auth-point-icon" aria-hidden="true">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5 16 5v4.6c0 3.5-2.4 6.6-6 7.9-3.6-1.3-6-4.4-6-7.9V5l6-2.5Z"/><path d="m7.4 10 1.9 1.9 3.4-3.6"/></svg>
+                            </span>
+                            <span class="auth-point-body">
+                                <span class="auth-point-title">Vendedores revisados</span>
+                                <span class="auth-point-text">Quien publica pasa antes por la revisión del equipo.</span>
+                            </span>
+                        </li>
+                    </ul>
+
+                    <figure class="auth-quote">
+                        <blockquote class="auth-quote-text">
+                            «Publiqué mi bicicleta un domingo y el lunes ya la había entregado en Yanahuara. Sin vueltas.»
+                        </blockquote>
+                        <figcaption class="auth-quote-author">
+                            <span class="auth-quote-avatar" aria-hidden="true">JR</span>
+                            <span class="auth-quote-name">
+                                <strong>Julio César R.</strong>
+                                Vendedor verificado · Cayma
+                            </span>
+                        </figcaption>
+                    </figure>
+                </div>
+            </aside>
+
+            <!-- Formulario -->
+            <div class="auth-panel">
+                <div class="auth-card">
+                    <p class="auth-mobile-brand">
+                        <span class="auth-brand-mark" aria-hidden="true">🛍️</span>
+                        <span>DiscoveryShop</span>
+                    </p>
+
+                    <header class="auth-head">
+                        <h1 class="auth-title">Crear cuenta</h1>
+                        <p class="auth-subtitle" id="auth-subtitle">
+                            Elige cómo quieres usar el foro y completa tus datos.
+                        </p>
+                    </header>
+
+                    <!-- Indicador de pasos (lo actualiza auth.js) -->
+                    <div class="steps auth-steps" id="auth-steps">
+                        <div class="step is-active" data-step-item="1">
+                            <span class="step-dot" aria-hidden="true">1</span>
+                            <span class="step-label">Tipo de cuenta</span>
+                        </div>
+                        <span class="step-line" aria-hidden="true"></span>
+                        <div class="step" data-step-item="2">
+                            <span class="step-dot" aria-hidden="true">2</span>
+                            <span class="step-label">Tus datos</span>
+                        </div>
+                    </div>
+                    <p class="sr-only" id="auth-step-status" aria-live="polite"></p>
+
+                    <!-- Errores del servidor y avisos (lo rellena auth.js) -->
+                    <div class="auth-banner" id="auth-banner" role="alert" aria-live="assertive" hidden></div>
+
+                    <!-- Aviso de sesión ya iniciada (lo rellena auth.js) -->
+                    <div class="auth-session" id="auth-session" hidden></div>
+
+                    <div id="auth-form-area">
+                        <form class="auth-form" id="register-form" novalidate>
+
+                            <!-- ============ PASO 1 · Tipo de cuenta ============ -->
+                            <div class="auth-step" data-step="1">
+                                <fieldset class="auth-roles-group">
+                                    <legend class="auth-roles-legend">¿Qué quieres hacer en DiscoveryShop?</legend>
+
+                                    <div class="auth-roles">
+                                        <label class="auth-role-card" for="role-buyer">
+                                            <input class="auth-role-input" type="radio" name="role"
+                                                   id="role-buyer" value="buyer"
+                                                   aria-describedby="role-buyer-desc">
+                                            <span class="auth-role-check" aria-hidden="true">
+                                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 7.3 2.7 2.7L11 4.4"/></svg>
+                                            </span>
+                                            <span class="auth-role-head">
+                                                <span class="auth-role-icon" aria-hidden="true">🛍️</span>
+                                                <span class="auth-role-name">Quiero comprar</span>
+                                            </span>
+                                            <span class="auth-role-desc" id="role-buyer-desc">
+                                                Explora el foro, guarda artículos, comenta y escríbete con
+                                                quien vende. Tu cuenta se activa al instante.
+                                            </span>
+                                            <span class="auth-role-perks">
+                                                <span class="auth-role-perk"><span aria-hidden="true">❤️</span> Reaccionar</span>
+                                                <span class="auth-role-perk"><span aria-hidden="true">🔖</span> Guardar</span>
+                                                <span class="auth-role-perk"><span aria-hidden="true">💬</span> Comentar</span>
+                                                <span class="auth-role-perk"><span aria-hidden="true">✉️</span> Mensajería</span>
+                                            </span>
+                                        </label>
+
+                                        <label class="auth-role-card" for="role-seller">
+                                            <input class="auth-role-input" type="radio" name="role"
+                                                   id="role-seller" value="seller"
+                                                   aria-describedby="role-seller-desc role-seller-notice">
+                                            <span class="auth-role-check" aria-hidden="true">
+                                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 7.3 2.7 2.7L11 4.4"/></svg>
+                                            </span>
+                                            <span class="auth-role-head">
+                                                <span class="auth-role-icon" aria-hidden="true">🏷️</span>
+                                                <span class="auth-role-name">Quiero vender</span>
+                                            </span>
+                                            <span class="auth-role-desc" id="role-seller-desc">
+                                                Todo lo anterior, y además publicas los artículos que ya no usas.
+                                            </span>
+                                            <span class="auth-role-perks">
+                                                <span class="auth-role-perk"><span aria-hidden="true">❤️</span> Reaccionar</span>
+                                                <span class="auth-role-perk"><span aria-hidden="true">🔖</span> Guardar</span>
+                                                <span class="auth-role-perk"><span aria-hidden="true">💬</span> Comentar</span>
+                                                <span class="auth-role-perk"><span aria-hidden="true">✉️</span> Mensajería</span>
+                                                <span class="auth-role-perk is-extra"><span aria-hidden="true">🏷️</span> Publicar</span>
+                                            </span>
+                                            <span class="alert alert-warning auth-role-notice" id="role-seller-notice">
+                                                <span class="alert-icon" aria-hidden="true">
+                                                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2.3 16.6 15H1.4L9 2.3Z"/><path d="M9 7v3.4M9 12.8h.01"/></svg>
+                                                </span>
+                                                <span class="alert-content">
+                                                    Tu cuenta de vendedor pasa por una revisión del equipo.
+                                                    Mientras tanto podrás usar el foro con normalidad, pero no publicar.
+                                                </span>
+                                            </span>
+                                        </label>
+                                    </div>
+
+                                    <p class="field-error" id="register-role-error" aria-live="polite"></p>
+                                </fieldset>
+
+                                <button class="btn btn-primary btn-block btn-lg auth-submit" type="submit" id="register-continue">
+                                    Continuar
+                                </button>
+                            </div>
+
+                            <!-- ============ PASO 2 · Tus datos ============ -->
+                            <div class="auth-step" data-step="2" hidden>
+                                <div class="auth-step-bar">
+                                    <button class="auth-back" type="button" id="register-back">
+                                        <span aria-hidden="true">
+                                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 3.5 5 8l4.5 4.5"/></svg>
+                                        </span>
+                                        Volver
+                                    </button>
+
+                                    <p class="auth-role-pill" id="register-role-pill">
+                                        <span class="auth-role-pill-icon" id="register-role-pill-icon" aria-hidden="true">🛍️</span>
+                                        <span class="auth-role-pill-text">
+                                            Cuenta de <strong id="register-role-pill-label">comprador</strong>
+                                        </span>
+                                        <button class="auth-link auth-role-pill-change" type="button" id="register-role-change">
+                                            Cambiar
+                                        </button>
+                                    </p>
+                                </div>
+
+                                <!-- Recordatorio de la revisión: solo se muestra si eligió vender -->
+                                <div class="alert alert-warning auth-seller-reminder" id="register-seller-reminder" hidden>
+                                    <span class="alert-icon" aria-hidden="true">
+                                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2.3 16.6 15H1.4L9 2.3Z"/><path d="M9 7v3.4M9 12.8h.01"/></svg>
+                                    </span>
+                                    <div class="alert-content">
+                                        <p class="alert-title">Tu cuenta de vendedor se revisa antes</p>
+                                        <p class="alert-body">
+                                            Podrás explorar, guardar, comentar y escribir mensajes desde el
+                                            primer momento. Para publicar artículos hace falta la aprobación
+                                            del equipo.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="field">
+                                    <label class="label" for="register-name">Nombre completo</label>
+                                    <div class="input-group">
+                                        <span class="input-icon" aria-hidden="true">
+                                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="6" r="2.9"/><path d="M3.4 15.3a5.6 5.6 0 0 1 11.2 0"/></svg>
+                                        </span>
+                                        <input class="input" type="text" id="register-name" name="username"
+                                               autocomplete="name" placeholder="Ana Quispe Flores"
+                                               maxlength="60" aria-describedby="register-name-error" required>
+                                    </div>
+                                    <p class="field-error" id="register-name-error" aria-live="polite"></p>
+                                </div>
+
+                                <div class="field">
+                                    <label class="label" for="register-email">Correo electrónico</label>
+                                    <div class="input-group">
+                                        <span class="input-icon" aria-hidden="true">
+                                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3.5" width="14" height="11" rx="2"/><path d="m2.5 5 6.5 4.5L15.5 5"/></svg>
+                                        </span>
+                                        <input class="input" type="email" id="register-email" name="email"
+                                               autocomplete="email" inputmode="email" spellcheck="false"
+                                               placeholder="tucorreo@ejemplo.com"
+                                               aria-describedby="register-email-error" required>
+                                    </div>
+                                    <p class="field-error" id="register-email-error" aria-live="polite"></p>
+                                </div>
+
+                                <div class="auth-row">
+                                    <div class="field">
+                                        <label class="label" for="register-district">Distrito</label>
+                                        <!-- Las opciones las rellena auth.js desde DiscoverySeed.DISTRICTS -->
+                                        <select class="select" id="register-district" name="district"
+                                                autocomplete="address-level3"
+                                                aria-describedby="register-district-error"></select>
+                                        <p class="field-error" id="register-district-error" aria-live="polite"></p>
+                                    </div>
+
+                                    <div class="field">
+                                        <label class="label" for="register-phone">
+                                            Teléfono <span class="text-muted">(opcional)</span>
+                                        </label>
+                                        <input class="input" type="tel" id="register-phone" name="phone"
+                                               autocomplete="tel-national" inputmode="tel"
+                                               placeholder="987 654 321" maxlength="20"
+                                               aria-describedby="register-phone-error">
+                                        <p class="field-error" id="register-phone-error" aria-live="polite"></p>
+                                    </div>
+                                </div>
+
+                                <div class="field">
+                                    <label class="label" for="register-password">Contraseña</label>
+                                    <div class="input-group">
+                                        <span class="input-icon" aria-hidden="true">
+                                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7.5" width="12" height="8" rx="2"/><path d="M5.8 7.5V5.6a3.2 3.2 0 0 1 6.4 0v1.9"/></svg>
+                                        </span>
+                                        <input class="input" type="password" id="register-password" name="password"
+                                               autocomplete="new-password" placeholder="Mínimo 8 caracteres"
+                                               aria-describedby="register-password-error password-meter-label" required>
+                                        <button class="input-action" type="button"
+                                                data-toggle-password="register-password"
+                                                aria-label="Mostrar contraseña" aria-pressed="false">
+                                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 9S4.5 3.8 9 3.8 16.5 9 16.5 9 13.5 14.2 9 14.2 1.5 9 1.5 9Z"/><circle cx="9" cy="9" r="2.3"/></svg>
+                                        </button>
+                                    </div>
+
+                                    <div class="auth-meter" id="password-meter" data-score="0" aria-hidden="true">
+                                        <span class="auth-meter-segment"></span>
+                                        <span class="auth-meter-segment"></span>
+                                        <span class="auth-meter-segment"></span>
+                                        <span class="auth-meter-segment"></span>
+                                    </div>
+                                    <p class="auth-meter-label" id="password-meter-label" data-score="0" aria-live="polite">
+                                        <span class="auth-meter-hint" id="password-meter-hint">Usa al menos 8 caracteres.</span>
+                                        <span class="auth-meter-level" id="password-meter-level"></span>
+                                    </p>
+
+                                    <p class="field-error" id="register-password-error" aria-live="polite"></p>
+                                </div>
+
+                                <div class="field">
+                                    <label class="label" for="register-confirm">Confirmar contraseña</label>
+                                    <div class="input-group">
+                                        <span class="input-icon" aria-hidden="true">
+                                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7.5" width="12" height="8" rx="2"/><path d="M5.8 7.5V5.6a3.2 3.2 0 0 1 6.4 0v1.9"/><path d="m7 11.4 1.4 1.4 2.6-2.8"/></svg>
+                                        </span>
+                                        <input class="input" type="password" id="register-confirm" name="confirm"
+                                               autocomplete="new-password" placeholder="Repite tu contraseña"
+                                               aria-describedby="register-confirm-error" required>
+                                        <button class="input-action" type="button"
+                                                data-toggle-password="register-confirm"
+                                                aria-label="Mostrar contraseña" aria-pressed="false">
+                                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 9S4.5 3.8 9 3.8 16.5 9 16.5 9 13.5 14.2 9 14.2 1.5 9 1.5 9Z"/><circle cx="9" cy="9" r="2.3"/></svg>
+                                        </button>
+                                    </div>
+                                    <p class="field-error" id="register-confirm-error" aria-live="polite"></p>
+                                </div>
+
+                                <div class="field">
+                                    <div class="auth-terms">
+                                        <input type="checkbox" id="register-terms" name="terms"
+                                               aria-describedby="register-terms-error">
+                                        <p class="auth-terms-text">
+                                            <label for="register-terms">Acepto los</label>
+                                            <button class="auth-link" type="button" id="terms-link">términos y la política de privacidad</button>
+                                        </p>
+                                    </div>
+                                    <p class="field-error" id="register-terms-error" aria-live="polite"></p>
+                                </div>
+
+                                <button class="btn btn-primary btn-block btn-lg auth-submit" type="submit" id="register-submit">
+                                    Crear cuenta
+                                </button>
+                            </div>
+                        </form>
+
+                        <!-- Aclaración del modo demostración, para quien llega desde GitHub Pages -->
+                        <div class="alert alert-info auth-demo" id="auth-demo">
+                            <span class="alert-icon" aria-hidden="true">
+                                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="7"/><path d="M9 8.2v4.3M9 5.6h.01"/></svg>
+                            </span>
+                            <div class="alert-content">
+                                <p class="alert-title">¿Solo quieres echar un vistazo?</p>
+                                <p class="alert-body">
+                                    Esta versión funciona sin servidor: tu cuenta se guarda únicamente en este
+                                    navegador. Si prefieres no registrarte, entra con una de las cuentas de
+                                    demostración.
+                                </p>
+                                <a class="btn btn-secondary btn-sm" href="login.html" id="demo-login-link">
+                                    Ver cuentas de demostración
+                                </a>
+                            </div>
+                        </div>
+
+                        <p class="auth-switch">
+                            ¿Ya tienes cuenta?
+                            <a href="login.html" id="auth-switch-link">Inicia sesión</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <div id="app-footer"></div>
+
+    <!-- Núcleo (este orden es obligatorio) -->
+    <script src="assets/js/core/seed.js"></script>
+    <script src="assets/js/core/mock-api.js"></script>
+    <script src="assets/js/core/store.js"></script>
+    <script src="assets/js/core/api.js"></script>
+    <script src="assets/js/ui/toast.js"></script>
+    <script src="assets/js/ui/modal.js"></script>
+    <script src="assets/js/ui/components.js"></script>
+    <script src="assets/js/ui/shell.js"></script>
+    <!-- Página -->
+    <script src="assets/js/pages/auth.js"></script>
+</body>
+</html>

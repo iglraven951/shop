@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi perfil · DiscoveryShop</title>
+    <meta name="description" content="Tu cuenta de DiscoveryShop: edita tus datos, revisa el estado de tus publicaciones y solicita tu cuenta de vendedor para publicar en el foro.">
+    <meta name="theme-color" content="#08090c">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><text y='16' font-size='16'>🛍️</text></svg>">
+    <link rel="manifest" href="site.webmanifest">
+    <link rel="stylesheet" href="assets/css/tokens.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+    <link rel="stylesheet" href="assets/css/layout.css">
+    <link rel="stylesheet" href="assets/css/pages/profile.css">
+</head>
+<body>
+    <a class="skip-link" href="#main">Saltar al contenido</a>
+
+    <div id="app-header"></div>
+
+    <main id="main">
+        <div class="profile-page">
+
+            <!-- Mientras se resuelve la sesión: silueta, nunca una pantalla en blanco -->
+            <div class="profile-boot" id="profile-boot" aria-live="polite" aria-busy="true">
+                <div class="skeleton profile-boot-hero"></div>
+                <div class="skeleton profile-boot-seller"></div>
+                <div class="skeleton profile-boot-tabs"></div>
+                <div class="skeleton profile-boot-body"></div>
+                <span class="sr-only">Cargando tu perfil…</span>
+            </div>
+
+            <!-- Sin sesión: invitación (`UI.loginGate`), nunca una redirección automática -->
+            <section class="profile-gate" id="profile-gate" hidden aria-label="Acceso a tu cuenta"></section>
+
+            <!-- Panel de cuenta -->
+            <div id="profile-content" hidden>
+
+                <!-- Cabecera de perfil -->
+                <section class="profile-hero" aria-labelledby="profile-name">
+                    <div class="profile-hero-main">
+                        <span class="avatar avatar-xl profile-avatar" id="profile-avatar" aria-hidden="true">··</span>
+
+                        <div class="profile-identity">
+                            <div class="profile-identity-head">
+                                <h1 class="profile-name truncate" id="profile-name">Mi perfil</h1>
+                                <span class="profile-role" id="profile-role"></span>
+                            </div>
+                            <p class="profile-email truncate" id="profile-email"></p>
+                            <ul class="profile-facts">
+                                <li class="profile-fact" id="profile-district"></li>
+                                <li class="profile-fact" id="profile-since"></li>
+                            </ul>
+                        </div>
+
+                        <div class="profile-hero-actions">
+                            <button class="btn btn-secondary" type="button" data-goto-tab="datos">
+                                Editar perfil
+                            </button>
+                            <a class="btn btn-ghost" href="guardados.html">Ver guardados</a>
+                        </div>
+                    </div>
+
+                    <dl class="profile-metrics" id="profile-metrics">
+                        <!-- El `dt` va antes que el `dd` para que el marcado sea válido;
+                             el orden visual lo invierte la hoja de estilos. -->
+                        <div class="profile-metric">
+                            <dt class="profile-metric-label">Publicaciones activas</dt>
+                            <dd class="profile-metric-value" data-metric="approved">—</dd>
+                        </div>
+                        <div class="profile-metric">
+                            <dt class="profile-metric-label">En revisión</dt>
+                            <dd class="profile-metric-value" data-metric="pending">—</dd>
+                        </div>
+                        <div class="profile-metric">
+                            <dt class="profile-metric-label">Guardados</dt>
+                            <dd class="profile-metric-value">
+                                <a class="profile-metric-link" href="guardados.html" data-metric="saved">—</a>
+                            </dd>
+                        </div>
+                        <div class="profile-metric">
+                            <dt class="profile-metric-label">Visitas totales</dt>
+                            <dd class="profile-metric-value" data-metric="views">—</dd>
+                        </div>
+                    </dl>
+                </section>
+
+                <!-- Estado de vendedor: el bloque cambia según `seller_status` -->
+                <section class="profile-seller" id="profile-seller"
+                         aria-live="polite" aria-label="Estado de tu cuenta de vendedor"></section>
+
+                <!-- Navegación por secciones (las anclas viven en la URL) -->
+                <div class="profile-tabs" id="profile-tabs" role="tablist" aria-label="Secciones del perfil">
+                    <button class="profile-tab is-active" type="button" role="tab" data-tab="datos"
+                            id="tab-datos" aria-controls="panel-datos" aria-selected="true">
+                        <span aria-hidden="true">👤</span><span>Mis datos</span>
+                    </button>
+                    <button class="profile-tab" type="button" role="tab" data-tab="publicaciones"
+                            id="tab-publicaciones" aria-controls="panel-publicaciones"
+                            aria-selected="false" tabindex="-1">
+                        <span aria-hidden="true">🏷️</span><span>Mis publicaciones</span>
+                    </button>
+                </div>
+
+                <!-- Pestaña: Mis datos -->
+                <section class="profile-panel" id="panel-datos" role="tabpanel"
+                         aria-labelledby="tab-datos" tabindex="0">
+                    <div class="profile-block">
+                        <div class="profile-section-head">
+                            <div class="profile-section-text">
+                                <h2 class="profile-block-title">Datos de la cuenta</h2>
+                                <p class="profile-block-hint">Así te verán quienes lean tus publicaciones y comentarios.</p>
+                            </div>
+                        </div>
+
+                        <form class="profile-form" id="profile-form" novalidate>
+                            <div class="profile-form-grid">
+                                <div class="field">
+                                    <label class="label" for="pf-username">Nombre <span class="required">*</span></label>
+                                    <input class="input" id="pf-username" name="username" type="text"
+                                           autocomplete="name" maxlength="40" required>
+                                    <p class="field-error" data-error-for="username" aria-live="polite"></p>
+                                </div>
+
+                                <div class="field">
+                                    <label class="label" for="pf-email">Correo electrónico</label>
+                                    <input class="input" id="pf-email" name="email" type="email"
+                                           disabled aria-describedby="pf-email-hint">
+                                    <p class="field-hint" id="pf-email-hint">El correo no se puede modificar.</p>
+                                </div>
+
+                                <div class="field">
+                                    <label class="label" for="pf-district">Distrito <span class="required">*</span></label>
+                                    <select class="select" id="pf-district" name="district" required></select>
+                                    <p class="field-error" data-error-for="district" aria-live="polite"></p>
+                                </div>
+
+                                <div class="field">
+                                    <label class="label" for="pf-phone">Teléfono</label>
+                                    <input class="input" id="pf-phone" name="phone" type="tel"
+                                           inputmode="tel" maxlength="20" placeholder="+51 999 888 777"
+                                           autocomplete="tel">
+                                    <p class="field-error" data-error-for="phone" aria-live="polite"></p>
+                                </div>
+                            </div>
+
+                            <div class="field profile-field-wide">
+                                <div class="profile-label-row">
+                                    <label class="label" for="pf-bio">Biografía</label>
+                                    <span class="profile-counter" id="pf-bio-counter">0/200</span>
+                                </div>
+                                <textarea class="textarea" id="pf-bio" name="bio" rows="3" maxlength="200"
+                                          placeholder="Cuéntale al foro quién eres en pocas palabras."
+                                          aria-describedby="pf-bio-counter"></textarea>
+                                <p class="field-error" data-error-for="bio" aria-live="polite"></p>
+                            </div>
+
+                            <div class="profile-form-actions">
+                                <button class="btn btn-primary" type="submit" id="profile-save">Guardar cambios</button>
+                                <button class="btn btn-ghost" type="button" id="profile-revert">Descartar cambios</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="profile-block">
+                        <div class="profile-section-head">
+                            <div class="profile-section-text">
+                                <h2 class="profile-block-title">Preferencias</h2>
+                                <p class="profile-block-hint">Configuración que solo afecta a este navegador.</p>
+                            </div>
+                        </div>
+
+                        <div class="profile-pref">
+                            <div class="profile-pref-text">
+                                <span class="profile-pref-label" id="pref-theme-label">Tema oscuro</span>
+                                <span class="profile-pref-hint">
+                                    Cambia el aspecto de todo el sitio. Se sincroniza con el botón de la cabecera.
+                                </span>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="pref-theme" aria-labelledby="pref-theme-label">
+                                <span class="switch-track"></span>
+                                <span class="switch-thumb"></span>
+                            </label>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Pestaña: Mis publicaciones -->
+                <section class="profile-panel" id="panel-publicaciones" role="tabpanel"
+                         aria-labelledby="tab-publicaciones" tabindex="0" hidden>
+                    <div class="profile-block">
+                        <div class="profile-section-head">
+                            <div class="profile-section-text">
+                                <h2 class="profile-block-title">Mis publicaciones</h2>
+                                <p class="profile-block-hint" id="posts-summary">Todo lo que has publicado en el foro.</p>
+                            </div>
+                            <a class="btn btn-primary" href="publicar.html" id="posts-publish" hidden>
+                                Publicar un artículo
+                            </a>
+                        </div>
+
+                        <div class="profile-subfilters" id="posts-filters" role="group"
+                             aria-label="Filtrar mis publicaciones por estado">
+                            <button class="profile-subfilter is-active" type="button"
+                                    data-filter="all" aria-pressed="true">
+                                Todas <span class="profile-subfilter-count" data-count="all">0</span>
+                            </button>
+                            <button class="profile-subfilter" type="button"
+                                    data-filter="approved" aria-pressed="false">
+                                Publicadas <span class="profile-subfilter-count" data-count="approved">0</span>
+                            </button>
+                            <button class="profile-subfilter" type="button"
+                                    data-filter="pending" aria-pressed="false">
+                                En revisión <span class="profile-subfilter-count" data-count="pending">0</span>
+                            </button>
+                            <button class="profile-subfilter" type="button"
+                                    data-filter="rejected" aria-pressed="false">
+                                Rechazadas <span class="profile-subfilter-count" data-count="rejected">0</span>
+                            </button>
+                        </div>
+
+                        <div class="profile-posts" id="posts-list" aria-live="polite"></div>
+                    </div>
+                </section>
+
+                <!-- Zona de sesión -->
+                <section class="profile-session" aria-labelledby="profile-session-title">
+                    <div class="profile-section-text">
+                        <h2 class="profile-block-title" id="profile-session-title">Sesión</h2>
+                        <p class="profile-block-hint">
+                            Se cerrará tu sesión en este navegador. Tus publicaciones y tus guardados se conservan.
+                        </p>
+                    </div>
+                    <button class="btn btn-danger" type="button" id="profile-logout">Cerrar sesión</button>
+                </section>
+
+            </div>
+        </div>
+    </main>
+
+    <div id="app-footer"></div>
+
+    <!-- Núcleo (este orden es obligatorio) -->
+    <script src="assets/js/core/seed.js"></script>
+    <script src="assets/js/core/mock-api.js"></script>
+    <script src="assets/js/core/store.js"></script>
+    <script src="assets/js/core/api.js"></script>
+    <script src="assets/js/ui/toast.js"></script>
+    <script src="assets/js/ui/modal.js"></script>
+    <script src="assets/js/ui/components.js"></script>
+    <script src="assets/js/ui/shell.js"></script>
+    <!-- Página -->
+    <script src="assets/js/pages/profile.js"></script>
+</body>
+</html>

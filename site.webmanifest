@@ -1,0 +1,22 @@
+{
+  "name": "DiscoveryShop",
+  "short_name": "Discovery",
+  "description": "Foro de compraventa donde encuentras lo que buscas y conversas directamente con quien lo vende.",
+  "lang": "es",
+  "dir": "ltr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#08090c",
+  "theme_color": "#08090c",
+  "categories": ["shopping", "business"],
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%236366f1'/%3E%3Cpath d='M16 23h32l-2.8 25.6a4 4 0 0 1-4 3.4H22.8a4 4 0 0 1-4-3.4L16 23Z' fill='none' stroke='%23ffffff' stroke-width='3.4' stroke-linejoin='round'/%3E%3Cpath d='M26 23v-4.5a6 6 0 0 1 12 0V23' fill='none' stroke='%23ffffff' stroke-width='3.4' stroke-linecap='round'/%3E%3C/svg%3E",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

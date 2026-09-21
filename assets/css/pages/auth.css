@@ -1,0 +1,861 @@
+/* ==========================================================================
+   DiscoveryShop · Acceso y alta con rol
+   Diseño partido: panel de marca a la izquierda, formulario a la derecha.
+   Por debajo de 900 px el panel desaparece y el formulario ocupa el ancho.
+
+   El registro son dos pasos (tipo de cuenta → datos) dentro del mismo
+   formulario: aquí viven el indicador de pasos, las tarjetas de rol y la
+   tabla de cuentas de demostración.
+   ========================================================================== */
+
+.auth-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    min-height: calc(100vh - var(--header-height));
+}
+
+/* --------------------------------------------------------------------------
+   Panel de marca
+   -------------------------------------------------------------------------- */
+.auth-brand {
+    position: relative;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    padding: var(--space-16) var(--space-12);
+    background: var(--gradient-brand);
+}
+
+/* Velo oscuro fijo (no depende del tema): asegura contraste del texto blanco
+   sobre el degradado de marca, que por sí solo es demasiado luminoso. Es el
+   único color literal del archivo; el resto sale de tokens.css. */
+.auth-brand::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(85% 65% at 12% 4%, rgba(0, 0, 0, 0.3), transparent 62%),
+        linear-gradient(152deg, rgba(6, 7, 10, 0.78), rgba(6, 7, 10, 0.46) 46%, rgba(6, 7, 10, 0.82));
+}
+
+/* Malla decorativa muy sutil, para que el degradado no se vea plano */
+.auth-brand::after {
+    content: "";
+    position: absolute;
+    inset: -30% -10% auto -10%;
+    height: 70%;
+    background: radial-gradient(50% 50% at 50% 50%, rgba(255, 255, 255, 0.16), transparent 70%);
+    pointer-events: none;
+}
+
+.auth-brand-inner {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 480px;
+    margin-inline: auto;
+    color: var(--brand-contrast);
+}
+
+.auth-brand-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-10);
+    font-size: var(--text-lg);
+    font-weight: 700;
+    letter-spacing: var(--tracking-tight);
+    color: var(--brand-contrast);
+}
+
+.auth-brand-mark {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    font-size: var(--text-lg);
+}
+
+.auth-brand-title {
+    /* clamp evita que el titular desborde en pantallas intermedias */
+    font-size: clamp(1.75rem, 2.6vw + 0.6rem, 2.25rem);
+    line-height: var(--leading-tight);
+    letter-spacing: var(--tracking-tight);
+    font-weight: 700;
+    margin-bottom: var(--space-4);
+    text-wrap: balance;
+}
+
+.auth-brand-text {
+    font-size: var(--text-base);
+    line-height: var(--leading-normal);
+    color: rgba(255, 255, 255, 0.82);
+    margin-bottom: var(--space-10);
+}
+
+/* ---- Puntos de valor ---- */
+.auth-points {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+    margin-bottom: var(--space-10);
+}
+
+.auth-point {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-4);
+    min-width: 0;
+}
+
+.auth-point-icon {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--brand-contrast);
+}
+
+.auth-point-body { min-width: 0; }
+
+.auth-point-title {
+    display: block;
+    font-size: var(--text-sm);
+    font-weight: 650;
+    margin-bottom: 2px;
+}
+
+.auth-point-text {
+    display: block;
+    font-size: var(--text-xs);
+    line-height: var(--leading-snug);
+    color: rgba(255, 255, 255, 0.76);
+}
+
+/* ---- Cita / testimonio ---- */
+.auth-quote {
+    padding: var(--space-5);
+    border-radius: var(--radius-lg);
+    background: rgba(255, 255, 255, 0.09);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+.auth-quote-text {
+    font-size: var(--text-sm);
+    line-height: var(--leading-normal);
+    color: rgba(255, 255, 255, 0.92);
+    margin-bottom: var(--space-4);
+}
+
+.auth-quote-author {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-width: 0;
+}
+
+.auth-quote-avatar {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-full);
+    background: rgba(255, 255, 255, 0.2);
+    font-size: var(--text-2xs);
+    font-weight: 700;
+}
+
+.auth-quote-name {
+    min-width: 0;
+    font-size: var(--text-2xs);
+    line-height: var(--leading-snug);
+    color: rgba(255, 255, 255, 0.78);
+}
+
+.auth-quote-name strong {
+    display: block;
+    font-size: var(--text-xs);
+    font-weight: 650;
+    color: var(--brand-contrast);
+}
+
+/* --------------------------------------------------------------------------
+   Columna del formulario
+   -------------------------------------------------------------------------- */
+.auth-panel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-12) var(--space-6);
+    background: var(--bg-base);
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 460px;
+}
+
+/* Cabecera compacta de marca: solo visible cuando el panel lateral se oculta */
+.auth-mobile-brand {
+    display: none;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-6);
+    font-size: var(--text-base);
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.auth-head { margin-bottom: var(--space-6); }
+
+.auth-title {
+    font-size: var(--text-2xl);
+    line-height: var(--leading-tight);
+    letter-spacing: var(--tracking-tight);
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--space-2);
+}
+
+.auth-subtitle {
+    font-size: var(--text-sm);
+    line-height: var(--leading-snug);
+    color: var(--text-secondary);
+}
+
+/* --------------------------------------------------------------------------
+   Indicador de pasos (solo en el registro)
+   Reutiliza .steps / .step / .step-dot de components.css; aquí solo se le
+   reserva sitio sobre el formulario.
+   -------------------------------------------------------------------------- */
+.auth-steps { margin-bottom: var(--space-6); }
+
+.auth-steps[hidden] { display: none; }
+
+/* --------------------------------------------------------------------------
+   Formulario
+   -------------------------------------------------------------------------- */
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+/* Cada paso del registro es un bloque independiente dentro del mismo form */
+.auth-step {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    min-width: 0;
+}
+
+/* Dos campos por fila en pantallas cómodas */
+.auth-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+}
+
+.auth-options {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    /* Compensa el relleno interno de .choice para alinear con los campos */
+    margin-inline: calc(var(--space-3) * -1);
+}
+
+.auth-link {
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: var(--brand);
+    text-align: left;
+    transition: color var(--duration-fast) var(--ease-out);
+}
+
+.auth-link:hover { color: var(--brand-hover); text-decoration: underline; }
+.auth-link:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+.auth-submit { margin-top: var(--space-2); }
+
+.auth-switch {
+    margin-top: var(--space-6);
+    text-align: center;
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+}
+
+.auth-switch a {
+    font-weight: 650;
+    color: var(--brand);
+}
+
+.auth-switch a:hover { color: var(--brand-hover); text-decoration: underline; }
+
+/* Banner de error / aviso sobre el formulario */
+.auth-banner { margin-bottom: var(--space-5); }
+.auth-banner[hidden] { display: none; }
+
+/* --------------------------------------------------------------------------
+   Paso 1 · Tarjetas de tipo de cuenta
+   -------------------------------------------------------------------------- */
+.auth-roles-group {
+    /* El fieldset solo agrupa semánticamente: sin marco ni relleno propios */
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.auth-roles-legend {
+    padding: 0;
+    margin-bottom: var(--space-4);
+    font-size: var(--text-sm);
+    font-weight: 650;
+    line-height: var(--leading-snug);
+    color: var(--text-primary);
+}
+
+.auth-roles {
+    display: grid;
+    gap: var(--space-3);
+}
+
+.auth-role-card {
+    position: relative;
+    display: grid;
+    gap: var(--space-3);
+    /* Hueco a la derecha para que el check nunca pise al titular */
+    padding: var(--space-5) var(--space-10) var(--space-5) var(--space-5);
+    border-radius: var(--radius-lg);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    cursor: pointer;
+    transition: border-color var(--duration-fast) var(--ease-out),
+                background-color var(--duration-fast) var(--ease-out),
+                box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.auth-role-card:hover {
+    border-color: var(--border-strong);
+    background: var(--bg-raised);
+}
+
+/* El radio real queda accesible al teclado, pero invisible: la tarjeta
+   completa es la superficie sobre la que se hace clic. */
+.auth-role-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.auth-role-card:has(.auth-role-input:checked) {
+    border-color: var(--brand);
+    background: var(--brand-soft);
+    box-shadow: var(--shadow-glow);
+}
+
+/* Sin el radio a la vista, el foco debe marcarse sobre la tarjeta */
+.auth-role-card:has(.auth-role-input:focus-visible) {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+}
+
+.auth-role-check {
+    position: absolute;
+    top: var(--space-4);
+    right: var(--space-4);
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border-radius: var(--radius-full);
+    background: var(--bg-raised);
+    border: 1px solid var(--border-strong);
+    color: transparent;
+    transition: background-color var(--duration-fast) var(--ease-out),
+                border-color var(--duration-fast) var(--ease-out),
+                color var(--duration-fast) var(--ease-out);
+}
+
+.auth-role-card:has(.auth-role-input:checked) .auth-role-check {
+    background: var(--brand);
+    border-color: var(--brand);
+    color: var(--brand-contrast);
+}
+
+.auth-role-head {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-width: 0;
+}
+
+.auth-role-icon {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 38px;
+    height: 38px;
+    border-radius: var(--radius-md);
+    background: var(--bg-hover);
+    border: 1px solid var(--border-subtle);
+    font-size: var(--text-lg);
+}
+
+.auth-role-name {
+    min-width: 0;
+    font-size: var(--text-base);
+    font-weight: 700;
+    line-height: var(--leading-snug);
+    color: var(--text-primary);
+}
+
+.auth-role-desc {
+    font-size: var(--text-xs);
+    line-height: var(--leading-normal);
+    color: var(--text-secondary);
+}
+
+.auth-role-perks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.auth-role-perk {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: 3px var(--space-3);
+    border-radius: var(--radius-full);
+    background: var(--bg-hover);
+    border: 1px solid var(--border-subtle);
+    font-size: var(--text-3xs);
+    font-weight: 600;
+    line-height: var(--leading-snug);
+    color: var(--text-secondary);
+}
+
+/* Lo que distingue a la cuenta de vendedor del resto */
+.auth-role-perk.is-extra {
+    background: var(--brand-soft);
+    border-color: var(--brand);
+    color: var(--brand);
+}
+
+/* Aviso honesto de revisión, dentro de la tarjeta de vendedor */
+.auth-role-notice {
+    padding: var(--space-3);
+    font-size: var(--text-2xs);
+    line-height: var(--leading-snug);
+}
+
+/* --------------------------------------------------------------------------
+   Paso 2 · Barra superior con «Volver» y el rol elegido
+   -------------------------------------------------------------------------- */
+.auth-step-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    min-width: 0;
+}
+
+.auth-back {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    min-height: 36px;
+    padding: var(--space-2) var(--space-3);
+    margin-left: calc(var(--space-3) * -1);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: var(--text-secondary);
+    transition: color var(--duration-fast) var(--ease-out),
+                background-color var(--duration-fast) var(--ease-out);
+}
+
+.auth-back:hover { color: var(--text-primary); background: var(--bg-hover); }
+.auth-back:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.auth-back svg { display: block; }
+
+.auth-role-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;
+    padding: var(--space-1) var(--space-2) var(--space-1) var(--space-3);
+    border-radius: var(--radius-full);
+    background: var(--brand-soft);
+    border: 1px solid var(--border-default);
+    font-size: var(--text-2xs);
+    color: var(--text-secondary);
+}
+
+.auth-role-pill-icon { flex-shrink: 0; font-size: var(--text-sm); }
+
+.auth-role-pill-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.auth-role-pill-text strong { color: var(--text-primary); font-weight: 650; }
+
+.auth-role-pill-change {
+    flex-shrink: 0;
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--text-3xs);
+}
+
+/* Recordatorio de la revisión en el paso 2 */
+.auth-seller-reminder[hidden] { display: none; }
+
+/* --------------------------------------------------------------------------
+   Medidor de fortaleza de la contraseña
+   -------------------------------------------------------------------------- */
+.auth-meter {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-1);
+    margin-top: var(--space-1);
+}
+
+.auth-meter-segment {
+    height: 4px;
+    border-radius: var(--radius-full);
+    background: var(--border-default);
+    transition: background-color var(--duration-base) var(--ease-out);
+}
+
+/* Cada nivel colorea tantos segmentos como puntuación tenga */
+.auth-meter[data-score="1"] .auth-meter-segment:nth-child(-n + 1) { background: var(--danger); }
+.auth-meter[data-score="2"] .auth-meter-segment:nth-child(-n + 2) { background: var(--warning); }
+.auth-meter[data-score="3"] .auth-meter-segment:nth-child(-n + 3) { background: var(--info); }
+.auth-meter[data-score="4"] .auth-meter-segment:nth-child(-n + 4) { background: var(--success); }
+
+.auth-meter-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-top: var(--space-2);
+    font-size: var(--text-2xs);
+    line-height: var(--leading-snug);
+    color: var(--text-muted);
+}
+
+.auth-meter-level {
+    flex-shrink: 0;
+    font-weight: 650;
+    color: var(--text-muted);
+}
+
+.auth-meter-hint {
+    min-width: 0;
+    /* El consejo puede ser largo: que se recorte antes que romper la caja */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.auth-meter-label[data-score="1"] .auth-meter-level { color: var(--danger); }
+.auth-meter-label[data-score="2"] .auth-meter-level { color: var(--warning); }
+.auth-meter-label[data-score="3"] .auth-meter-level { color: var(--info); }
+.auth-meter-label[data-score="4"] .auth-meter-level { color: var(--success); }
+
+/* --------------------------------------------------------------------------
+   Términos y condiciones
+   -------------------------------------------------------------------------- */
+.auth-terms {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    min-width: 0;
+}
+
+.auth-terms input[type="checkbox"] {
+    flex-shrink: 0;
+    width: 17px;
+    height: 17px;
+    margin-top: 2px;
+    accent-color: var(--brand);
+    cursor: pointer;
+}
+
+.auth-terms-text {
+    min-width: 0;
+    font-size: var(--text-sm);
+    line-height: var(--leading-snug);
+    color: var(--text-secondary);
+}
+
+.auth-terms-text label { cursor: pointer; }
+
+/* El enlace de términos vive dentro del párrafo: sin relleno extra */
+.auth-terms-text .auth-link {
+    display: inline;
+    padding: 0;
+    font-size: inherit;
+}
+
+/* Texto legal dentro de los modales de términos, contraseña y bienvenida */
+.auth-legal {
+    display: grid;
+    gap: var(--space-4);
+    font-size: var(--text-sm);
+    line-height: var(--leading-normal);
+    color: var(--text-secondary);
+}
+
+.auth-legal strong { color: var(--text-primary); }
+
+/* --------------------------------------------------------------------------
+   Cuentas de demostración
+   -------------------------------------------------------------------------- */
+.auth-demo { margin-top: var(--space-6); }
+.auth-demo[hidden] { display: none; }
+.auth-demo .alert-body { margin-bottom: var(--space-3); }
+
+/* Variante de tarjeta: la lista de cuentas necesita más aire que una alerta */
+.auth-demo-card {
+    padding: var(--space-5);
+    border-radius: var(--radius-lg);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+}
+
+.auth-demo-head {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+    min-width: 0;
+}
+
+.auth-demo-icon {
+    flex-shrink: 0;
+    margin-top: 1px;
+    color: var(--info);
+}
+
+.auth-demo-head-body { min-width: 0; }
+
+.auth-demo-title {
+    font-size: var(--text-sm);
+    font-weight: 650;
+    color: var(--text-primary);
+    margin-bottom: var(--space-1);
+}
+
+.auth-demo-text {
+    font-size: var(--text-2xs);
+    line-height: var(--leading-normal);
+    color: var(--text-secondary);
+}
+
+.auth-demo-code {
+    padding: 1px var(--space-1);
+    border-radius: var(--radius-xs);
+    background: var(--bg-hover);
+    border: 1px solid var(--border-subtle);
+    font-family: var(--font-mono);
+    font-size: var(--text-3xs);
+    color: var(--text-primary);
+}
+
+.auth-demo-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.auth-demo-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    min-width: 0;
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    background: var(--bg-raised);
+    border: 1px solid var(--border-subtle);
+}
+
+.auth-demo-account {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.auth-demo-email {
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    color: var(--text-primary);
+    /* Un correo largo se parte antes que desbordar la fila */
+    overflow-wrap: anywhere;
+}
+
+.auth-demo-role {
+    font-size: var(--text-3xs);
+    line-height: var(--leading-snug);
+    color: var(--text-muted);
+}
+
+/* .btn-sm mide 36 px; aquí se recupera el área táctil accesible */
+.auth-demo-use {
+    flex-shrink: 0;
+    min-height: 44px;
+    white-space: normal;
+}
+
+/* --------------------------------------------------------------------------
+   Aviso de sesión ya iniciada
+   -------------------------------------------------------------------------- */
+.auth-session {
+    padding: var(--space-6);
+    border-radius: var(--radius-lg);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    box-shadow: var(--shadow-sm);
+    text-align: center;
+}
+
+.auth-session[hidden] { display: none; }
+
+.auth-session-avatar {
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    margin: 0 auto var(--space-4);
+    border-radius: var(--radius-full);
+    background: var(--brand-soft);
+    color: var(--brand);
+    font-size: var(--text-lg);
+    font-weight: 700;
+}
+
+.auth-session-title {
+    font-size: var(--text-lg);
+    font-weight: 650;
+    color: var(--text-primary);
+    margin-bottom: var(--space-2);
+    overflow-wrap: anywhere;
+}
+
+.auth-session-role {
+    font-size: var(--text-sm);
+    line-height: var(--leading-snug);
+    color: var(--text-secondary);
+    margin-bottom: var(--space-2);
+}
+
+.auth-session-role strong { color: var(--text-primary); font-weight: 650; }
+
+.auth-session-text {
+    font-size: var(--text-sm);
+    line-height: var(--leading-snug);
+    color: var(--text-secondary);
+    margin-bottom: var(--space-6);
+}
+
+.auth-session-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+/* --------------------------------------------------------------------------
+   Responsive
+   -------------------------------------------------------------------------- */
+@media (max-width: 900px) {
+    .auth-layout {
+        grid-template-columns: minmax(0, 1fr);
+        min-height: auto;
+    }
+
+    .auth-brand { display: none; }
+
+    .auth-mobile-brand { display: flex; }
+
+    .auth-panel {
+        align-items: flex-start;
+        padding: var(--space-8) var(--space-5) var(--space-12);
+    }
+}
+
+@media (max-width: 520px) {
+    .auth-row { grid-template-columns: minmax(0, 1fr); }
+
+    .auth-options {
+        justify-content: flex-start;
+        gap: 0;
+    }
+
+    /* En pantallas estrechas el consejo del medidor cabe entero debajo del nivel */
+    .auth-meter-label {
+        flex-direction: column-reverse;
+        align-items: flex-start;
+        gap: var(--space-1);
+    }
+
+    .auth-meter-hint { white-space: normal; }
+
+    /* El nombre del paso compite con el círculo: solo queda el paso activo */
+    .auth-steps .step:not(.is-active) .step-label { display: none; }
+
+    .auth-role-card { padding: var(--space-4) var(--space-10) var(--space-4) var(--space-4); }
+
+    /* Correo y botón dejan de caber en línea: se apilan */
+    .auth-demo-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .auth-demo-use { width: 100%; }
+}
+
+@media (max-width: 380px) {
+    .auth-panel { padding-inline: var(--space-4); }
+
+    .auth-title { font-size: var(--text-xl); }
+
+    .auth-demo-card { padding: var(--space-4); }
+
+    .auth-step-bar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .auth-meter-segment,
+    .auth-role-card,
+    .auth-role-check { transition: none; }
+}

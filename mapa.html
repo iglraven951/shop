@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa de vendedores · DiscoveryShop</title>
+    <meta name="description" content="Mira en el mapa de Arequipa dónde están los vendedores verificados con publicaciones activas. Filtra por distrito y categoría y escríbeles al instante.">
+    <meta name="theme-color" content="#08090c">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><text y='16' font-size='16'>🛍️</text></svg>">
+    <link rel="manifest" href="site.webmanifest">
+
+    <!-- Leaflet primero: así nuestro CSS de página puede reescribir sus estilos.
+         Si la red falla, la página degrada a un listado agrupado por distrito. -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+
+    <link rel="stylesheet" href="assets/css/tokens.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+    <link rel="stylesheet" href="assets/css/layout.css">
+    <link rel="stylesheet" href="assets/css/pages/map.css">
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="" defer></script>
+</head>
+<body>
+    <a class="skip-link" href="#main">Saltar al contenido</a>
+
+    <div id="app-header"></div>
+
+    <main id="main">
+        <div class="map-page" id="map-page">
+
+            <!-- ==================== Cabecera compacta ==================== -->
+            <header class="map-topbar">
+                <div class="map-topbar-text">
+                    <h1 class="map-title">Vendedores en Arequipa</h1>
+                    <p class="map-subtitle" id="map-summary" aria-live="polite">
+                        Cargando el mapa de vendedores…
+                    </p>
+                </div>
+
+                <button class="btn btn-secondary btn-sm map-sheet-toggle"
+                        id="sheet-toggle"
+                        type="button"
+                        aria-expanded="false"
+                        aria-controls="map-panel">
+                    Ver lista
+                </button>
+            </header>
+
+            <!-- Aviso visible solo cuando Leaflet no ha podido cargarse -->
+            <p class="map-notice" id="map-notice" role="status" hidden>
+                <span class="map-notice-icon" aria-hidden="true">🛰️</span>
+                <span>
+                    No se pudo cargar el mapa interactivo (revisa tu conexión).
+                    Mientras tanto, aquí tienes a todos los vendedores agrupados por distrito.
+                </span>
+            </p>
+
+            <!-- ==================== Dos paneles ==================== -->
+            <div class="map-layout">
+
+                <!-- ---------- Panel lateral: filtros y lista ---------- -->
+                <aside class="map-panel" id="map-panel" aria-label="Filtros y lista de vendedores">
+                    <button class="map-sheet-handle"
+                            id="sheet-handle"
+                            type="button"
+                            aria-expanded="false"
+                            aria-controls="map-panel">
+                        <span class="map-sheet-grip" aria-hidden="true"></span>
+                        <span class="map-sheet-label" id="sheet-handle-label">Ver lista de vendedores</span>
+                    </button>
+
+                    <div class="map-filters">
+                        <div class="input-group">
+                            <span class="input-icon" aria-hidden="true">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
+                                     stroke="currentColor" stroke-width="1.7"
+                                     stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="7.2" cy="7.2" r="4.6"/><path d="m10.6 10.6 3 3"/>
+                                </svg>
+                            </span>
+                            <label class="sr-only" for="seller-search">Buscar vendedor por nombre</label>
+                            <input class="input"
+                                   id="seller-search"
+                                   type="search"
+                                   autocomplete="off"
+                                   placeholder="Buscar vendedor por nombre">
+                        </div>
+
+                        <div class="map-filter-row">
+                            <div class="map-field">
+                                <label class="map-field-label" for="district-filter">Distrito</label>
+                                <select class="select" id="district-filter">
+                                    <option value="">Todos los distritos</option>
+                                </select>
+                            </div>
+
+                            <div class="map-field">
+                                <label class="map-field-label" for="category-filter">Categoría</label>
+                                <select class="select" id="category-filter">
+                                    <option value="">Todas las categorías</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-ghost btn-sm map-reset" id="reset-filters" type="button" hidden>
+                            Quitar filtros
+                        </button>
+                    </div>
+
+                    <div class="map-list" id="seller-list" aria-label="Vendedores encontrados"></div>
+                </aside>
+
+                <!-- ---------- Escenario: el mapa ---------- -->
+                <section class="map-stage" id="map-stage" aria-label="Mapa de vendedores de Arequipa">
+                    <div class="map-canvas"
+                         id="sellers-map"
+                         role="application"
+                         aria-label="Mapa de Arequipa con la ubicación de cada vendedor"></div>
+
+                    <div class="map-controls" id="map-controls">
+                        <button class="map-control" id="center-btn" type="button"
+                                aria-label="Centrar el mapa en Arequipa"
+                                title="Centrar en Arequipa">
+                            <svg width="18" height="18" viewBox="0 0 20 20" fill="none"
+                                 stroke="currentColor" stroke-width="1.7"
+                                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <circle cx="10" cy="10" r="5.2"/>
+                                <path d="M10 1.6v2.4M10 16v2.4M18.4 10H16M4 10H1.6"/>
+                            </svg>
+                        </button>
+
+                        <button class="map-control" id="tiles-btn" type="button"
+                                aria-pressed="false"
+                                aria-label="Cambiar el mapa a tonos oscuros"
+                                title="Cambiar el tono del mapa">
+                            <svg width="18" height="18" viewBox="0 0 20 20" fill="none"
+                                 stroke="currentColor" stroke-width="1.7"
+                                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M16.2 12.4A6.8 6.8 0 0 1 7.6 3.8a6.8 6.8 0 1 0 8.6 8.6Z"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="map-legend" id="map-legend">
+                        <span class="map-legend-sample" aria-hidden="true">4</span>
+                        <span class="map-legend-text">
+                            El número indica cuántas publicaciones activas tiene el vendedor.
+                            Al alejar el mapa, los marcadores se agrupan por distrito.
+                        </span>
+                    </div>
+
+                    <!-- Listado de respaldo cuando no hay mapa interactivo -->
+                    <div class="map-fallback" id="map-fallback" hidden></div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <div id="app-footer"></div>
+
+    <script src="assets/js/core/seed.js"></script>
+    <script src="assets/js/core/mock-api.js"></script>
+    <script src="assets/js/core/store.js"></script>
+    <script src="assets/js/core/api.js"></script>
+    <script src="assets/js/ui/toast.js"></script>
+    <script src="assets/js/ui/modal.js"></script>
+    <script src="assets/js/ui/components.js"></script>
+    <script src="assets/js/ui/shell.js"></script>
+    <script src="assets/js/pages/map.js"></script>
+</body>
+</html>

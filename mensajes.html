@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mensajes · DiscoveryShop</title>
+    <meta name="description" content="Centro de mensajes de DiscoveryShop: conversa con quien publica, resuelve tus dudas sobre el artículo y acuerda dónde verse dentro de Arequipa.">
+    <meta name="theme-color" content="#08090c">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><text y='16' font-size='16'>🛍️</text></svg>">
+    <link rel="manifest" href="site.webmanifest">
+    <link rel="stylesheet" href="assets/css/tokens.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+    <link rel="stylesheet" href="assets/css/layout.css">
+    <link rel="stylesheet" href="assets/css/pages/chat.css">
+</head>
+<body>
+    <a class="skip-link" href="#main">Saltar al contenido</a>
+
+    <div id="app-header"></div>
+
+    <main id="main">
+        <div class="chat-page" id="chat-page">
+
+            <!-- Invitación a iniciar sesión: la rellena chat.js cuando no hay usuario -->
+            <section class="chat-gate" id="chat-gate" hidden aria-label="Sesión requerida"></section>
+
+            <div class="chat-shell" id="chat-shell">
+
+                <!-- =========================================================
+                     Panel izquierdo · lista de conversaciones
+                     ========================================================= -->
+                <aside class="chat-sidebar" aria-label="Lista de conversaciones">
+                    <header class="chat-sidebar-head">
+                        <h1 class="chat-sidebar-title">Mensajes</h1>
+
+                        <div class="chat-search">
+                            <span class="chat-search-icon" aria-hidden="true">
+                                <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">
+                                    <circle cx="9" cy="9" r="6"/><path d="m13.5 13.5 3.5 3.5"/>
+                                </svg>
+                            </span>
+                            <label class="sr-only" for="chat-search-input">Buscar conversación por vendedor o artículo</label>
+                            <input class="input chat-search-input" id="chat-search-input" type="search"
+                                   placeholder="Buscar vendedor o artículo…" autocomplete="off">
+                        </div>
+                    </header>
+
+                    <div class="chat-list" id="chat-list" aria-label="Conversaciones" aria-busy="true"></div>
+                </aside>
+
+                <!-- =========================================================
+                     Panel derecho · hilo de conversación
+                     ========================================================= -->
+                <section class="chat-thread" id="chat-thread" aria-label="Conversación">
+
+                    <!-- Bienvenida: visible mientras no se elige ninguna conversación -->
+                    <div class="chat-welcome" id="thread-welcome">
+                        <div class="chat-welcome-art" aria-hidden="true">
+                            <svg width="112" height="112" viewBox="0 0 112 112" fill="none" stroke="currentColor"
+                                 stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="13" y="22" width="62" height="45" rx="13"/>
+                                <path d="M29 40h30M29 51h18"/>
+                                <path d="M37 67v13l15-13"/>
+                                <rect x="53" y="51" width="46" height="35" rx="11" opacity="0.4"/>
+                                <path d="M67 66h18" opacity="0.4"/>
+                            </svg>
+                        </div>
+                        <h2 class="chat-welcome-title">Selecciona una conversación para empezar</h2>
+                        <p class="chat-welcome-text">
+                            Aquí verás todo el historial con cada persona: el estado del artículo,
+                            el precio y en qué distrito de Arequipa pueden verse.
+                        </p>
+                    </div>
+
+                    <!-- Hilo activo -->
+                    <div class="chat-thread-panel" id="thread-panel" hidden>
+                        <header class="chat-thread-head" id="thread-head"></header>
+
+                        <div class="chat-thread-body" id="thread-body">
+                            <div class="chat-messages" id="thread-messages"
+                                 role="log" aria-live="polite" aria-relevant="additions"></div>
+
+                            <div class="chat-typing" id="thread-typing" hidden role="status">
+                                <span class="avatar avatar-sm chat-typing-avatar" id="thread-typing-avatar" aria-hidden="true"></span>
+                                <span class="chat-typing-bubble" aria-hidden="true">
+                                    <span class="chat-typing-dot"></span>
+                                    <span class="chat-typing-dot"></span>
+                                    <span class="chat-typing-dot"></span>
+                                </span>
+                                <span class="sr-only">El vendedor está escribiendo un mensaje</span>
+                            </div>
+                        </div>
+
+                        <div class="chat-thread-foot">
+                            <div class="chat-quick" id="thread-quick" role="group" aria-label="Respuestas rápidas"></div>
+
+                            <form class="chat-composer" id="thread-composer" novalidate>
+                                <div class="chat-composer-field">
+                                    <label class="sr-only" for="chat-input">Escribe un mensaje</label>
+                                    <textarea class="textarea chat-input" id="chat-input" rows="1" maxlength="1000"
+                                              placeholder="Escribe un mensaje…" autocomplete="off"
+                                              aria-describedby="chat-counter"></textarea>
+                                    <span class="chat-counter" id="chat-counter" hidden aria-live="polite"></span>
+                                </div>
+
+                                <button class="btn btn-primary chat-send" id="chat-send" type="submit" disabled
+                                        aria-label="Enviar mensaje">
+                                    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor"
+                                         stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M17.5 2.5 9 11"/><path d="M17.5 2.5 12 17.5 9 11 2.5 8z"/>
+                                    </svg>
+                                    <span class="chat-send-label">Enviar</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <div id="app-footer"></div>
+
+    <!-- Núcleo (este orden es obligatorio) -->
+    <script src="assets/js/core/seed.js"></script>
+    <script src="assets/js/core/mock-api.js"></script>
+    <script src="assets/js/core/store.js"></script>
+    <script src="assets/js/core/api.js"></script>
+    <script src="assets/js/ui/toast.js"></script>
+    <script src="assets/js/ui/modal.js"></script>
+    <script src="assets/js/ui/components.js"></script>
+    <script src="assets/js/ui/shell.js"></script>
+    <!-- Página -->
+    <script src="assets/js/pages/chat.js"></script>
+</body>
+</html>

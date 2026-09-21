@@ -1,0 +1,95 @@
+# Publica DiscoveryShop en GitHub Pages.
+#
+# El sitio es 100 % estático: no hay compilación ni dependencias que instalar.
+# El workflow verifica que las piezas esenciales existan, ejecuta las pruebas
+# del núcleo de datos y publica únicamente los archivos del sitio.
+name: Publicar en GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  # Permite lanzar el despliegue a mano desde la pestaña Actions.
+  workflow_dispatch:
+
+# Permisos mínimos para que `deploy-pages` pueda publicar con OIDC.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Un despliegue a la vez. No cancelamos el que está en curso para no dejar
+# la página a medio publicar.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Verificar y empaquetar
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar el repositorio
+        uses: actions/checkout@v4
+
+      - name: Preparar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Red de seguridad: si falta una pieza del núcleo, preferimos fallar aquí
+      # antes que publicar una página rota.
+      - name: Comprobar archivos esenciales
+        run: |
+          missing=0
+          for file in index.html assets/css/tokens.css assets/js/core/api.js assets/js/ui/shell.js; do
+            if [ -f "$file" ]; then
+              echo "OK       $file"
+            else
+              echo "::error file=$file::Falta el archivo esencial $file"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            echo "Publicación cancelada: faltan archivos esenciales."
+            exit 1
+          fi
+          echo "Todos los archivos esenciales están presentes."
+
+      # Las mismas pruebas que se ejecutan en local. Si el contrato de datos o
+      # la integridad del sitio se rompen, el push no llega a publicarse.
+      - name: Ejecutar pruebas
+        run: |
+          node tests/core.test.mjs
+          node tests/integrity.test.mjs
+
+      # Solo se publica lo que el navegador necesita: las pruebas y la memoria
+      # del proyecto no forman parte del sitio.
+      - name: Reunir los archivos del sitio
+        run: |
+          mkdir -p _site/assets
+          cp ./*.html _site/
+          cp -r assets/. _site/assets/
+          cp .nojekyll _site/ 2>/dev/null || true
+          cp site.webmanifest _site/ 2>/dev/null || true
+          echo "Contenido publicado:"
+          find _site -type f | sort
+
+      - name: Configurar GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Empaquetar el sitio
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '_site'
+
+  deploy:
+    name: Desplegar
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publicar en GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

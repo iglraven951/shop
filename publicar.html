@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Publicar artículo · DiscoveryShop</title>
+    <meta name="description" content="Publica tu artículo de segunda mano en el foro de Arequipa: describe su estado real, pon tu precio en soles y elige tu distrito en menos de un minuto.">
+    <meta name="theme-color" content="#08090c">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><text y='16' font-size='16'>🛍️</text></svg>">
+    <link rel="manifest" href="site.webmanifest">
+    <link rel="stylesheet" href="assets/css/tokens.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+    <link rel="stylesheet" href="assets/css/layout.css">
+    <link rel="stylesheet" href="assets/css/pages/publish.css">
+</head>
+<body>
+    <a class="skip-link" href="#main">Saltar al contenido</a>
+
+    <div id="app-header"></div>
+
+    <main id="main">
+        <div class="publish-page">
+
+            <header class="publish-head">
+                <p class="publish-eyebrow">
+                    <span aria-hidden="true">🛍️</span>
+                    Foro de segunda mano · Arequipa
+                </p>
+                <h1 class="publish-title">Publicar artículo</h1>
+                <p class="publish-subtitle">
+                    Cuenta qué vendes, en qué estado está y cuánto pides. Cuanto más claro lo
+                    expliques, menos preguntas tendrás que responder después.
+                </p>
+            </header>
+
+            <!--
+                Aquí se pinta UNA sola cosa: o una pantalla de bloqueo, o el formulario.
+
+                El formulario vive dentro de un <template> y solo se clona cuando la
+                sesión confirma que la cuenta puede publicar. El contenido de un
+                <template> no forma parte del documento: no se pinta, no recibe foco y
+                no aparece en el árbol de accesibilidad. Por eso no se oculta por CSS —
+                quien no puede publicar sencillamente no lo tiene.
+            -->
+            <div class="publish-stage" id="publish-stage">
+                <p class="publish-loading" role="status">
+                    <span class="spinner" aria-hidden="true"></span>
+                    Comprobando los permisos de tu cuenta…
+                </p>
+            </div>
+
+        </div>
+    </main>
+
+    <div id="app-footer"></div>
+
+    <!-- ==================================================================
+         Formulario de publicación (solo para vendedores aprobados)
+         ================================================================== -->
+    <template id="publish-form-template">
+        <div class="publish-layout">
+
+            <form class="publish-form" id="publish-form" novalidate>
+
+                <!-- Aviso de borrador recuperado (lo rellena publish.js) -->
+                <div id="publish-draft-slot"></div>
+
+                <!-- ---------------- 1 · Qué publicas ---------------- -->
+                <section class="publish-section">
+                    <header class="publish-section-head">
+                        <span class="publish-section-step" aria-hidden="true">1</span>
+                        <div class="publish-section-text">
+                            <h2 class="publish-section-title">Qué publicas</h2>
+                            <p class="publish-section-hint">
+                                Un título honesto y la categoría correcta hacen que te encuentren.
+                            </p>
+                        </div>
+                    </header>
+
+                    <div class="publish-section-body">
+
+                        <div class="field">
+                            <div class="publish-label-row">
+                                <label class="label" for="publish-title">
+                                    Título
+                                    <span class="required" aria-hidden="true">*</span>
+                                    <span class="sr-only">(obligatorio)</span>
+                                </label>
+                                <span class="publish-counter" id="publish-title-counter" aria-hidden="true">0 / 90</span>
+                            </div>
+                            <input class="input" type="text" id="publish-title" name="title"
+                                   placeholder="Bicicleta montañera aro 29 casi sin uso"
+                                   maxlength="200" autocomplete="off" spellcheck="true"
+                                   aria-describedby="publish-title-hint publish-title-error" required>
+                            <p class="field-hint" id="publish-title-hint">Entre 4 y 90 caracteres.</p>
+                            <p class="field-error" id="publish-title-error" aria-live="polite"></p>
+                        </div>
+
+                        <div class="field">
+                            <label class="label" for="publish-category">
+                                Categoría
+                                <span class="required" aria-hidden="true">*</span>
+                                <span class="sr-only">(obligatorio)</span>
+                            </label>
+                            <select class="select" id="publish-category" name="category_id"
+                                    aria-describedby="publish-category-hint publish-category-error" required>
+                                <option value="">Elige una categoría</option>
+                            </select>
+                            <p class="field-hint" id="publish-category-hint">
+                                Determina el icono por defecto y dónde aparecerá al filtrar.
+                            </p>
+                            <p class="field-error" id="publish-category-error" aria-live="polite"></p>
+                        </div>
+
+                        <fieldset class="publish-fieldset">
+                            <legend class="label">
+                                Estado del artículo
+                                <span class="required" aria-hidden="true">*</span>
+                                <span class="sr-only">(obligatorio)</span>
+                            </legend>
+
+                            <div class="publish-conditions">
+                                <label class="publish-condition">
+                                    <input type="radio" name="condition" value="Nuevo">
+                                    <span class="publish-condition-body">
+                                        <span class="publish-condition-name">
+                                            <span aria-hidden="true">✨</span> Nuevo
+                                        </span>
+                                        <span class="publish-condition-text">
+                                            Sin estrenar, con su caja, etiquetas o precinto original.
+                                        </span>
+                                    </span>
+                                </label>
+
+                                <label class="publish-condition">
+                                    <input type="radio" name="condition" value="Como nuevo">
+                                    <span class="publish-condition-body">
+                                        <span class="publish-condition-name">
+                                            <span aria-hidden="true">👌</span> Como nuevo
+                                        </span>
+                                        <span class="publish-condition-text">
+                                            Lo usaste muy poco y no tiene marcas visibles de uso.
+                                        </span>
+                                    </span>
+                                </label>
+
+                                <label class="publish-condition">
+                                    <input type="radio" name="condition" value="Buen estado" checked>
+                                    <span class="publish-condition-body">
+                                        <span class="publish-condition-name">
+                                            <span aria-hidden="true">👍</span> Buen estado
+                                        </span>
+                                        <span class="publish-condition-text">
+                                            Se usó con normalidad, funciona bien y tiene señales leves de uso.
+                                        </span>
+                                    </span>
+                                </label>
+                            </div>
+                        </fieldset>
+
+                        <div class="field">
+                            <div class="publish-label-row">
+                                <span class="label" id="publish-emoji-label">Icono de la publicación</span>
+                                <span class="publish-counter" id="publish-emoji-current" aria-hidden="true"></span>
+                            </div>
+                            <!-- Los botones los genera publish.js a partir de una sola lista -->
+                            <div class="publish-emoji-grid" id="publish-emoji-grid"
+                                 role="radiogroup" aria-labelledby="publish-emoji-label"
+                                 aria-describedby="publish-emoji-hint"></div>
+                            <p class="field-hint" id="publish-emoji-hint">
+                                Se usa como portada de la tarjeta. Si no eliges ninguno, tomamos el de la categoría.
+                            </p>
+                        </div>
+
+                    </div>
+                </section>
+
+                <!-- ---------------- 2 · Descripción ---------------- -->
+                <section class="publish-section">
+                    <header class="publish-section-head">
+                        <span class="publish-section-step" aria-hidden="true">2</span>
+                        <div class="publish-section-text">
+                            <h2 class="publish-section-title">Descripción</h2>
+                            <p class="publish-section-hint">
+                                Aquí se decide si te escriben o siguen de largo.
+                            </p>
+                        </div>
+                    </header>
+
+                    <div class="publish-section-body">
+                        <div class="field">
+                            <div class="publish-label-row">
+                                <label class="label" for="publish-description">
+                                    Cuéntalo con tus palabras
+                                    <span class="required" aria-hidden="true">*</span>
+                                    <span class="sr-only">(obligatorio)</span>
+                                </label>
+                                <span class="publish-counter" id="publish-description-counter" aria-hidden="true">0 / 1000</span>
+                            </div>
+                            <textarea class="textarea publish-textarea" id="publish-description" name="description"
+                                      rows="7" maxlength="2000" spellcheck="true"
+                                      placeholder="Lo compré hace dos años y lo usé poco. Funciona perfecto, solo tiene un rayón en la base que no se nota. Incluye cargador original y su caja. Lo vendo porque me mudo."
+                                      aria-describedby="publish-description-hint publish-description-error" required></textarea>
+                            <p class="field-hint" id="publish-description-hint">Entre 20 y 1000 caracteres.</p>
+                            <p class="field-error" id="publish-description-error" aria-live="polite"></p>
+                        </div>
+
+                        <div class="alert alert-info publish-tips">
+                            <span class="alert-icon" aria-hidden="true">💡</span>
+                            <div class="alert-content">
+                                <p class="alert-title">Tres cosas que siempre conviene decir</p>
+                                <ul class="publish-tip-list alert-body">
+                                    <li>
+                                        <strong>El estado real.</strong> Si tiene un rayón, la batería
+                                        rinde menos o falta una pieza, dilo tú antes de que lo pregunten.
+                                    </li>
+                                    <li>
+                                        <strong>Qué incluyes.</strong> Caja, cargador, accesorios,
+                                        garantía o comprobante: todo eso sube el valor de tu publicación.
+                                    </li>
+                                    <li>
+                                        <strong>Por qué lo vendes.</strong> «Me mudo», «ya tengo otro»
+                                        o «mi hija dejó las clases» dan confianza y evitan sospechas.
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ---------------- 3 · Precio y ubicación ---------------- -->
+                <section class="publish-section">
+                    <header class="publish-section-head">
+                        <span class="publish-section-step" aria-hidden="true">3</span>
+                        <div class="publish-section-text">
+                            <h2 class="publish-section-title">Precio y ubicación</h2>
+                            <p class="publish-section-hint">
+                                Un precio realista y un distrito claro aceleran la venta.
+                            </p>
+                        </div>
+                    </header>
+
+                    <div class="publish-section-body">
+                        <div class="publish-row">
+                            <div class="field">
+                                <label class="label" for="publish-price">
+                                    Precio
+                                    <span class="required" aria-hidden="true">*</span>
+                                    <span class="sr-only">(obligatorio)</span>
+                                </label>
+                                <div class="publish-price">
+                                    <span class="publish-price-prefix" aria-hidden="true">S/</span>
+                                    <input class="input publish-price-input" type="number" id="publish-price"
+                                           name="price" min="1" step="1" inputmode="decimal"
+                                           placeholder="0" autocomplete="off"
+                                           aria-describedby="publish-price-hint publish-price-error" required>
+                                </div>
+                                <p class="field-hint" id="publish-price-hint">En soles. Debe ser mayor que cero.</p>
+                                <p class="field-error" id="publish-price-error" aria-live="polite"></p>
+                            </div>
+
+                            <div class="field">
+                                <label class="label" for="publish-district">
+                                    Distrito
+                                    <span class="required" aria-hidden="true">*</span>
+                                    <span class="sr-only">(obligatorio)</span>
+                                </label>
+                                <!-- Las opciones salen de DiscoverySeed.DISTRICTS -->
+                                <select class="select" id="publish-district" name="district"
+                                        aria-describedby="publish-district-hint publish-district-error" required></select>
+                                <p class="field-hint" id="publish-district-hint">
+                                    Mostraremos tu distrito en el mapa, no tu dirección exacta.
+                                </p>
+                                <p class="field-error" id="publish-district-error" aria-live="polite"></p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ---------------- Aviso de moderación y envío ---------------- -->
+                <div class="alert alert-warning publish-moderation">
+                    <span class="alert-icon" aria-hidden="true">⏳</span>
+                    <div class="alert-content">
+                        <p class="alert-title">Tu publicación pasa antes por revisión</p>
+                        <p class="alert-body">
+                            Tu publicación pasará por una revisión rápida del equipo antes de
+                            aparecer en el foro. Te avisaremos cuando esté lista.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="publish-actions">
+                    <a class="btn btn-ghost" href="index.html" id="publish-cancel">Cancelar</a>
+                    <button class="btn btn-primary btn-lg publish-submit" type="submit" id="publish-submit">
+                        Publicar artículo
+                    </button>
+                </div>
+
+            </form>
+
+            <!-- Vista previa en vivo: la misma tarjeta que se ve en el foro -->
+            <aside class="publish-preview-col" aria-labelledby="publish-preview-title">
+                <div class="publish-preview-sticky">
+                    <h2 class="publish-preview-title" id="publish-preview-title">
+                        <span aria-hidden="true">👁️</span> Vista previa
+                    </h2>
+                    <p class="publish-preview-hint">
+                        Así se verá tu publicación en el foro. Se actualiza mientras escribes.
+                    </p>
+                    <div class="publish-preview" id="publish-preview"></div>
+                </div>
+            </aside>
+
+        </div>
+    </template>
+
+    <!-- Núcleo (este orden es obligatorio) -->
+    <script src="assets/js/core/seed.js"></script>
+    <script src="assets/js/core/mock-api.js"></script>
+    <script src="assets/js/core/store.js"></script>
+    <script src="assets/js/core/api.js"></script>
+    <script src="assets/js/ui/toast.js"></script>
+    <script src="assets/js/ui/modal.js"></script>
+    <script src="assets/js/ui/components.js"></script>
+    <script src="assets/js/ui/shell.js"></script>
+    <!-- Página -->
+    <script src="assets/js/pages/publish.js"></script>
+</body>
+</html>

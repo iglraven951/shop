@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de administración · DiscoveryShop</title>
+    <meta name="description" content="Panel de moderación de DiscoveryShop: aprueba o rechaza las publicaciones pendientes y las solicitudes de cuenta de vendedor del foro de Arequipa.">
+    <meta name="theme-color" content="#08090c">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><text y='16' font-size='16'>🛍️</text></svg>">
+    <link rel="manifest" href="site.webmanifest">
+    <link rel="stylesheet" href="assets/css/tokens.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+    <link rel="stylesheet" href="assets/css/layout.css">
+    <link rel="stylesheet" href="assets/css/pages/admin.css">
+</head>
+<body>
+    <a class="skip-link" href="#main">Saltar al contenido</a>
+
+    <div id="app-header"></div>
+
+    <main id="main">
+        <div class="admin-page">
+
+            <!-- Mientras se resuelve la sesión: nunca se muestra dato alguno -->
+            <div class="admin-boot" id="admin-boot" aria-live="polite" aria-busy="true">
+                <div class="skeleton admin-boot-title"></div>
+                <div class="admin-boot-metrics">
+                    <div class="skeleton admin-boot-card"></div>
+                    <div class="skeleton admin-boot-card"></div>
+                    <div class="skeleton admin-boot-card"></div>
+                    <div class="skeleton admin-boot-card"></div>
+                    <div class="skeleton admin-boot-card"></div>
+                    <div class="skeleton admin-boot-card"></div>
+                </div>
+                <div class="skeleton admin-boot-body"></div>
+                <span class="sr-only">Comprobando tu sesión…</span>
+            </div>
+
+            <!-- Sin sesión: invitación a iniciar sesión (la pinta admin.js) -->
+            <section class="admin-gate" id="admin-gate" hidden aria-label="Iniciar sesión"></section>
+
+            <!-- Con sesión pero sin permisos: ni datos ni botones de moderación -->
+            <section class="admin-denied" id="admin-denied" hidden aria-labelledby="admin-denied-title">
+                <div class="admin-denied-card">
+                    <div class="admin-denied-icon" aria-hidden="true">🛡️</div>
+                    <h1 class="admin-denied-title" id="admin-denied-title">
+                        Esta sección es solo para el equipo de moderación
+                    </h1>
+                    <p class="admin-denied-text">
+                        Tu cuenta no tiene permisos de administración, así que aquí no hay
+                        nada que revisar. Si crees que se trata de un error, escríbenos desde
+                        tu perfil y lo revisamos.
+                    </p>
+                    <div class="admin-denied-actions">
+                        <a class="btn btn-primary btn-lg" href="index.html">Volver al feed</a>
+                        <a class="btn btn-secondary btn-lg" href="perfil.html">Ir a mi perfil</a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Panel de moderación -->
+            <div id="admin-content" hidden>
+
+                <header class="admin-header">
+                    <div class="admin-header-text">
+                        <p class="admin-eyebrow">Equipo de moderación</p>
+                        <h1 class="admin-title">Panel de administración</h1>
+                        <p class="admin-subtitle">
+                            Revisa las publicaciones que esperan aprobación y las solicitudes
+                            de cuenta de vendedor. Nada se publica en el foro sin pasar por aquí.
+                        </p>
+                    </div>
+                    <button class="btn btn-secondary admin-refresh" type="button" id="admin-refresh">
+                        <span aria-hidden="true">↻</span>
+                        <span>Actualizar</span>
+                    </button>
+                </header>
+
+                <!-- Métricas -->
+                <section class="admin-metrics" aria-label="Resumen de moderación" id="admin-metrics">
+                    <button class="admin-metric admin-metric-action is-warning" type="button"
+                            data-goto-tab="publicaciones" data-metric-card="posts-pending">
+                        <span class="admin-metric-icon" aria-hidden="true">⏳</span>
+                        <span class="admin-metric-value" data-metric="posts-pending">—</span>
+                        <span class="admin-metric-label">Publicaciones pendientes</span>
+                        <span class="admin-metric-hint">Ir a la cola</span>
+                    </button>
+
+                    <button class="admin-metric admin-metric-action is-brand" type="button"
+                            data-goto-tab="vendedores" data-metric-card="sellers-pending">
+                        <span class="admin-metric-icon" aria-hidden="true">🧑‍💼</span>
+                        <span class="admin-metric-value" data-metric="sellers-pending">—</span>
+                        <span class="admin-metric-label">Vendedores por aprobar</span>
+                        <span class="admin-metric-hint">Ir a las solicitudes</span>
+                    </button>
+
+                    <div class="admin-metric">
+                        <span class="admin-metric-icon" aria-hidden="true">✅</span>
+                        <span class="admin-metric-value" data-metric="posts-approved">—</span>
+                        <span class="admin-metric-label">Publicaciones activas</span>
+                    </div>
+
+                    <div class="admin-metric">
+                        <span class="admin-metric-icon" aria-hidden="true">🚫</span>
+                        <span class="admin-metric-value" data-metric="posts-rejected">—</span>
+                        <span class="admin-metric-label">Publicaciones rechazadas</span>
+                    </div>
+
+                    <div class="admin-metric">
+                        <span class="admin-metric-icon" aria-hidden="true">👥</span>
+                        <span class="admin-metric-value" data-metric="users-total">—</span>
+                        <span class="admin-metric-label">Personas registradas</span>
+                    </div>
+
+                    <div class="admin-metric">
+                        <span class="admin-metric-icon" aria-hidden="true">📈</span>
+                        <span class="admin-metric-value" data-metric="activity-total">—</span>
+                        <span class="admin-metric-label">Actividad del foro</span>
+                        <span class="admin-metric-hint" data-metric="activity-detail"></span>
+                    </div>
+                </section>
+
+                <!-- Pestañas -->
+                <div class="admin-tabs" id="admin-tabs" role="tablist" aria-label="Secciones de moderación">
+                    <button class="admin-tab is-active" type="button" role="tab" data-tab="publicaciones"
+                            id="tab-publicaciones" aria-controls="panel-publicaciones" aria-selected="true">
+                        <span aria-hidden="true">📝</span>
+                        <span>Publicaciones</span>
+                        <span class="admin-tab-count" data-tab-count="publicaciones" hidden></span>
+                    </button>
+                    <button class="admin-tab" type="button" role="tab" data-tab="vendedores"
+                            id="tab-vendedores" aria-controls="panel-vendedores" aria-selected="false" tabindex="-1">
+                        <span aria-hidden="true">🧑‍💼</span>
+                        <span>Vendedores</span>
+                        <span class="admin-tab-count" data-tab-count="vendedores" hidden></span>
+                    </button>
+                    <button class="admin-tab" type="button" role="tab" data-tab="historial"
+                            id="tab-historial" aria-controls="panel-historial" aria-selected="false" tabindex="-1">
+                        <span aria-hidden="true">🕑</span>
+                        <span>Historial</span>
+                    </button>
+                </div>
+
+                <!-- Pestaña: Publicaciones -->
+                <section class="admin-panel" id="panel-publicaciones" role="tabpanel"
+                         aria-labelledby="tab-publicaciones" tabindex="0">
+
+                    <div class="admin-toolbar">
+                        <div class="segmented admin-filters" role="group" aria-label="Filtrar publicaciones por estado">
+                            <button class="segmented-item" type="button" data-post-status="pending" aria-pressed="true">
+                                Pendientes <span class="admin-filter-count" data-count="posts-pending"></span>
+                            </button>
+                            <button class="segmented-item" type="button" data-post-status="approved" aria-pressed="false">
+                                Aprobadas <span class="admin-filter-count" data-count="posts-approved"></span>
+                            </button>
+                            <button class="segmented-item" type="button" data-post-status="rejected" aria-pressed="false">
+                                Rechazadas <span class="admin-filter-count" data-count="posts-rejected"></span>
+                            </button>
+                            <button class="segmented-item" type="button" data-post-status="all" aria-pressed="false">
+                                Todas <span class="admin-filter-count" data-count="posts-total"></span>
+                            </button>
+                        </div>
+
+                        <div class="input-group admin-search">
+                            <span class="input-icon" aria-hidden="true">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="7.2" cy="7.2" r="4.4"/><path d="m10.6 10.6 3 3"/></svg>
+                            </span>
+                            <label class="sr-only" for="admin-search">Buscar por título, autor o distrito</label>
+                            <input class="input" type="search" id="admin-search" autocomplete="off"
+                                   placeholder="Buscar por título, autor o distrito…">
+                        </div>
+                    </div>
+
+                    <p class="admin-hint">
+                        <span aria-hidden="true">⌨️</span>
+                        Atajo: con una fila enfocada pulsa <kbd>A</kbd> para aprobarla o
+                        <kbd>R</kbd> para abrir el diálogo de rechazo.
+                    </p>
+
+                    <div class="admin-bulk" id="admin-bulk" hidden aria-label="Acciones en lote">
+                        <p class="admin-bulk-count" id="admin-bulk-count">0 seleccionadas</p>
+                        <div class="admin-bulk-actions">
+                            <button class="btn btn-success btn-sm" type="button" data-bulk="approve">Aprobar todas</button>
+                            <button class="btn btn-danger btn-sm" type="button" data-bulk="reject">Rechazar todas</button>
+                            <button class="btn btn-ghost btn-sm" type="button" data-bulk="clear">Quitar selección</button>
+                        </div>
+                        <p class="admin-bulk-progress" id="admin-bulk-progress" role="status" hidden></p>
+                    </div>
+
+                    <div class="admin-queue-head" id="admin-queue-head" hidden>
+                        <label class="admin-check admin-check-all">
+                            <input type="checkbox" id="admin-select-all">
+                            <span>Seleccionar todo</span>
+                        </label>
+                        <p class="admin-queue-status" id="admin-posts-status" role="status"></p>
+                    </div>
+
+                    <div class="admin-list" id="admin-post-list" aria-busy="true"></div>
+                </section>
+
+                <!-- Pestaña: Vendedores -->
+                <section class="admin-panel" id="panel-vendedores" role="tabpanel"
+                         aria-labelledby="tab-vendedores" tabindex="0" hidden>
+
+                    <div class="admin-toolbar">
+                        <div class="segmented admin-filters" role="group" aria-label="Filtrar solicitudes por estado">
+                            <button class="segmented-item" type="button" data-seller-status="pending" aria-pressed="true">
+                                Pendientes <span class="admin-filter-count" data-count="sellers-pending"></span>
+                            </button>
+                            <button class="segmented-item" type="button" data-seller-status="approved" aria-pressed="false">
+                                Aprobados <span class="admin-filter-count" data-count="sellers-approved"></span>
+                            </button>
+                            <button class="segmented-item" type="button" data-seller-status="rejected" aria-pressed="false">
+                                Rechazados <span class="admin-filter-count" data-count="sellers-rejected"></span>
+                            </button>
+                            <button class="segmented-item" type="button" data-seller-status="all" aria-pressed="false">
+                                Todos <span class="admin-filter-count" data-count="sellers-total"></span>
+                            </button>
+                        </div>
+
+                        <p class="admin-queue-status" id="admin-sellers-status" role="status"></p>
+                    </div>
+
+                    <div class="admin-sellers" id="admin-seller-list" aria-busy="true"></div>
+                </section>
+
+                <!-- Pestaña: Historial -->
+                <section class="admin-panel" id="panel-historial" role="tabpanel"
+                         aria-labelledby="tab-historial" tabindex="0" hidden>
+
+                    <p class="admin-panel-intro">
+                        Cada decisión de moderación queda registrada: quién la tomó, sobre qué
+                        y cuándo. Se muestran las 60 más recientes.
+                    </p>
+
+                    <div class="admin-log" id="admin-log" aria-busy="true"></div>
+                </section>
+
+            </div>
+        </div>
+    </main>
+
+    <div id="app-footer"></div>
+
+    <script src="assets/js/core/seed.js"></script>
+    <script src="assets/js/core/mock-api.js"></script>
+    <script src="assets/js/core/store.js"></script>
+    <script src="assets/js/core/api.js"></script>
+    <script src="assets/js/ui/toast.js"></script>
+    <script src="assets/js/ui/modal.js"></script>
+    <script src="assets/js/ui/components.js"></script>
+    <script src="assets/js/ui/shell.js"></script>
+    <script src="assets/js/pages/admin.js"></script>
+</body>
+</html>

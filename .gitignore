@@ -1,0 +1,33 @@
+# Volcados de fallo de Git Bash: ruido, no forman parte del proyecto
+*.stackdump
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Base de datos local del backend
+*.db
+*.sqlite
+*.sqlite3
+
+# Registros
+logs/
+*.log
+
+# Entorno
+.env
+.env.local
+
+# Sistema operativo
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Editores
+.vscode/
+.idea/
+*.swp

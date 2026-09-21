@@ -1,0 +1,143 @@
+/* ==========================================================================
+   DiscoveryShop · Guardados (guardados.html)
+
+   Una sola columna con el mismo ancho de lectura del feed. Todo lo que se ve
+   dentro del listado son `.post-card` del núcleo: aquí solo viven la cabecera
+   de la página, la barra de acciones y la animación de salida de una tarjeta
+   cuando deja de estar guardada.
+   ========================================================================== */
+
+.saved-page {
+    /* El feed del núcleo mide 680 px: sumando el aire lateral, la cabecera y
+       las tarjetas quedan alineadas al mismo borde. */
+    max-width: calc(680px + var(--space-5) * 2);
+    margin-inline: auto;
+    padding: var(--space-8) var(--space-5) var(--space-16);
+}
+
+/* --------------------------------------------------------------------------
+   Cabecera
+   -------------------------------------------------------------------------- */
+.saved-heading {
+    /* Sin esto el título largo empujaría al selector de orden fuera de la fila. */
+    min-width: 0;
+}
+
+.saved-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: var(--text-2xl);
+    line-height: var(--leading-tight);
+    letter-spacing: var(--tracking-tight);
+    margin-bottom: var(--space-1);
+}
+
+.saved-title-icon {
+    flex-shrink: 0;
+    font-size: var(--text-xl);
+    line-height: 1;
+}
+
+/* --------------------------------------------------------------------------
+   Barra de acciones
+   -------------------------------------------------------------------------- */
+.saved-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-5);
+    padding: var(--space-3) var(--space-4);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+}
+
+.saved-hint {
+    flex: 1 1 15rem;
+    min-width: 0;
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    line-height: var(--leading-snug);
+}
+
+.saved-clear {
+    flex-shrink: 0;
+}
+
+/* Progreso de «Vaciar guardados»: ocupa su sitio solo mientras trabaja. */
+.saved-progress {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-5);
+    padding: var(--space-3) var(--space-4);
+    background: var(--brand-soft);
+    border-radius: var(--radius-md);
+    color: var(--brand);
+    font-size: var(--text-xs);
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+}
+
+.saved-progress::before {
+    content: '';
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+
+/* --------------------------------------------------------------------------
+   Listado
+   -------------------------------------------------------------------------- */
+
+/* La tarjeta del núcleo solo transiciona borde y sombra; aquí necesita además
+   desvanecerse al quitarla, así que se repite la lista completa. */
+.saved-page .post-card {
+    transition: border-color var(--duration-base) var(--ease-out),
+                box-shadow var(--duration-base) var(--ease-out),
+                opacity var(--duration-base) var(--ease-out),
+                transform var(--duration-base) var(--ease-out);
+}
+
+.saved-page .post-card.is-removing {
+    opacity: 0;
+    transform: scale(0.97) translateY(-8px);
+    pointer-events: none;
+}
+
+/* --------------------------------------------------------------------------
+   Invitación a iniciar sesión
+   -------------------------------------------------------------------------- */
+.saved-gate {
+    display: grid;
+    place-items: center;
+    min-height: 54vh;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+}
+
+/* --------------------------------------------------------------------------
+   Responsive
+   -------------------------------------------------------------------------- */
+@media (max-width: 720px) {
+    .saved-page { padding: var(--space-6) var(--space-4) var(--space-12); }
+    .saved-title { font-size: var(--text-xl); }
+}
+
+@media (max-width: 480px) {
+    /* Con tan poco ancho, etiqueta y desplegable comparten toda la fila. */
+    .saved-page .results-tools,
+    .saved-page .sort-control { width: 100%; }
+    .saved-page .sort-control .select { flex: 1; min-width: 0; }
+
+    .saved-actions { padding: var(--space-3); }
+    .saved-clear { width: 100%; }
+}

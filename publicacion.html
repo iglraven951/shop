@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Publicación · DiscoveryShop</title>
+    <meta name="description" content="Mira el detalle del artículo, conversa con quien lo publica y descubre en un mapa real el distrito de Arequipa donde se encuentra.">
+    <meta name="theme-color" content="#08090c">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><text y='16' font-size='16'>🛍️</text></svg>">
+    <link rel="manifest" href="site.webmanifest">
+
+    <!-- Leaflet: única librería externa del proyecto, solo para el mapa.
+         Se carga con `defer` para no bloquear el primer pintado y la página
+         funciona igual si no llega: el script comprueba `typeof L` y, si falta,
+         muestra una tarjeta estática con el distrito. -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="" defer></script>
+
+    <link rel="stylesheet" href="assets/css/tokens.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+    <link rel="stylesheet" href="assets/css/layout.css">
+    <link rel="stylesheet" href="assets/css/pages/post.css">
+</head>
+<body>
+    <a class="skip-link" href="#main">Saltar al contenido</a>
+
+    <div id="app-header"></div>
+
+    <main id="main">
+        <div class="post-detail-page">
+
+            <!-- Carga: silueta con la misma forma que la ficha real -->
+            <div class="post-detail-boot" id="post-boot" aria-live="polite" aria-busy="true">
+                <div class="post-detail-boot-main">
+                    <div class="skeleton skeleton-text w-50"></div>
+                    <div class="skeleton post-detail-boot-card"></div>
+                    <div class="skeleton post-detail-boot-block"></div>
+                </div>
+                <div class="post-detail-boot-side">
+                    <div class="skeleton post-detail-boot-block"></div>
+                    <div class="skeleton post-detail-boot-map"></div>
+                </div>
+                <span class="sr-only">Cargando la publicación…</span>
+            </div>
+
+            <!-- Publicación inexistente, retirada o todavía en revisión -->
+            <div class="post-detail-error" id="post-error" hidden></div>
+
+            <!-- Ficha completa -->
+            <div class="post-detail-layout" id="post-detail" hidden>
+
+                <div class="post-detail-main">
+
+                    <nav class="breadcrumb" id="breadcrumb" aria-label="Ruta de navegación"></nav>
+
+                    <!-- La publicación, con el texto completo y sus acciones -->
+                    <div id="post-article"></div>
+
+                    <!-- Ficha de datos del artículo -->
+                    <section class="post-detail-facts" aria-labelledby="facts-title">
+                        <h2 class="post-detail-section-title" id="facts-title">Ficha del artículo</h2>
+                        <dl class="post-detail-dl" id="post-facts"></dl>
+                    </section>
+
+                    <!-- Comentarios -->
+                    <section class="post-detail-comments" id="comentarios" aria-labelledby="comments-title">
+                        <h2 class="post-detail-section-title" id="comments-title">
+                            Comentarios
+                            <span class="post-detail-count" id="comment-count" aria-live="polite">0</span>
+                        </h2>
+
+                        <!-- Compositor o invitación a iniciar sesión, según haya sesión -->
+                        <div id="comment-composer-slot"></div>
+
+                        <div class="comment-list post-detail-comment-list" id="comment-list"></div>
+                    </section>
+
+                </div>
+
+                <aside class="post-detail-side" aria-label="Información de quien publica y ubicación">
+
+                    <!-- Quién publica -->
+                    <section class="seller-card" id="seller-card" aria-labelledby="seller-card-title">
+                        <h2 class="sr-only" id="seller-card-title">Quién publica</h2>
+                    </section>
+
+                    <!-- Mapa real del distrito -->
+                    <section class="post-map-card" aria-labelledby="map-title">
+                        <div class="post-map-head">
+                            <h2 class="post-detail-section-title" id="map-title">Dónde está el artículo</h2>
+                            <p class="post-map-district" id="post-map-district">Arequipa, Perú</p>
+                        </div>
+
+                        <div class="post-map" id="post-map" role="region" aria-label="Mapa del distrito donde está el artículo"></div>
+
+                        <p class="post-map-note">
+                            La ubicación es aproximada al distrito, por privacidad de quien publica.
+                        </p>
+
+                        <a class="btn btn-secondary btn-block" id="post-map-link" href="mapa.html">
+                            Ver todos los vendedores en el mapa
+                        </a>
+                    </section>
+
+                    <!-- Publicaciones relacionadas -->
+                    <section class="post-detail-related" id="related-section" aria-labelledby="related-title" hidden>
+                        <h2 class="post-detail-section-title" id="related-title">Publicaciones relacionadas</h2>
+                        <div class="post-detail-related-list" id="related-list"></div>
+                    </section>
+
+                </aside>
+
+            </div>
+        </div>
+    </main>
+
+    <div id="app-footer"></div>
+
+    <!-- Núcleo (este orden es obligatorio) -->
+    <script src="assets/js/core/seed.js"></script>
+    <script src="assets/js/core/mock-api.js"></script>
+    <script src="assets/js/core/store.js"></script>
+    <script src="assets/js/core/api.js"></script>
+    <script src="assets/js/ui/toast.js"></script>
+    <script src="assets/js/ui/modal.js"></script>
+    <script src="assets/js/ui/components.js"></script>
+    <script src="assets/js/ui/shell.js"></script>
+    <!-- Página -->
+    <script src="assets/js/pages/post.js"></script>
+</body>
+</html>

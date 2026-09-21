@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Página no encontrada · DiscoveryShop</title>
+    <meta name="description" content="No encontramos la página que buscabas en DiscoveryShop. Vuelve al foro o usa los atajos para ir al mapa, a tus guardados o a tus mensajes.">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#08090c">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><text y='16' font-size='16'>🛍️</text></svg>">
+    <link rel="manifest" href="site.webmanifest">
+    <link rel="stylesheet" href="assets/css/tokens.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+    <link rel="stylesheet" href="assets/css/layout.css">
+</head>
+<body>
+    <a class="skip-link" href="#main">Saltar al contenido</a>
+
+    <div id="app-header"></div>
+
+    <main id="main">
+        <div class="page-narrow">
+            <div class="empty-state">
+                <p aria-hidden="true" style="font-size: clamp(4.5rem, 18vw, 7.5rem); font-weight: 800; line-height: 1; letter-spacing: var(--tracking-tight); background: var(--gradient-brand); -webkit-background-clip: text; background-clip: text; color: transparent;">404</p>
+
+                <h1 class="empty-title" style="font-size: var(--text-2xl);">Esta página no existe</h1>
+
+                <p class="empty-message">
+                    El enlace que seguiste está roto, se escribió mal la dirección
+                    o la publicación que buscabas ya no está disponible.
+                </p>
+
+                <div style="display: flex; flex-wrap: wrap; gap: var(--space-3); justify-content: center;">
+                    <a class="btn btn-primary" href="index.html">Volver al foro</a>
+                    <a class="btn btn-secondary" href="index.html?sort=popular">Ver lo más popular</a>
+                </div>
+            </div>
+
+            <nav aria-label="Enlaces útiles" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--space-3); margin-top: var(--space-8);">
+                <a class="card card-interactive" href="index.html" style="display: block; padding: var(--space-4);">
+                    <span style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-primary);">Foro</span>
+                    <span style="display: block; margin-top: var(--space-1); font-size: var(--text-2xs); color: var(--text-muted);">Todo lo publicado</span>
+                </a>
+
+                <a class="card card-interactive" href="mapa.html" style="display: block; padding: var(--space-4);">
+                    <span style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-primary);">Mapa de vendedores</span>
+                    <span style="display: block; margin-top: var(--space-1); font-size: var(--text-2xs); color: var(--text-muted);">Quién vende cerca de ti</span>
+                </a>
+
+                <a class="card card-interactive" href="guardados.html" style="display: block; padding: var(--space-4);">
+                    <span style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-primary);">Guardados</span>
+                    <span style="display: block; margin-top: var(--space-1); font-size: var(--text-2xs); color: var(--text-muted);">Lo que apartaste</span>
+                </a>
+
+                <a class="card card-interactive" href="mensajes.html" style="display: block; padding: var(--space-4);">
+                    <span style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-primary);">Mis mensajes</span>
+                    <span style="display: block; margin-top: var(--space-1); font-size: var(--text-2xs); color: var(--text-muted);">Habla con quien publica</span>
+                </a>
+            </nav>
+        </div>
+    </main>
+
+    <div id="app-footer"></div>
+
+    <!-- Núcleo (este orden es obligatorio) -->
+    <script src="assets/js/core/seed.js"></script>
+    <script src="assets/js/core/mock-api.js"></script>
+    <script src="assets/js/core/store.js"></script>
+    <script src="assets/js/core/api.js"></script>
+    <script src="assets/js/ui/toast.js"></script>
+    <script src="assets/js/ui/modal.js"></script>
+    <script src="assets/js/ui/components.js"></script>
+    <script src="assets/js/ui/shell.js"></script>
+</body>
+</html>
