@@ -27,7 +27,24 @@
         store: '<svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 7h13v7.5a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1V7Z"/><path d="M2.5 7 4 2.5h10L15.5 7"/></svg>',
     };
 
-    const LOGO = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6.5h14l-1.2 8.2a1.5 1.5 0 0 1-1.5 1.3H5.7a1.5 1.5 0 0 1-1.5-1.3L3 6.5Z"/><path d="M7 6.5V5a3 3 0 0 1 6 0v1.5"/></svg>';
+    /**
+     * Símbolo de la marca: bolsa con la lupa recortada. Va en línea y no como
+     * <img> para que herede `currentColor` y funcione en ambos temas sin
+     * pedir un segundo archivo. La lupa se recorta con una máscara en vez de
+     * dibujarse con trazo, porque a 24 px un trazo fino desaparece.
+     */
+    const LOGO = [
+        '<svg viewBox="0 0 40 40" fill="none" aria-hidden="true" focusable="false">',
+        '<path d="M13.4 10.6 9.1 29.4a1.1 1.1 0 0 0 1.07 1.35h3.23Z" fill="currentColor" opacity="0.5"/>',
+        '<path d="M16.6 11.2V9.4a4.6 4.6 0 0 1 9.2 0v1.8" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>',
+        '<mask id="ds-mark-lens">',
+        '<rect width="40" height="40" fill="#fff"/>',
+        '<circle cx="21.3" cy="19.4" r="5.2" fill="none" stroke="#000" stroke-width="2.3"/>',
+        '<path d="m25.2 23.3 4.6 4.6" stroke="#000" stroke-width="2.5" stroke-linecap="round"/>',
+        '</mask>',
+        '<path d="M13.4 10.6h15.9a1.6 1.6 0 0 1 1.6 1.45l1.62 17.1a1.6 1.6 0 0 1-1.6 1.75H10.9a1.1 1.1 0 0 1-1.07-1.35Z" fill="currentColor" mask="url(#ds-mark-lens)"/>',
+        '</svg>',
+    ].join('');
 
     const NAV_LINKS = [
         { href: 'index.html', label: 'Inicio' },

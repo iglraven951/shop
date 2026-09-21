@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
+    <title>DiscoveryShop</title>
+
+    <!--
+        Favicon: el símbolo sobre el azul de marca. A 16 px el trazo fino
+        desaparece, así que la lupa se recorta del cuerpo en lugar de
+        dibujarse con stroke, y el panel lateral se omite: a ese tamaño solo
+        añadía ruido.
+    -->
+    <rect width="40" height="40" rx="9" fill="#12406e"/>
+
+    <mask id="fav-lens">
+        <rect width="40" height="40" fill="#fff"/>
+        <circle cx="21" cy="19.6" r="5" fill="none" stroke="#000" stroke-width="2.6"/>
+        <path d="m25 23.6 4.4 4.4" stroke="#000" stroke-width="2.8" stroke-linecap="round"/>
+    </mask>
+
+    <path d="M16.3 12.4V10.6a4.4 4.4 0 0 1 8.8 0v1.8"
+          fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round"/>
+
+    <path d="M11.6 12.4h17.4a1.5 1.5 0 0 1 1.5 1.38l1.2 14.4a1.5 1.5 0 0 1-1.5 1.62H10.4a1.5 1.5 0 0 1-1.5-1.62l1.2-14.4a1.5 1.5 0 0 1 1.5-1.38Z"
+          fill="#ffffff" mask="url(#fav-lens)"/>
+</svg>

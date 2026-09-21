@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" role="img" aria-label="DiscoveryShop">
+    <title>DiscoveryShop</title>
+
+    <!--
+        Símbolo de DiscoveryShop: bolsa de compra con una lupa recortada.
+        Se dibuja con `currentColor` para el cuerpo y una opacidad menor para
+        el panel lateral, de modo que funciona sobre cualquier fondo y hereda
+        el color del contexto (cabecera, intro, favicon).
+    -->
+
+    <!-- Panel lateral en perspectiva -->
+    <path d="M13.4 10.6 9.1 29.4a1.1 1.1 0 0 0 1.07 1.35h3.23Z"
+          fill="currentColor" opacity="0.45"/>
+
+    <!-- Asa -->
+    <path d="M16.6 11.2V9.4a4.6 4.6 0 0 1 9.2 0v1.8"
+          fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+
+    <!-- Cuerpo de la bolsa, con la lupa recortada -->
+    <mask id="ds-lens">
+        <rect x="0" y="0" width="40" height="40" fill="#fff"/>
+        <!-- Aro de la lupa -->
+        <circle cx="21.3" cy="19.4" r="5.2" fill="none" stroke="#000" stroke-width="2.1"/>
+        <!-- Mango de la lupa -->
+        <path d="m25.2 23.3 4.6 4.6" stroke="#000" stroke-width="2.3" stroke-linecap="round"/>
+    </mask>
+
+    <path d="M13.4 10.6h15.9a1.6 1.6 0 0 1 1.6 1.45l1.62 17.1a1.6 1.6 0 0 1-1.6 1.75H10.9a1.1 1.1 0 0 1-1.07-1.35Z"
+          fill="currentColor" mask="url(#ds-lens)"/>
+</svg>

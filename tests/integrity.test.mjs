@@ -77,13 +77,27 @@ presentPages.forEach((page) => {
     check(`${page}: meta description`, /name="description"/.test(html));
     // El favicon es un SVG en línea dentro de un data URI, así que su href
     // contiene ">" y es fácil partirlo con una sustitución descuidada.
-    // Se toma la línea entera: buscar hasta el primer ">" cortaría dentro del SVG.
+    // Se toma la línea entera: buscar hasta el primer ">" cortaría dentro de
+    // un favicon escrito como data URI, cuyo href contiene marcado.
     const faviconLine = html.split('\n').find((line) => line.includes('<link rel="icon"'));
     check(`${page}: tiene favicon`, !!faviconLine);
+
     if (faviconLine) {
-        check(`${page}: data URI del favicon íntegro`,
-            /href="data:image\/svg\+xml,<svg[^"]*<\/svg>"/.test(faviconLine),
-            faviconLine.trim().slice(0, 80));
+        const href = faviconLine.match(/href="([^"]*)"/);
+        check(`${page}: el favicon declara href`, !!href, faviconLine.trim().slice(0, 70));
+
+        if (href) {
+            const value = href[1];
+
+            if (value.startsWith('data:')) {
+                // Un data URI debe estar completo: el SVG entero en una línea
+                check(`${page}: data URI del favicon íntegro`,
+                    /^data:image\/svg\+xml,<svg[\s\S]*<\/svg>$/.test(value),
+                    value.slice(0, 70));
+            } else {
+                check(`${page}: el archivo del favicon existe`, exists(value), value);
+            }
+        }
     }
 
     // Ninguna etiqueta del head debe haber quedado anidada dentro de otra.
