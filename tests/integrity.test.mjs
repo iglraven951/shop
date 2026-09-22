@@ -40,8 +40,17 @@ const REMOVED_PAGES = ['carrito.html', 'producto.html', 'vender.html', 'favorito
    cuenta con ellos: mock-api llama al revisor al crear una publicación, y el
    chat flotante al buscador. Ambos se leen de forma perezosa, así que su
    ausencia no rompe nada de golpe —simplemente la función desaparece sin
-   avisar, que es peor. Esta lista es la que impide que vuelva a ocurrir. */
+   avisar, que es peor. Esta lista es la que impide que vuelva a ocurrir.
+
+   native.js abre la lista porque es el único que tiene que correr antes de que
+   se pinte nada: marca <html> con `ds-native` y publica ahí las medidas de las
+   barras del sistema, y lo que se dibujase antes quedaría colocado con los
+   márgenes equivocados. En el navegador no hace nada observable, así que
+   olvidarlo tampoco daría un error visible —solo una aplicación con la
+   cabecera bajo la barra de estado—, que es exactamente el fallo silencioso
+   que esta lista existe para atrapar. */
 const CORE_ORDER = [
+    'assets/js/core/native.js',
     'assets/js/core/seed.js',
     'assets/js/core/moderator.js',
     'assets/js/core/mock-api.js',
@@ -63,6 +72,11 @@ const CORE_CSS = [
     // El chat flotante está en las once páginas; sin su hoja se vería como
     // una lista suelta de texto encima del contenido.
     'assets/css/assistant.css',
+    // Los ajustes de la aplicación Android. En el navegador no cambia ni un
+    // píxel, y por eso se olvida con facilidad; sin ella, dentro de la
+    // aplicación la cabecera y el asistente flotante se meten debajo de las
+    // barras del sistema.
+    'assets/css/native.css',
 ];
 
 console.log('\nVERIFICACIÓN DE INTEGRIDAD\n' + '='.repeat(58));

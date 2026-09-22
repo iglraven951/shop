@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Temas de DiscoveryShop — variante de NOCHE (modo oscuro del sistema).
+
+    Solo se redefine Theme.DiscoveryShop. Theme.DiscoveryShop.Starter no aparece
+    aquí adrede: el splash usa @color/splash_background (#070c14) y el logo
+    blanco en los dos modos, porque es identidad de marca y no debe parpadear
+    de color según el ajuste del teléfono.
+
+    Todo lo que no se repita más abajo se hereda de values/themes.xml.
+-->
+<resources>
+
+    <style name="Theme.DiscoveryShop" parent="Theme.AppCompat.DayNight.NoActionBar">
+
+        <!--
+            Fondo de ventana oscuro: el mismo #070c14 con el que la web se pinta
+            cuando `prefers-color-scheme` resuelve a oscuro, y el mismo del
+            splash. Así el arranque es un único color continuo.
+        -->
+        <item name="android:windowBackground">@color/bg_base</item>
+
+        <!-- Edge-to-edge igual que en claro: las barras las pinta el contenido. -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+
+        <!--
+            Contenido oscuro debajo => los iconos de la barra de estado tienen
+            que ser CLAROS, que es lo que significa `false` aquí.
+            (`windowLightStatusBar` = «pon iconos oscuros porque la barra es
+            clara»; en oscuro lo queremos apagado.)
+        -->
+        <item name="android:windowLightStatusBar">false</item>
+
+    </style>
+
+</resources>

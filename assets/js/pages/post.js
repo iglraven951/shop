@@ -161,6 +161,11 @@
                 <span class="post-action-icon">${post.saved ? I.bookmarkFill : I.bookmark}</span>
                 <span class="post-action-label">Guardar</span>
             </button>
+
+            <button class="post-action" type="button" data-action="share" data-id="${id}">
+                <span class="post-action-icon">${I.share}</span>
+                <span class="post-action-label">Compartir</span>
+            </button>
         </div>`;
     }
 

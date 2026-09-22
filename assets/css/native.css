@@ -1,0 +1,45 @@
+/* ==========================================================================
+   DiscoveryShop · Ajustes para la aplicación Android
+
+   Solo se aplica bajo `.ds-native`, la clase que `core/native.js` pone en
+   <html> cuando el sitio corre dentro de la WebView. En el navegador este
+   archivo no cambia ni un píxel.
+
+   La capa nativa ya aparta el contenido de las barras del sistema, así que
+   todo lo que fluye con la página está bien sin tocar nada. Lo que no fluye
+   —la cabecera pegajosa y lo que vive en `position: fixed`— se ancla al
+   borde de la pantalla, y ahí sí quedaría debajo de la barra de estado o de
+   la de navegación. Se les suma el margen correspondiente.
+
+   Las variables las escribe native.js leyendo el puente. El respaldo `0px`
+   no es decorativo: si el puente falla o tarda, todo sigue donde estaba.
+   ========================================================================== */
+
+/* La cabecera se pega bajo la barra de estado, no bajo el borde físico. */
+.ds-native .site-header {
+    top: var(--ds-inset-top, 0px);
+}
+
+/* El asistente flotante, por encima de la barra de navegación. */
+.ds-native .ds-assistant {
+    right: calc(var(--ds-inset-right, 0px) + var(--asst-edge));
+    bottom: calc(var(--ds-inset-bottom, 0px) + var(--asst-edge));
+}
+
+/* Los avisos comparten esa esquina y necesitan el mismo respeto. */
+.ds-native .toast-stack {
+    right: calc(var(--ds-inset-right, 0px) + var(--space-5));
+    bottom: calc(var(--ds-inset-bottom, 0px) + var(--space-5));
+}
+
+.ds-native .filters-fab {
+    bottom: calc(var(--ds-inset-bottom, 0px) + var(--space-5));
+}
+
+/* Los paneles deslizantes llegan hasta el borde inferior a propósito: su
+   fondo debe seguir tocándolo, así que se aparta el contenido por dentro en
+   lugar de mover la hoja entera. */
+.ds-native .map-panel,
+.ds-native .filters-panel {
+    padding-bottom: calc(var(--ds-inset-bottom, 0px) + var(--space-5));
+}

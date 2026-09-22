@@ -1,0 +1,28 @@
+<!--
+    Acceso directo «Publicar»: una etiqueta de precio con un signo más.
+
+    Los tres iconos de acceso directo comparten el mismo lenguaje que el icono
+    del lanzador —marca blanca sobre el azul de marca— para que, al abrir el
+    menú de la app, los cuatro se lean como una misma familia.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <path
+        android:fillColor="#004080"
+        android:pathData="M24,0A24,24 0 1,1 24,48A24,24 0 1,1 24,0Z" />
+
+    <!-- Etiqueta -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M15.2,14h9.6l9.2,9.2a2.2,2.2 0 0,1 0,3.1l-7.7,7.7a2.2,2.2 0 0,1 -3.1,0L14,24.8V14zM19.4,18.2a1.9,1.9 0 1,0 0,3.8a1.9,1.9 0 0,0 0,-3.8z" />
+
+    <!-- Signo más -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M31.4,11.4h2.4v3.4h3.4v2.4h-3.4v3.4h-2.4v-3.4h-3.4v-2.4h3.4z" />
+
+</vector>

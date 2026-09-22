@@ -1113,8 +1113,22 @@
         }
     }
 
-    /** Abre WhatsApp en otra pestaña con el mensaje ya redactado. */
+    /**
+     * Abre WhatsApp con el mensaje ya redactado.
+     *
+     * En el navegador es una pestaña nueva. Dentro de la app Android una
+     * pestaña nueva no existe, y `window.open` dejaría al administrador
+     * atrapado en una página web dentro de su propia app: `DSApp.openExternal`
+     * entrega el enlace al sistema para que lo atienda WhatsApp de verdad.
+     * En la web esa misma llamada acaba en `window.open`, así que sirve para
+     * los dos entornos.
+     */
     function openWhatsapp(link) {
+        if (global.DSApp && typeof global.DSApp.openExternal === 'function') {
+            global.DSApp.openExternal(link);
+            return;
+        }
+
         global.open(link, '_blank', 'noopener');
     }
 

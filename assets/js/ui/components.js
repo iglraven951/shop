@@ -29,6 +29,7 @@
         check: '<svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 7.2 2.6 2.6L11 4.4"/></svg>',
         more: '<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><circle cx="5" cy="10" r="1.5"/><circle cx="10" cy="10" r="1.5"/><circle cx="15" cy="10" r="1.5"/></svg>',
         eye: '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8Z"/><circle cx="8" cy="8" r="2"/></svg>',
+        share: '<svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13.2V3.4"/><path d="m6.6 6.6 3.4-3.2 3.4 3.2"/><path d="M5 11.4v4.2a1.4 1.4 0 0 0 1.4 1.4h7.2a1.4 1.4 0 0 0 1.4-1.4v-4.2"/></svg>',
     };
 
     /* ----------------------------------------------------------------------
@@ -438,9 +439,17 @@
             if (!button || !container.contains(button)) return;
 
             const { action, id } = button.dataset;
-            if (!['like', 'interest', 'save', 'comment', 'post-menu'].includes(action)) return;
+            if (!['like', 'interest', 'save', 'comment', 'share', 'post-menu'].includes(action)) return;
 
             event.preventDefault();
+
+            if (action === 'share') {
+                // Compartir no es una reacción: no toca la publicación, no
+                // necesita sesión y no hay nada que guardar. Cualquiera que
+                // esté mirando un artículo puede pasarlo.
+                sharePost(id, button);
+                return;
+            }
 
             if (action === 'comment') {
                 if (typeof hooks.onComment === 'function') {
@@ -470,6 +479,57 @@
         interest: 'Inicia sesión para avisar al vendedor que te interesa su artículo.',
         save: 'Inicia sesión para guardar publicaciones y revisarlas después.',
     };
+
+    /**
+     * Pasa una publicación a otra persona.
+     *
+     * El foro existe para que alguien acabe escribiéndole a alguien, y la
+     * mitad de las veces eso empieza fuera: un «mira esto» por WhatsApp. En la
+     * app abre la hoja de compartir de Android; en un móvil con
+     * `navigator.share`, la del navegador; y en un escritorio sin ninguna de
+     * las dos, copia el enlace, que es lo único honesto que queda.
+     *
+     * El título sale del DOM y no de la API a propósito: es exactamente lo que
+     * la persona tiene delante, y así funciona igual sin conexión.
+     *
+     * @param {string} id - Identificador de la publicación.
+     * @param {HTMLElement} button - El botón pulsado, para situar la tarjeta.
+     */
+    async function sharePost(id, button) {
+        const card = button.closest('.post-card');
+        const heading = card && card.querySelector('.post-title');
+        const title = (heading && heading.textContent.trim()) || 'DiscoveryShop';
+
+        const link = global.DS.url.publicHref(
+            `publicacion.html?id=${encodeURIComponent(id)}`,
+        );
+
+        // Si no hay ninguna hoja de compartir, `DSApp.share` copia el enlace.
+        // Hay que saberlo antes de llamar para poder decir la verdad después.
+        const hasSheet = !!(global.DSApp && global.DSApp.isNative)
+            || typeof (global.navigator || {}).share === 'function';
+
+        button.disabled = true;
+
+        try {
+            const shared = await global.DSApp.share({
+                title,
+                text: `${title} · en DiscoveryShop, el foro de segunda mano de Arequipa`,
+                url: link,
+            });
+
+            if (!shared) {
+                global.toast.error('No pudimos compartir esta publicación');
+                return;
+            }
+
+            if (!hasSheet) global.toast.success('Enlace copiado');
+        } catch (error) {
+            global.toast.error('No pudimos compartir esta publicación');
+        } finally {
+            button.disabled = false;
+        }
+    }
 
     /** Ejecuta la reacción y refleja el nuevo estado en el botón. */
     async function runReaction(action, id, button, hooks) {
@@ -513,10 +573,14 @@
             button.setAttribute('aria-pressed', String(active));
             button.querySelector('.post-action-icon').innerHTML = active ? icons[1] : icons[0];
 
-            // Una animación breve confirma que la acción surtió efecto.
+            // Una animación breve confirma que la acción surtió efecto, y en
+            // el teléfono también un toque háptico: con el dedo encima del
+            // botón, la animación queda justo debajo y no se ve. Fuera de la
+            // app esto no hace nada salvo donde el navegador vibre.
             if (active) {
                 button.classList.add('just-activated');
                 setTimeout(() => button.classList.remove('just-activated'), 420);
+                if (global.DSApp) global.DSApp.vibrate(12);
             }
 
             updateReactionSummary(button, result);

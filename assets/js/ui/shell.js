@@ -616,6 +616,7 @@
 
     async function init() {
         theme.apply();
+        theme.follow();
 
         const headerSlot = $('#app-header');
         if (headerSlot) headerSlot.outerHTML = headerMarkup();

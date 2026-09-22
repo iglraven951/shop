@@ -281,6 +281,16 @@
        URL
        ---------------------------------------------------------------------- */
 
+    /**
+     * Dónde vive el foro de cara al público.
+     *
+     * Solo se usa para construir enlaces que salen del dispositivo. La app
+     * Android sirve estas mismas páginas desde dentro de la APK, así que un
+     * enlace a esta dirección y la pantalla que se está viendo son la misma
+     * cosa para quien lo recibe.
+     */
+    const PUBLIC_SITE = 'https://iglraven951.github.io/shop/';
+
     const url = {
         param(name, fallback = null) {
             return new URLSearchParams(global.location.search).get(name) ?? fallback;
@@ -312,6 +322,37 @@
         build(page, params = {}) {
             const search = new URLSearchParams(params).toString();
             return `${page}${search ? `?${search}` : ''}`;
+        },
+
+        /**
+         * Dirección que se puede enviar a otra persona.
+         *
+         * En la web es la página donde se está, sin más. Dentro de la app
+         * Android no: allí el origen es `appassets.androidplatform.net`, un
+         * dominio que solo existe dentro de esa APK. Compartir ese enlace
+         * mandaría a quien lo reciba a un error, así que se reescribe contra
+         * el sitio publicado, que sirve exactamente las mismas páginas con
+         * las mismas rutas.
+         *
+         * @param {string} [page] - Ruta relativa (`publicacion.html?id=…`).
+         *   Sin ella se comparte la página actual, con su consulta y su ancla.
+         * @returns {string} URL absoluta y pública.
+         */
+        publicHref(page) {
+            const relative = page || [
+                global.location.pathname.split('/').pop() || 'index.html',
+                global.location.search,
+                global.location.hash,
+            ].join('');
+
+            const insideApp = !!(global.DSApp && global.DSApp.isNative);
+            const base = insideApp ? PUBLIC_SITE : global.location.href;
+
+            try {
+                return new URL(relative, base).href;
+            } catch (error) {
+                return PUBLIC_SITE + relative;
+            }
         },
     };
 
@@ -349,6 +390,45 @@
 
         apply() {
             document.documentElement.dataset.theme = this.get();
+        },
+
+        /**
+         * Sigue el tema del sistema mientras el usuario no haya elegido uno.
+         *
+         * `get()` ya consulta la preferencia del sistema, pero solo al cargar
+         * la página. En un navegador eso basta: cambiar el tema del sistema es
+         * poco frecuente y la siguiente recarga lo recoge. Dentro de la app
+         * Android no basta, porque ahí la pantalla no se recarga nunca —el
+         * usuario cambiaba el tema del teléfono y el foro se quedaba como
+         * estaba, con el marco de la app ya cambiado alrededor.
+         *
+         * En cuanto alguien toca el interruptor de tema, `set()` guarda su
+         * elección y esto deja de mandar: una preferencia explícita siempre
+         * gana a la del sistema.
+         */
+        follow() {
+            if (typeof global.matchMedia !== 'function') return;
+
+            const query = global.matchMedia('(prefers-color-scheme: light)');
+
+            const onChange = () => {
+                try {
+                    // Elección explícita del usuario: no se toca.
+                    if (localStorage.getItem(THEME_KEY)) return;
+                } catch (error) {
+                    /* sin almacenamiento: se sigue al sistema */
+                }
+
+                const next = query.matches ? 'light' : 'dark';
+                document.documentElement.dataset.theme = next;
+                store.set({ theme: next });
+            };
+
+            if (typeof query.addEventListener === 'function') {
+                query.addEventListener('change', onChange);
+            } else if (typeof query.addListener === 'function') {
+                query.addListener(onChange);
+            }
         },
     };
 

@@ -105,6 +105,76 @@ restringe algunas cosas del navegador, así que la opción A es preferible.
 
 ---
 
+## Aplicación para Android
+
+DiscoveryShop también se instala como aplicación. **Es exactamente el mismo
+sitio**: no existe una segunda versión hecha a mano, sino una carcasa nativa que
+abre estos mismos archivos dentro de un WebView. Lo que se arregla en la página
+queda arreglado en la aplicación.
+
+| Dato | Valor |
+|---|---|
+| Identificador | `pe.discoveryshop.app` |
+| Versión | 1.0.0 |
+| Android mínimo | 7.0 (API 24) |
+
+El sitio viaja **dentro del APK**, así que la aplicación abre sin conexión. Lo
+único que necesita internet son los mapas, porque las teselas vienen de
+OpenStreetMap; sin conexión el mapa se sustituye por la lista de distritos, igual
+que en la web. Leaflet ya no se descarga de un CDN: vive en
+`assets/vendor/leaflet/`, dentro del repositorio, para que el código del mapa
+exista aunque no haya red.
+
+Los enlaces que salen de DiscoveryShop salen de verdad: un enlace de WhatsApp
+abre WhatsApp, y OpenStreetMap o Unsplash abren el navegador. La aplicación no te
+deja atrapado en una ventana sin salida.
+
+Lo que la aplicación añade sobre abrir la página en el navegador:
+
+| | |
+|---|---|
+| **Accesos directos** | Mantén pulsado el icono: Publicar, Mapa y Mensajes. Son los mismos tres que la web ya ofrecía al instalarse desde el navegador |
+| **Compartir** | Cada publicación tiene su botón. Abre la hoja de compartir de Android con un enlace **público**, así que quien lo reciba puede abrirlo aunque no tenga la aplicación |
+| **Enlaces que abren la app** | `discoveryshop://publicacion.html?id=…` lleva directo a esa publicación, con su ancla y sus filtros |
+| **Tirar para recargar** | Solo cuando la página está arriba del todo, para que no estorbe al leer |
+| **Salir con aviso** | Atrás en la portada avisa una vez antes de cerrar: en el foro se escriben mensajes largos y cerrar al primer toque los tira |
+| **Tema del sistema** | Claro y oscuro cambian en vivo, incluida la franja de la barra de estado |
+
+> **Los datos siguen viviendo en el dispositivo.** Igual que en la web, todo se
+> guarda en el navegador —aquí, el de la aplicación—, así que la cuenta que crees
+> en el móvil no existe en la página publicada, ni al revés. Mientras no haya un
+> servidor de verdad, cada instalación es un mundo aparte.
+
+### Instalarla en un móvil
+
+1. Copia `app-debug.apk` al teléfono (por cable, por Drive, como prefieras).
+2. Ábrelo desde el gestor de archivos.
+3. Android pedirá permiso para **instalar aplicaciones de orígenes
+   desconocidos**: concédeselo a la aplicación desde la que estás abriendo el
+   APK. Es normal, porque el paquete no viene de Google Play.
+4. Acepta la instalación.
+
+### Compilarla
+
+El proyecto vive en `android/`. Hacen falta el JDK 21 y el SDK de Android, y un
+archivo `android/local.properties` con `sdk.dir` apuntando a tu SDK.
+
+```bash
+cd android
+.\gradlew assembleDebug
+```
+
+El APK aparece en `android/app/build/outputs/apk/debug/app-debug.apk`.
+
+En ningún momento hay que copiar la web a mano: una tarea de Gradle vuelca la
+raíz del repositorio en `android/app/src/main/assets/www/` antes de cada
+compilación, y esa carpeta queda fuera del repositorio precisamente para que
+nadie pueda dejarla desactualizada. La prueba `tests/android.test.mjs` compara
+byte a byte lo que hay dentro del APK con lo que hay en el repositorio: así,
+«la aplicación es el sitio» es algo que se comprueba, no algo que se promete.
+
+---
+
 ## Pruebas
 
 Solo necesitan Node 20 o superior; no hay dependencias que instalar.
@@ -112,15 +182,25 @@ Solo necesitan Node 20 o superior; no hay dependencias que instalar.
 ```bash
 node tests/core.test.mjs
 node tests/integrity.test.mjs
+node tests/contract.test.mjs
+node tests/responsive.test.mjs
+node tests/contrast.test.mjs
+node tests/ai.test.mjs
+node tests/android.test.mjs
 ```
 
 | Archivo | Qué comprueba |
 |---|---|
 | `tests/core.test.mjs` | El contrato de datos: publicaciones, filtros, sesión, permisos y moderación de `MockAPI` |
 | `tests/integrity.test.mjs` | La integridad del sitio: enlaces que resuelven, orden de los scripts, colores desde los tokens, ortografía española y ausencia de restos de depuración |
+| `tests/contract.test.mjs` | Que los métodos que invocan las páginas existan de verdad en el núcleo, cargándolo en un DOM simulado |
+| `tests/responsive.test.mjs` | Los patrones que provocan desbordes horizontales o elementos inalcanzables a 360, 768 y 1440 px |
+| `tests/contrast.test.mjs` | Que cada combinación de texto sobre fondo de la paleta cumpla WCAG 2.1 AA, en ambos temas |
+| `tests/ai.test.mjs` | El comportamiento del asistente de búsqueda y del revisor de publicaciones |
+| `tests/android.test.mjs` | La app Android: proyecto completo, iconos en todas las densidades, nada de HTTP en claro y que la copia del sitio dentro del APK sea idéntica a la real |
 
-Las dos se ejecutan también en cada despliegue: si alguna falla, el sitio no se
-publica.
+Las siete se ejecutan también en cada despliegue: si alguna falla, el sitio no
+se publica.
 
 ---
 

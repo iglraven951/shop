@@ -6,6 +6,18 @@
 
 :root {
     /* ----------------------------------------------------------------------
+       Esquema de color
+
+       Le dice al navegador qué tema está pintando la página. No es adorno:
+       sin esta declaración, el agente de usuario da por hecho que el sitio no
+       sabe hacer modo oscuro y lo oscurece él por su cuenta —el WebView de la
+       app Android lo hacía—, encima del tema oscuro que ya tenemos. También
+       hace que los controles nativos (selectores, barras de desplazamiento,
+       campos de fecha) se pinten acordes al tema en lugar de blancos.
+       ---------------------------------------------------------------------- */
+    color-scheme: dark;
+
+    /* ----------------------------------------------------------------------
        Escala de marca
        Tomada del logo: el triángulo lateral (400), el texto «SHOP» (500), el
        cuerpo de la bolsa (700), el asa (800) y el texto «Discovery» (900).
@@ -181,6 +193,8 @@
    10.58 de contraste, muy por encima de lo que exige AA.
    ========================================================================== */
 :root[data-theme="light"] {
+    color-scheme: light;
+
     --bg-base: #f2f6fb;
     --bg-sunken: #e7eef7;
     --bg-surface: #ffffff;

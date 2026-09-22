@@ -277,6 +277,21 @@
     border-radius: var(--radius-md);
 }
 
+/* El botón flotante del asistente vive fijo en la esquina inferior derecha, y
+   en un teléfono la barra de acciones de la publicación cruza exactamente por
+   ahí nada más abrirla: el último botón queda debajo y no recibe el toque
+   —comprobado con `elementFromPoint`, no a ojo—. Aquí no sirve apartar el
+   botón flotante como se hace en mensajes (assistant.css), porque esta página
+   se desplaza y cualquier posición fija acaba chocando con algo; lo que tiene
+   que ceder es la barra. La reserva es el ancho del botón más un respiro, y
+   con las etiquetas ya ocultas a este ancho los cinco iconos siguen holgados
+   por encima del área táctil mínima. */
+@media (max-width: 720px) {
+    .post-detail-page .post-actions {
+        padding-right: calc(58px + var(--space-2));
+    }
+}
+
 .post-detail-page .post-action.is-active { font-weight: 700; }
 
 .post-detail-page .post-action.is-active.is-like {

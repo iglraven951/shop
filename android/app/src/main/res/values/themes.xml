@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Temas de DiscoveryShop — variante de DÍA (modo claro del sistema).
+
+    Son dos temas distintos y con parientes distintos a propósito:
+
+      · Theme.DiscoveryShop.Starter  es el `android:theme` de la MainActivity en
+        el manifiesto. Hereda de Theme.SplashScreen (androidx.core:core-splashscreen
+        1.0.1) y solo existe durante el arranque.
+      · Theme.DiscoveryShop          es el tema real de la app. La librería lo
+        aplica sola en cuanto termina el splash, gracias a `postSplashScreenTheme`.
+
+    Ojo con la herencia por puntos: aunque el nombre empiece por
+    «Theme.DiscoveryShop.», el atributo `parent` explícito manda, así que el
+    Starter NO hereda del tema de la app. Es justo lo que queremos.
+-->
+<resources>
+
+    <!--
+        Pantalla de arranque. El fondo es el azul casi negro de la marca en
+        ambos modos: el splash es un momento de marca, no de tema, y el logo
+        vectorial es blanco, así que se lee sobre ese fondo siempre.
+    -->
+    <style name="Theme.DiscoveryShop.Starter" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
+        <item name="postSplashScreenTheme">@style/Theme.DiscoveryShop</item>
+    </style>
+
+    <!--
+        Tema de la app. DayNight porque el sitio web trae su propio tema claro
+        gobernado por `prefers-color-scheme`: si la app siguiera el tema del
+        sistema, el WebView lo hereda y la web se pinta clara u oscura sola.
+        Por eso hay una variante en values-night/ en vez de forzar oscuro aquí.
+    -->
+    <style name="Theme.DiscoveryShop" parent="Theme.AppCompat.DayNight.NoActionBar">
+
+        <!--
+            Fondo de ventana del modo claro. Es el mismo gris azulado que pinta
+            la web en claro (#f2f6fb), así que el fotograma que va entre el fin
+            del splash y el primer pintado del WebView no destella en blanco.
+        -->
+        <item name="android:windowBackground">@color/bg_base_light</item>
+
+        <!--
+            Android 15 (targetSdk 35) impone edge-to-edge y ya ignora los
+            colores opacos de las barras. No peleamos con eso: las dejamos
+            transparentes y la Activity aplica los insets como padding del
+            WebView, que es lo que el sistema espera.
+        -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+
+        <!--
+            En modo claro el contenido de debajo es claro, así que los iconos de
+            la barra de estado tienen que ser OSCUROS: `true`.
+            (API 23; minSdk es 24, o sea que no hace falta calificador.)
+
+            `android:windowLightNavigationBar` sería el equivalente para la barra
+            de navegación, pero es API 27 y minSdk es 24: se omite a propósito
+            para no arrastrar un values-v27 ni arriesgar un aviso de NewApi. En
+            gestos la barra es una línea fina y el sistema ya la contrasta solo,
+            así que no se pierde nada visible.
+        -->
+        <item name="android:windowLightStatusBar">true</item>
+
+    </style>
+
+</resources>

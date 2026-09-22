@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+    Una sola pantalla: el sitio dentro de un WebView, y encima una vista de
+    error que solo aparece si la carga falla.
+
+    El WebView va envuelto en un SwipeRefreshLayout porque tirar hacia abajo
+    para recargar es el único gesto que un navegador ofrece siempre y que una
+    app con WebView no hereda: sin él, cuando algo que necesita red —el mapa,
+    las fotos— falla a media página, no queda ninguna forma de reintentar.
+    `MainActivity` solo lo arma cuando la página está arriba del todo; si no,
+    competiría con el desplazamiento del propio sitio.
+
+    Los colores salen del tema, no de la paleta oscura fija: el sitio cambia
+    con `prefers-color-scheme`, así que el hueco que dejan las barras del
+    sistema tiene que cambiar con él. Con `?android:attr/windowBackground` el
+    fondo de la app y el de la página son el mismo en ambos modos.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?android:attr/windowBackground">
+
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipe_refresh"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <WebView
+            android:id="@+id/web_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+    <LinearLayout
+        android:id="@+id/error_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="?android:attr/windowBackground"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:paddingLeft="32dp"
+        android:paddingRight="32dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/error_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="@string/error_offline_title"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/error_body"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:alpha="0.72"
+            android:gravity="center"
+            android:lineSpacingMultiplier="1.35"
+            android:text="@string/error_offline_body"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textSize="15sp" />
+
+        <Button
+            android:id="@+id/error_retry"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="@string/error_offline_retry" />
+
+    </LinearLayout>
+
+</FrameLayout>

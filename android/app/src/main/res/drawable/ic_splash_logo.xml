@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Marca para la pantalla de arranque. Android 12+ recorta el icono a un
+    circulo de 2/3 del lienzo (72dp de 108dp); la escala 2.05 deja el punto
+    mas lejano del dibujo a 35.7dp del centro, asi que la marca llena ese
+    circulo sin salirse.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <group
+        android:scaleX="2.05"
+        android:scaleY="2.05"
+        android:translateX="11.37"
+        android:translateY="18.64">
+
+        <!-- Panel lateral en perspectiva -->
+        <path
+            android:pathData="M13.4,10.6 L9.1,29.4 a1.1,1.1 0 0 0 1.07,1.35 h3.23 Z"
+            android:fillColor="#FFFFFF"
+            android:fillAlpha="0.45" />
+
+        <!-- Asa de la bolsa -->
+        <path
+            android:pathData="M16.6,11.2 V9.4 a4.6,4.6 0 0 1 9.2,0 v1.8"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="2.4"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+
+        <!-- Cuerpo con la lupa recortada -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:fillType="evenOdd"
+            android:pathData="M13.4,10.6 h15.9 a1.6,1.6 0 0 1 1.6,1.45 l1.62,17.1 a1.6,1.6 0 0 1 -1.6,1.75 H10.9 a1.1,1.1 0 0 1 -1.07,-1.35 Z M26.4571,22.9308 A6.25,6.25 0 1 0 24.8308,24.5571 L28.9868,28.7132 A1.15,1.15 0 0 0 30.6132,27.0868 Z M17.15,19.4 A4.15,4.15 0 1 0 25.45,19.4 A4.15,4.15 0 1 0 17.15,19.4 Z" />
+    </group>
+</vector>

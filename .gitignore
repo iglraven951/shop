@@ -34,3 +34,23 @@ desktop.ini
 .vscode/
 .idea/
 *.swp
+
+# --- App Android -----------------------------------------------------------
+# Salidas de compilacion y cache de Gradle
+android/.gradle/
+android/build/
+android/app/build/
+android/captures/
+android/.cxx/
+
+# Rutas y credenciales de esta maquina, nunca del repositorio
+android/local.properties
+android/keystore.properties
+*.jks
+*.keystore
+
+# El sitio que viaja dentro de la APK lo genera la tarea syncWebAssets en cada
+# build, bajo android/app/build/, que ya queda excluido por la regla de arriba.
+
+# APKs listas para instalar: se regeneran con gradlew, no se versionan
+android/dist/

@@ -11,8 +11,11 @@
     <link rel="manifest" href="site.webmanifest">
 
     <!-- Leaflet primero: así nuestro CSS de página puede reescribir sus estilos.
-         Si la red falla, la página degrada a un listado agrupado por distrito. -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+         Si la red falla, la página degrada a un listado agrupado por distrito.
+         La copia se sirve desde el propio sitio: dentro de la aplicación Android
+         no hay red de la que fiarse, y un mapa colgado de un CDN allí es un
+         mapa muerto. -->
+    <link rel="stylesheet" href="assets/vendor/leaflet/leaflet.css">
 
     <link rel="stylesheet" href="assets/css/tokens.css">
     <link rel="stylesheet" href="assets/css/base.css">
@@ -20,8 +23,20 @@
     <link rel="stylesheet" href="assets/css/layout.css">
     <link rel="stylesheet" href="assets/css/assistant.css">
     <link rel="stylesheet" href="assets/css/pages/map.css">
+    <link rel="stylesheet" href="assets/css/native.css">
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="" defer></script>
+    <script src="assets/vendor/leaflet/leaflet.js" defer></script>
+    <script>
+        /* Respaldo: si la copia local faltase, se recurre al CDN igual que
+           antes. El sitio publicado se comporta exactamente como siempre. */
+        window.addEventListener('load', function () {
+            if (typeof L !== 'undefined') return;
+            var cdn = document.createElement('script');
+            cdn.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+            cdn.crossOrigin = '';
+            document.head.appendChild(cdn);
+        });
+    </script>
 </head>
 <body>
     <a class="skip-link" href="#main">Saltar al contenido</a>
@@ -161,6 +176,7 @@
 
     <div id="app-footer"></div>
 
+    <script src="assets/js/core/native.js"></script>
     <script src="assets/js/core/seed.js"></script>
     <script src="assets/js/core/moderator.js"></script>
     <script src="assets/js/core/mock-api.js"></script>

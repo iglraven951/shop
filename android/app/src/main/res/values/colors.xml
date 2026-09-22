@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Paleta de marca DiscoveryShop, espejo de assets/css/tokens.css -->
+<resources>
+    <!-- Fondo del icono adaptativo (brand-700) -->
+    <color name="ic_launcher_background">#004080</color>
+
+    <!-- Acentos -->
+    <color name="brand">#67a4e5</color>
+    <color name="brand_strong">#004080</color>
+
+    <!-- Fondos del tema oscuro -->
+    <color name="bg_base">#070c14</color>
+    <color name="bg_sunken">#04080e</color>
+    <color name="bg_surface">#0c1320</color>
+
+    <!-- Texto -->
+    <color name="text_primary">#EEF3F9</color>
+
+    <!-- Pantalla de arranque -->
+    <color name="splash_background">#070c14</color>
+
+    <!-- Fondo claro, para variantes en tema claro -->
+    <color name="bg_base_light">#f2f6fb</color>
+</resources>

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Accesos directos del lanzador (mantener pulsado el icono de la app).
+
+    Son deliberadamente los MISMOS TRES que `site.webmanifest` declara para la
+    instalación del sitio como PWA, y en el mismo orden. La web ya prometía
+    estos atajos; que la app no los tuviera era la diferencia más visible entre
+    instalar DiscoveryShop desde el navegador e instalarla como APK.
+
+    `tests/android.test.mjs` compara ambas listas, así que no pueden separarse
+    sin que un test lo diga.
+
+    Cada uno entra por el esquema propio `discoveryshop://`, no por la URL de
+    GitHub Pages: un atajo no puede depender de que la verificación del dominio
+    haya salido bien ni de que el teléfono tenga conexión.
+-->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_publish"
+        android:shortcutId="publicar"
+        android:shortcutLongLabel="@string/shortcut_publish_long"
+        android:shortcutShortLabel="@string/shortcut_publish_short">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="discoveryshop://publicar.html"
+            android:targetClass="pe.discoveryshop.app.MainActivity"
+            android:targetPackage="pe.discoveryshop.app" />
+    </shortcut>
+
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_map"
+        android:shortcutId="mapa"
+        android:shortcutLongLabel="@string/shortcut_map_long"
+        android:shortcutShortLabel="@string/shortcut_map_short">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="discoveryshop://mapa.html"
+            android:targetClass="pe.discoveryshop.app.MainActivity"
+            android:targetPackage="pe.discoveryshop.app" />
+    </shortcut>
+
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_messages"
+        android:shortcutId="mensajes"
+        android:shortcutLongLabel="@string/shortcut_messages_long"
+        android:shortcutShortLabel="@string/shortcut_messages_short">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="discoveryshop://mensajes.html"
+            android:targetClass="pe.discoveryshop.app.MainActivity"
+            android:targetPackage="pe.discoveryshop.app" />
+    </shortcut>
+
+</shortcuts>
