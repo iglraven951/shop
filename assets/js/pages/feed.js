@@ -752,6 +752,8 @@
             if (global.DiscoveryShell) global.DiscoveryShell.toggleFilters(true);
         });
 
+        bindFabVisibility();
+
         // Acciones sueltas repartidas por la página (portada, chips, estados).
         document.addEventListener('click', (event) => {
             const preset = event.target.closest('.price-preset');
@@ -792,6 +794,44 @@
         });
 
         store.subscribe('saved', repaintSaved, false);
+    }
+
+    /**
+     * Aparta el botón de filtros mientras se baja por el feed.
+     *
+     * Está fijo sobre una lista sin fin: la acción de tarjeta que le toque
+     * quedar debajo no recibe el toque, y no hay ninguna tarjeta concreta que
+     * pueda reservarle el hueco. Así que se aparta al bajar y vuelve al subir,
+     * que es justo cuando se le busca. Arriba del todo siempre está, porque
+     * ahí lo que hay debajo es la portada, no tarjetas.
+     */
+    function bindFabVisibility() {
+        if (!dom.fab) return;
+
+        const TOP_SAFE_ZONE = 240;
+        // Umbral pequeño: sin él, el rebote del desplazamiento por inercia
+        // haría parpadear el botón.
+        const THRESHOLD = 6;
+
+        let last = Math.max(0, global.scrollY);
+        let ticking = false;
+
+        const update = () => {
+            ticking = false;
+
+            const y = Math.max(0, global.scrollY);
+            const delta = y - last;
+            if (Math.abs(delta) < THRESHOLD) return;
+
+            last = y;
+            dom.fab.classList.toggle('is-tucked', delta > 0 && y > TOP_SAFE_ZONE);
+        };
+
+        global.addEventListener('scroll', () => {
+            if (ticking) return;
+            ticking = true;
+            global.requestAnimationFrame(update);
+        }, { passive: true });
     }
 
     function checkedValues(name, container) {
