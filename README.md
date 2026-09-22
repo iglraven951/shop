@@ -186,6 +186,7 @@ node tests/contract.test.mjs
 node tests/responsive.test.mjs
 node tests/contrast.test.mjs
 node tests/ai.test.mjs
+node tests/transport.test.mjs
 node tests/android.test.mjs
 ```
 
@@ -197,6 +198,7 @@ node tests/android.test.mjs
 | `tests/responsive.test.mjs` | Los patrones que provocan desbordes horizontales o elementos inalcanzables a 360, 768 y 1440 px |
 | `tests/contrast.test.mjs` | Que cada combinación de texto sobre fondo de la paleta cumpla WCAG 2.1 AA, en ambos temas |
 | `tests/ai.test.mjs` | El comportamiento del asistente de búsqueda y del revisor de publicaciones |
+| `tests/transport.test.mjs` | El transporte de la capa de datos: cuándo habla con el servidor, cuándo cae a la demo, y que un 4xx del servidor llegue intacto en vez de disfrazarse de éxito |
 | `tests/android.test.mjs` | La app Android: proyecto completo, iconos en todas las densidades, nada de HTTP en claro y que la copia del sitio dentro del APK sea idéntica a la real |
 
 Las siete se ejecutan también en cada despliegue: si alguna falla, el sitio no

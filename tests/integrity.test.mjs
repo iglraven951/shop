@@ -50,6 +50,9 @@ const REMOVED_PAGES = ['carrito.html', 'producto.html', 'vender.html', 'favorito
    cabecera bajo la barra de estado—, que es exactamente el fallo silencioso
    que esta lista existe para atrapar. */
 const CORE_ORDER = [
+    // La configuración va primero: api.js la lee al construirse, y si no
+    // estuviera cargada el sitio arrancaría siempre en modo demo.
+    'assets/js/core/config.js',
     'assets/js/core/native.js',
     'assets/js/core/seed.js',
     'assets/js/core/moderator.js',
