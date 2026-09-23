@@ -24,6 +24,14 @@
 
     const SORT_OPTIONS = ['recent', 'price_asc', 'price_desc', 'popular', 'interest', 'commented'];
     const CONDITION_OPTIONS = ['Nuevo', 'Como nuevo', 'Buen estado'];
+    const AVAILABILITY_OPTIONS = ['available', 'reserved', 'sold'];
+
+    /** Cómo se llama cada estado de venta en la interfaz. */
+    const AVAILABILITY_NAMES = {
+        available: 'Disponible',
+        reserved: 'Reservado',
+        sold: 'Vendido',
+    };
 
     const state = {
         filters: defaultFilters(),
@@ -55,6 +63,7 @@
             category: [],
             district: [],
             condition: [],
+            availability: [],
             min_price: '',
             max_price: '',
             author_id: '',
@@ -89,6 +98,8 @@
             category: csv(url.param('category', '')),
             district: csv(url.param('district', '')),
             condition: csv(url.param('condition', '')).filter((c) => CONDITION_OPTIONS.includes(c)),
+            availability: csv(url.param('availability', ''))
+                .filter((v) => AVAILABILITY_OPTIONS.includes(v)),
             min_price: positiveNumber(url.param('min_price', '')),
             max_price: positiveNumber(url.param('max_price', '')),
             author_id: String(url.param('author_id', '') || '').slice(0, 64),
@@ -113,6 +124,7 @@
             category: f.category,
             district: f.district,
             condition: f.condition,
+            availability: f.availability,
             min_price: f.min_price,
             max_price: f.max_price,
             author_id: f.author_id,
@@ -130,7 +142,8 @@
 
     function countActiveFilters() {
         const f = state.filters;
-        let total = f.category.length + f.district.length + f.condition.length;
+        let total = f.category.length + f.district.length + f.condition.length
+            + f.availability.length;
         if (f.q) total += 1;
         if (f.min_price || f.max_price) total += 1;
         if (f.author_id) total += 1;
@@ -470,6 +483,16 @@
             describeSelection(f.condition, 'Cualquiera', 'seleccionados'),
             f.condition.length > 0
         );
+
+        setSummary(
+            dom.summaryAvailability,
+            describeSelection(
+                f.availability.map((value) => AVAILABILITY_NAMES[value] || value),
+                'Todo',
+                'seleccionados'
+            ),
+            f.availability.length > 0
+        );
     }
 
     function setSummary(node, text, active) {
@@ -518,6 +541,11 @@
 
         f.condition.forEach((condition) => {
             chips.push(filterChip('condition', condition, `Estado: ${condition}`));
+        });
+
+        f.availability.forEach((value) => {
+            chips.push(filterChip('availability', value,
+                `Disponibilidad: ${AVAILABILITY_NAMES[value] || value}`));
         });
 
         if (f.author_id) {
@@ -589,6 +617,10 @@
             input.checked = f.condition.includes(input.value);
         });
 
+        $$('input[name="availability"]', dom.panel).forEach((input) => {
+            input.checked = f.availability.includes(input.value);
+        });
+
         syncCheckboxes('category', dom.categoryOptions, f.category);
         syncCheckboxes('district', dom.districtOptions, f.district);
         updateFilterSummaries();
@@ -622,6 +654,7 @@
             case 'category': f.category = f.category.filter((id) => id !== value); break;
             case 'district': f.district = f.district.filter((name) => name !== value); break;
             case 'condition': f.condition = f.condition.filter((c) => c !== value); break;
+            case 'availability': f.availability = f.availability.filter((v) => v !== value); break;
             case 'price': f.min_price = ''; f.max_price = ''; break;
             case 'author_id': f.author_id = ''; state.authorName = ''; break;
             default: return;
@@ -706,6 +739,8 @@
                 state.filters.district = checkedValues('district', dom.districtOptions);
             } else if (input.name === 'condition') {
                 state.filters.condition = checkedValues('condition', dom.panel);
+            } else if (input.name === 'availability') {
+                state.filters.availability = checkedValues('availability', dom.panel);
             } else {
                 return;
             }
@@ -872,6 +907,7 @@
         dom.summaryDistrict = $('#summary-district');
         dom.summaryPrice = $('#summary-price');
         dom.summaryCondition = $('#summary-condition');
+        dom.summaryAvailability = $('#summary-availability');
     }
 
     async function init() {

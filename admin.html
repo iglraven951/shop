@@ -190,6 +190,12 @@
                         <span>Vendedores</span>
                         <span class="admin-tab-count" data-tab-count="vendedores" hidden></span>
                     </button>
+                    <button class="admin-tab" type="button" role="tab" data-tab="denuncias"
+                            id="tab-denuncias" aria-controls="panel-denuncias" aria-selected="false" tabindex="-1">
+                        <span aria-hidden="true">🚩</span>
+                        <span>Denuncias</span>
+                        <span class="admin-tab-count" data-tab-count="denuncias" hidden></span>
+                    </button>
                     <button class="admin-tab" type="button" role="tab" data-tab="ia"
                             id="tab-ia" aria-controls="panel-ia" aria-selected="false" tabindex="-1">
                         <span aria-hidden="true">🤖</span>
@@ -299,6 +305,37 @@
                     </div>
 
                     <div class="admin-sellers" id="admin-seller-list" aria-busy="true"></div>
+                </section>
+
+                <!-- Pestaña: Denuncias
+                     Lo que la comunidad señala de lo que ya está publicado. La
+                     IA revisa lo que entra; esto cubre lo que se le cuela. -->
+                <section class="admin-panel" id="panel-denuncias" role="tabpanel"
+                         aria-labelledby="tab-denuncias" tabindex="0" hidden>
+
+                    <p class="admin-panel-intro">
+                        Cada denuncia señala una publicación que ya es visible. Resolverla
+                        cierra el aviso y responde a quien lo envió; aprobar o retirar la
+                        publicación se sigue haciendo desde «Publicaciones».
+                    </p>
+
+                    <div class="admin-toolbar">
+                        <div class="segmented admin-filters" role="group" aria-label="Filtrar denuncias por estado">
+                            <button class="segmented-item" type="button" data-report-status="open" aria-pressed="true">
+                                Abiertas <span class="admin-filter-count" data-count="reports-open"></span>
+                            </button>
+                            <button class="segmented-item" type="button" data-report-status="resolved" aria-pressed="false">
+                                Resueltas
+                            </button>
+                            <button class="segmented-item" type="button" data-report-status="all" aria-pressed="false">
+                                Todas <span class="admin-filter-count" data-count="reports-total"></span>
+                            </button>
+                        </div>
+
+                        <p class="admin-queue-status" id="admin-reports-status" role="status"></p>
+                    </div>
+
+                    <div class="admin-reports" id="admin-report-list" aria-busy="true"></div>
                 </section>
 
                 <!-- Pestaña: Asistente IA

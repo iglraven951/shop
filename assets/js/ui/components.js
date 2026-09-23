@@ -96,6 +96,22 @@
     }
 
     /**
+     * Estado de venta. Se calla cuando el artículo sigue disponible: lo
+     * normal no necesita etiqueta, y marcarlo todo haría que no se viera lo
+     * que sí importa.
+     */
+    function availabilityBadge(post) {
+        switch (post.availability) {
+            case 'reserved':
+                return '<span class="badge badge-warning">🔖 Reservado</span>';
+            case 'sold':
+                return '<span class="badge badge-danger">🤝 Vendido</span>';
+            default:
+                return '';
+        }
+    }
+
+    /**
      * Cabecera de la publicación: quién la escribió, desde dónde y cuándo.
      */
     function postHeader(post, options) {
@@ -217,8 +233,14 @@
 
         const href = `publicacion.html?id=${encodeURIComponent(post.id)}`;
 
+        // Lo vendido se atenúa en lugar de desaparecer: saber que algo ya se
+        // fue es información, y borrarlo dejaría el foro contando mentiras.
+        const soldClass = post.availability && post.availability !== 'available'
+            ? ` is-${post.availability}`
+            : '';
+
         return `
-        <article class="post-card" data-post-id="${escapeAttr(post.id)}"
+        <article class="post-card${soldClass}" data-post-id="${escapeAttr(post.id)}"
                  style="animation-delay: ${Math.min(index * 55, 330)}ms">
 
             ${postHeader(post, { showStatus, showMenu })}
@@ -231,6 +253,7 @@
                 <p class="post-text">${escapeHtml(post.description)}</p>
 
                 <div class="post-tags">
+                    ${availabilityBadge(post)}
                     <span class="badge badge-brand">${escapeHtml(post.category.icon)} ${escapeHtml(post.category.name)}</span>
                     <span class="badge">${escapeHtml(post.condition)}</span>
                     <span class="post-price-tag">${escapeHtml(format.money(post.price))}</span>
@@ -312,6 +335,7 @@
                     ${escapeHtml(format.relative(post.created_at))}
                 </p>
                 <p class="post-row-tags">
+                    ${availabilityBadge(post)}
                     <span class="badge badge-brand">${escapeHtml(post.category.name)}</span>
                     <span class="badge">${escapeHtml(post.condition)}</span>
                     ${showStatus ? statusBadge(post.status, post.rejection_reason) : ''}
@@ -657,6 +681,7 @@
         commentItem,
         reactionSummary,
         statusBadge,
+        availabilityBadge,
         verifiedBadge,
         normalizePost,
         emptyState,

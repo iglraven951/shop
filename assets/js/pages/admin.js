@@ -21,7 +21,16 @@
     const toast = global.toast;
     const modal = global.modal;
 
-    const TABS = ['publicaciones', 'vendedores', 'ia', 'historial'];
+    const TABS = ['publicaciones', 'vendedores', 'denuncias', 'ia', 'historial'];
+
+    /** Cómo se lee cada motivo de denuncia en pantalla. */
+    const REPORT_CATEGORIES = {
+        engano: 'La publicación engaña',
+        prohibido: 'Artículo prohibido',
+        duplicado: 'Está repetida',
+        ofensivo: 'Contenido ofensivo',
+        otro: 'Otro motivo',
+    };
 
     /** Motivos que el equipo escribe una y otra vez: un clic rellena el campo. */
     const REJECTION_PRESETS = [
@@ -159,6 +168,7 @@
         stats: null,
         posts: { status: 'pending', q: '', items: [], loaded: false },
         sellers: { status: 'pending', items: [], loaded: false },
+        reports: { status: 'open', items: [], open: 0, total: 0, loaded: false },
         log: { items: [], loaded: false },
         inbox: {
             decision: 'all',
@@ -352,8 +362,15 @@
         setCount('sellers-rejected', stats.sellers.rejected);
         setCount('sellers-total', sellersTotal);
 
+        // Las denuncias abiertas viajan en las estadísticas, así que la
+        // pestaña se entera aunque nunca se haya abierto.
+        const reports = stats.reports || { open: 0, total: 0 };
+        setCount('reports-open', reports.open);
+        setCount('reports-total', reports.total);
+
         setTabCount('publicaciones', stats.posts.pending);
         setTabCount('vendedores', stats.sellers.pending);
+        setTabCount('denuncias', reports.open);
     }
 
     function setTabCount(tab, value) {
@@ -401,8 +418,145 @@
     function loadTab(tab) {
         if (tab === 'publicaciones' && !state.posts.loaded) loadPosts();
         if (tab === 'vendedores' && !state.sellers.loaded) loadSellers();
+        if (tab === 'denuncias' && !state.reports.loaded) loadReports();
         if (tab === 'ia' && !state.inbox.loaded) loadInbox();
         if (tab === 'historial' && !state.log.loaded) loadLog();
+    }
+
+    /* ======================================================================
+       Denuncias de la comunidad
+
+       La IA revisa todo lo que entra. Esto es para lo que se le cuela: lo
+       señala quien lo ve, y aterriza en la misma mesa donde ya se modera.
+       ====================================================================== */
+
+    async function loadReports() {
+        const list = $('#admin-report-list');
+        if (!list) return;
+
+        list.setAttribute('aria-busy', 'true');
+        list.innerHTML = listSkeleton(3);
+
+        try {
+            const data = await api.getAdminReports(state.reports.status);
+
+            state.reports.items = data.reports || [];
+            state.reports.open = data.open || 0;
+            state.reports.total = data.total || 0;
+            state.reports.loaded = true;
+
+            renderReports();
+        } catch (error) {
+            list.innerHTML = UI.emptyState({
+                icon: '⚠️',
+                title: 'No se pudieron cargar las denuncias',
+                message: error.message || 'Vuelve a intentarlo en un momento.',
+            });
+        } finally {
+            list.setAttribute('aria-busy', 'false');
+        }
+    }
+
+    function renderReports() {
+        const list = $('#admin-report-list');
+        const status = $('#admin-reports-status');
+        if (!list) return;
+
+        setTabCount('denuncias', state.reports.open);
+        setCount('reports-open', state.reports.open);
+
+        if (status) {
+            status.textContent = state.reports.items.length
+                ? `${format.number(state.reports.items.length)} ${state.reports.items.length === 1 ? 'denuncia' : 'denuncias'}`
+                : '';
+        }
+
+        if (!state.reports.items.length) {
+            list.innerHTML = UI.emptyState({
+                icon: '🕊️',
+                title: state.reports.status === 'open'
+                    ? 'No hay denuncias abiertas'
+                    : 'Nada que mostrar aquí',
+                message: state.reports.status === 'open'
+                    ? 'Cuando alguien señale una publicación, aparecerá en esta lista.'
+                    : 'Prueba con otro filtro.',
+            });
+            return;
+        }
+
+        list.innerHTML = state.reports.items.map((report) => `
+            <article class="admin-report${report.status === 'open' ? ' is-open' : ''}"
+                     data-report-id="${escapeAttr(report.id)}">
+                <div class="admin-report-head">
+                    <a class="admin-report-title" href="publicacion.html?id=${escapeAttr(report.post_id)}">
+                        ${escapeHtml(report.post_title)}
+                    </a>
+                    <span class="badge ${report.status === 'open' ? 'badge-warning' : 'badge-success'}">
+                        ${report.status === 'open' ? 'Abierta' : 'Resuelta'}
+                    </span>
+                </div>
+
+                <p class="admin-report-meta">
+                    ${escapeHtml(REPORT_CATEGORIES[report.category] || REPORT_CATEGORIES.otro)}
+                    <span aria-hidden="true">·</span>
+                    la envió ${escapeHtml(report.reporter)}
+                    <span aria-hidden="true">·</span>
+                    publica ${escapeHtml(report.author)}
+                    <span aria-hidden="true">·</span>
+                    ${escapeHtml(format.relative(report.created_at))}
+                </p>
+
+                <blockquote class="admin-report-reason">${escapeHtml(report.reason)}</blockquote>
+
+                ${report.status === 'open' ? `
+                <div class="admin-report-actions">
+                    <button class="btn btn-secondary btn-sm" type="button"
+                            data-resolve="${escapeAttr(report.id)}" data-resolution="Revisada, la publicación se mantiene">
+                        Se mantiene
+                    </button>
+                    <button class="btn btn-danger btn-sm" type="button"
+                            data-resolve="${escapeAttr(report.id)}" data-resolution="Revisada, se actuó sobre la publicación">
+                        Actuamos sobre ella
+                    </button>
+                </div>` : `
+                <p class="admin-report-resolution">
+                    ${escapeHtml(report.resolution || '')}
+                    <span aria-hidden="true">·</span>
+                    ${escapeHtml(format.relative(report.resolved_at))}
+                </p>`}
+            </article>`).join('');
+    }
+
+    function bindReportControls() {
+        $$('[data-report-status]').forEach((button) => {
+            button.addEventListener('click', () => {
+                state.reports.status = button.dataset.reportStatus;
+                $$('[data-report-status]').forEach((other) => {
+                    other.setAttribute('aria-pressed', String(other === button));
+                });
+                loadReports();
+            });
+        });
+
+        const list = $('#admin-report-list');
+        if (!list) return;
+
+        list.addEventListener('click', async (event) => {
+            const button = event.target.closest('[data-resolve]');
+            if (!button) return;
+
+            button.classList.add('is-loading');
+
+            try {
+                await api.resolveReport(button.dataset.resolve, button.dataset.resolution);
+                toast.success('Denuncia resuelta. Avisamos a quien la envió.');
+                await loadReports();
+                await refreshStats();
+            } catch (error) {
+                button.classList.remove('is-loading');
+                toast.error(error.message || 'No se pudo resolver la denuncia');
+            }
+        });
     }
 
     /* ======================================================================
@@ -1622,6 +1776,7 @@
         bindTabs();
         bindPostControls();
         bindSellerControls();
+        bindReportControls();
         bindBulk();
         bindInboxControls();
         bindSettingsControls();

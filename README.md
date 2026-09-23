@@ -51,15 +51,21 @@ restaura el catálogo original y cierra la sesión.
 | Rol | Qué puede hacer |
 |---|---|
 | **Visitante** (sin sesión) | Ver el feed, buscar, filtrar, abrir publicaciones y consultar el mapa de vendedores |
-| **Comprador** (`role: 'buyer'`) | Todo lo anterior y además: ❤️ me gusta, 🙋 me interesa, 🔖 guardar, 💬 comentar y escribir por privado |
-| **Vendedor aprobado** (`seller_status: 'approved'`) | Todo lo anterior y además **publicar artículos** |
-| **Administrador** (`role: 'admin'`) | Aprobar o rechazar publicaciones y solicitudes de vendedor |
+| **Comprador** (`role: 'buyer'`) | Todo lo anterior y además: ❤️ me gusta, 🙋 me interesa, 🔖 guardar, 💬 comentar, escribir por privado y 🚩 denunciar una publicación |
+| **Vendedor aprobado** (`seller_status: 'approved'`) | Todo lo anterior y además **publicar artículos** y marcarlos como reservados o vendidos |
+| **Administrador** (`role: 'admin'`) | Aprobar o rechazar publicaciones y solicitudes de vendedor, y resolver denuncias |
 
 Al registrarse se elige entre comprador o vendedor. Quien elige vendedor entra
 como comprador con la solicitud **en revisión** (`seller_status: 'pending'`) y
 **no puede publicar hasta que un administrador la apruebe**; mientras tanto usa
 la cuenta con total normalidad. Toda publicación nueva nace también en revisión
 y solo aparece en el foro cuando el administrador la aprueba.
+
+Cada cuenta tiene además una **campana de avisos** en la cabecera: ahí llegan
+las reacciones y los comentarios a lo que publicas, y las decisiones que se
+toman sobre ello. Un artículo puede marcarse **reservado** o **vendido** sin
+retirarlo del foro: se sigue viendo, atenuado y con su etiqueta, porque saber
+que algo ya se fue también es información.
 
 ---
 

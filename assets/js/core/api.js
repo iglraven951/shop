@@ -387,6 +387,22 @@
             return this.request(`/api/posts/${id}`, { method: 'DELETE' });
         }
 
+        /**
+         * Estado de venta del artículo, aparte de la moderación.
+         * @param {'available'|'reserved'|'sold'} availability
+         */
+        setAvailability(id, availability) {
+            return this.request(`/api/posts/${id}/availability`, {
+                method: 'PUT',
+                body: { availability },
+            });
+        }
+
+        /** Otras publicaciones del mismo vendedor o de la misma categoría. */
+        getRelatedPosts(id) {
+            return this.request(`/api/posts/${id}/related`);
+        }
+
         /* ------------------------------------------------------------------
            Interacciones del foro
            ------------------------------------------------------------------ */
@@ -416,6 +432,30 @@
 
         deleteComment(postId, commentId) {
             return this.request(`/api/posts/${postId}/comments/${commentId}`, { method: 'DELETE' });
+        }
+
+        /** Denunciar una publicación que ya está visible en el foro. */
+        reportPost(postId, { category = 'otro', reason = '' } = {}) {
+            return this.request(`/api/posts/${postId}/report`, {
+                method: 'POST',
+                body: { category, reason },
+            });
+        }
+
+        /* ------------------------------------------------------------------
+           Avisos
+           ------------------------------------------------------------------ */
+
+        getNotifications({ unreadOnly = false } = {}) {
+            return this.request(`/api/notifications${unreadOnly ? '?unread=1' : ''}`);
+        }
+
+        markNotificationRead(id) {
+            return this.request(`/api/notifications/${id}/read`, { method: 'POST' });
+        }
+
+        markAllNotificationsRead() {
+            return this.request('/api/notifications/read-all', { method: 'POST' });
         }
 
         /* ------------------------------------------------------------------
@@ -470,6 +510,18 @@
 
         getModerationLog() {
             return this.request('/api/admin/log');
+        }
+
+        /** @param {'open'|'resolved'|'all'} [status] */
+        getAdminReports(status = 'open') {
+            return this.request(`/api/admin/reports${this.toQuery({ status })}`);
+        }
+
+        resolveReport(id, resolution) {
+            return this.request(`/api/admin/reports/${id}/resolve`, {
+                method: 'POST',
+                body: { resolution },
+            });
         }
 
         /* ------------------------------------------------------------------

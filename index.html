@@ -299,6 +299,35 @@
                             </div>
                         </div>
                     </details>
+
+                    <!-- Disponibilidad: si el artículo sigue libre, está
+                         reservado o ya se vendió. Distinto del estado físico. -->
+                    <details class="filter-group" id="group-availability" open>
+                        <summary class="filter-summary">
+                            <span class="filter-summary-name">Disponibilidad</span>
+                            <span class="filter-summary-value" id="summary-availability">Todo</span>
+                            <span class="filter-chevron" aria-hidden="true">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 5.5 3 3 3-3"/></svg>
+                            </span>
+                        </summary>
+
+                        <div class="filter-body">
+                            <div class="filter-options">
+                                <label class="choice">
+                                    <input type="checkbox" name="availability" value="available">
+                                    <span class="choice-text">Disponible</span>
+                                </label>
+                                <label class="choice">
+                                    <input type="checkbox" name="availability" value="reserved">
+                                    <span class="choice-text">Reservado</span>
+                                </label>
+                                <label class="choice">
+                                    <input type="checkbox" name="availability" value="sold">
+                                    <span class="choice-text">Vendido</span>
+                                </label>
+                            </div>
+                        </div>
+                    </details>
                 </aside>
 
                 <!-- ------------------ Resultados ------------------ -->

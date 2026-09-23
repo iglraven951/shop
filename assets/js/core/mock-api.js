@@ -16,10 +16,12 @@
     'use strict';
 
 /* Al subir la versión, los datos guardados en el navegador se descartan y se
-   regeneran desde `seed.js`. Se sube cada vez que el modelo cambia: la v3 trae
-   las fotos reales del catálogo, la bandeja de la IA y los ajustes. */
-    const STORAGE_KEY = 'discoveryshop:db:v3';
-    const SCHEMA_VERSION = 3;
+   regeneran desde `seed.js`. Se sube cada vez que el modelo cambia: la v3 trajo
+   las fotos reales del catálogo, la bandeja de la IA y los ajustes; la v4 trae
+   el estado de venta, la fecha de guardado, las denuncias y los avisos que ya
+   se escribían pero que nadie llegaba a ver. */
+    const STORAGE_KEY = 'discoveryshop:db:v4';
+    const SCHEMA_VERSION = 4;
 
     /* ----------------------------------------------------------------------
        Utilidades
@@ -141,6 +143,8 @@
                 sessions: {},
                 conversations: [],
                 notifications: [],
+                // Denuncias de la comunidad sobre publicaciones ya visibles
+                reports: [],
                 // Registro de decisiones de moderación, humanas y de la IA
                 moderation_log: [],
                 // Avisos de la IA dirigidos al administrador
@@ -149,8 +153,59 @@
                 settings: { whatsapp: '', auto_notify: true },
             };
 
+            this.seedNotifications(state);
+
             this.persist(state);
             return state;
+        }
+
+        /**
+         * Avisos de partida, derivados del propio catálogo.
+         *
+         * Sin esto la campana nace vacía y la función más importante del foro
+         * — enterarte de que alguien quiere tu cosa — no se ve hasta que otra
+         * persona reacciona, que en una demo de un solo navegador no pasa
+         * nunca. Se construyen de lo que ya hay: quien comentó, comentó de
+         * verdad, y la publicación existe.
+         */
+        seedNotifications(state) {
+            const visible = state.posts.filter((p) => p.status === 'approved');
+            const hour = 3600 * 1000;
+            let age = 0;
+
+            const push = (post, type, text) => {
+                age += 1;
+                state.notifications.push({
+                    id: `ntf-seed-${state.notifications.length}`,
+                    user_id: post.author.id,
+                    type,
+                    post_id: post.id,
+                    text,
+                    // Los tres más recientes llegan sin leer: es lo que hace
+                    // que la campana tenga algo que contar al entrar.
+                    read: age > 3,
+                    created_at: new Date(Date.now() - age * 5 * hour).toISOString(),
+                });
+            };
+
+            visible
+                .filter((post) => post.comments.length)
+                .slice(0, 5)
+                .forEach((post) => {
+                    const last = post.comments[post.comments.length - 1];
+                    push(post, 'comment', `${last.author.username} comentó en «${post.title}»`);
+                });
+
+            visible
+                .filter((post) => post.interested_count > 0)
+                .slice(0, 6)
+                .forEach((post) => {
+                    push(post, 'interest',
+                        `${post.interested_count} ${post.interested_count === 1 ? 'persona quiere' : 'personas quieren'} «${post.title}»`);
+                });
+
+            // El más reciente arriba, como los lee la interfaz
+            state.notifications.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         }
 
         persist(state = this.state) {
@@ -250,7 +305,9 @@
                 ['GET', /^\/api\/posts\/categories$/, this.listCategories],
                 ['GET', /^\/api\/posts\/saved$/, this.listSaved],
                 ['GET', /^\/api\/posts\/mine$/, this.listMine],
+                ['GET', /^\/api\/posts\/([\w-]+)\/related$/, this.relatedPosts],
                 ['GET', /^\/api\/posts\/([\w-]+)$/, this.getPost],
+                ['PUT', /^\/api\/posts\/([\w-]+)\/availability$/, this.setAvailability],
                 ['PUT', /^\/api\/posts\/([\w-]+)$/, this.updatePost],
                 ['DELETE', /^\/api\/posts\/([\w-]+)$/, this.deletePost],
 
@@ -261,6 +318,12 @@
                 ['GET', /^\/api\/posts\/([\w-]+)\/comments$/, this.listComments],
                 ['POST', /^\/api\/posts\/([\w-]+)\/comments$/, this.createComment],
                 ['DELETE', /^\/api\/posts\/([\w-]+)\/comments\/([\w-]+)$/, this.deleteComment],
+                ['POST', /^\/api\/posts\/([\w-]+)\/report$/, this.reportPost],
+
+                // Avisos dirigidos a quien ha iniciado sesión
+                ['GET', /^\/api\/notifications$/, this.listNotifications],
+                ['POST', /^\/api\/notifications\/read-all$/, this.markAllNotificationsRead],
+                ['POST', /^\/api\/notifications\/([\w-]+)\/read$/, this.markNotificationRead],
 
                 // Autenticación y cuenta
                 ['POST', /^\/api\/auth\/register$/, this.register],
@@ -283,6 +346,8 @@
                 ['POST', /^\/api\/admin\/sellers\/([\w-]+)\/approve$/, this.approveSeller],
                 ['POST', /^\/api\/admin\/sellers\/([\w-]+)\/reject$/, this.rejectSeller],
                 ['GET', /^\/api\/admin\/log$/, this.adminLog],
+                ['GET', /^\/api\/admin\/reports$/, this.adminReports],
+                ['POST', /^\/api\/admin\/reports\/([\w-]+)\/resolve$/, this.resolveReport],
                 ['GET', /^\/api\/admin\/inbox$/, this.adminInbox],
                 ['POST', /^\/api\/admin\/inbox\/([\w-]+)\/read$/, this.markInboxRead],
                 ['POST', /^\/api\/admin\/inbox\/([\w-]+)\/sent$/, this.markInboxSent],
@@ -337,6 +402,7 @@
             const categories = (query.get('category') || '').split(',').filter(Boolean);
             const districts = (query.get('district') || '').split(',').filter(Boolean);
             const conditions = (query.get('condition') || '').split(',').filter(Boolean);
+            const availability = (query.get('availability') || '').split(',').filter(Boolean);
             const minPrice = parseFloat(query.get('min_price') || '');
             const maxPrice = parseFloat(query.get('max_price') || '');
             const authorId = query.get('author_id');
@@ -357,6 +423,9 @@
             if (categories.length) items = items.filter((p) => categories.includes(p.category.id));
             if (districts.length) items = items.filter((p) => districts.includes(p.district));
             if (conditions.length) items = items.filter((p) => conditions.includes(p.condition));
+            if (availability.length) {
+                items = items.filter((p) => availability.includes(p.availability || 'available'));
+            }
             if (!Number.isNaN(minPrice)) items = items.filter((p) => p.price >= minPrice);
             if (!Number.isNaN(maxPrice)) items = items.filter((p) => p.price <= maxPrice);
             if (authorId) items = items.filter((p) => p.author.id === authorId);
@@ -485,9 +554,12 @@
                 // Toda publicación nueva pasa por revisión antes de salir al feed.
                 status: 'pending',
                 rejection_reason: null,
+                // Estado de venta, independiente de la moderación
+                availability: 'available',
+                availability_at: null,
                 likes: [], likes_count: 0,
                 interested: [], interested_count: 0,
-                saves: [], saves_count: 0,
+                saves: [], saves_count: 0, saved_at: {},
                 comments: [], comment_count: 0,
                 views: 0,
                 created_at: nowIso(),
@@ -638,6 +710,88 @@
             return ok({ deleted: params.id });
         }
 
+        /* ---------------------- Estado de venta ---------------------- */
+
+        /** Los tres estados posibles y cómo se cuentan a quien mira. */
+        static get AVAILABILITY() {
+            return {
+                available: 'Disponible',
+                reserved: 'Reservado',
+                sold: 'Vendido',
+            };
+        }
+
+        /**
+         * Marca una publicación como disponible, reservada o vendida.
+         *
+         * Es lo que distingue un tablón vivo de una lista de fantasmas: sin
+         * esto nada se puede dar por cerrado y la gente escribe por cosas que
+         * ya no están. No toca `status`, que es la moderación.
+         */
+        setAvailability({ params, body, token }) {
+            const user = this.requireUser(token);
+            const post = this.state.posts.find((p) => p.id === params.id);
+
+            if (!post) fail('Publicación no encontrada', 404);
+            if (post.author.id !== user.id && user.role !== 'admin') {
+                fail('Solo quien publica puede cambiar el estado del artículo', 403);
+            }
+
+            const value = String(body.availability || '');
+            if (!Object.prototype.hasOwnProperty.call(MockAPI.AVAILABILITY, value)) {
+                fail('Estado no válido. Usa disponible, reservado o vendido.');
+            }
+
+            if (post.availability === value) {
+                fail(`La publicación ya está marcada como «${MockAPI.AVAILABILITY[value].toLowerCase()}»`);
+            }
+
+            post.availability = value;
+            post.availability_at = value === 'available' ? null : nowIso();
+            post.updated_at = nowIso();
+
+            // Avisar a quien había mostrado interés: es su señal de que la
+            // cosa se movió, y evita que sigan esperando respuesta.
+            if (value !== 'available') {
+                post.interested.forEach((id) => {
+                    if (id === user.id) return;
+                    this.notify(id, `post_${value}`, post.id,
+                        `«${post.title}» se marcó como ${MockAPI.AVAILABILITY[value].toLowerCase()}`);
+                });
+            }
+
+            this.save();
+            return ok({ post: this.decorate(post, user) });
+        }
+
+        /**
+         * Otras publicaciones que le pueden interesar a quien está mirando
+         * esta: primero del mismo vendedor, luego de la misma categoría.
+         */
+        relatedPosts({ params, token }) {
+            const user = this.userFromToken(token);
+            const post = this.state.posts.find((p) => p.id === params.id);
+
+            if (!post) fail('Publicación no encontrada', 404);
+
+            const candidates = this.state.posts.filter((p) =>
+                p.id !== post.id
+                && p.status === 'approved'
+                && p.availability !== 'sold');
+
+            const sameAuthor = candidates.filter((p) => p.author.id === post.author.id);
+            const sameCategory = candidates.filter((p) =>
+                p.category.id === post.category.id && p.author.id !== post.author.id);
+
+            const pick = [...sameAuthor.slice(0, 3), ...sameCategory].slice(0, 6);
+
+            return ok({
+                related: pick.map((p) => this.decorate(p, user)),
+                from_author: sameAuthor.length,
+                from_category: sameCategory.length,
+            });
+        }
+
         listMine({ token }) {
             const user = this.requireUser(token);
             const posts = this.state.posts
@@ -658,9 +812,17 @@
 
         listSaved({ token }) {
             const user = this.requireUser(token);
+
             const posts = this.state.posts
                 .filter((p) => p.saves.includes(user.id) && p.status === 'approved')
-                .map((p) => this.decorate(p, user));
+                // Por cuándo se guardó, no por cuándo se publicó: la pantalla
+                // se titula «guardados recientes» y antes ordenaba por otra
+                // cosa. Lo guardado antes de que existiera la fecha va al final.
+                .sort((a, b) => {
+                    const at = (p) => ((p.saved_at || {})[user.id] || '');
+                    return String(at(b)).localeCompare(String(at(a)));
+                })
+                .map((p) => ({ ...this.decorate(p, user), saved_at: (p.saved_at || {})[user.id] || null }));
 
             return ok({ posts, ids: posts.map((p) => p.id) });
         }
@@ -692,6 +854,12 @@
 
             if (post.author.id === user.id) fail('No puedes marcar interés en tu propia publicación');
 
+            // Ya se vendió: dejar marcar interés solo alimentaría una espera
+            // que no va a ninguna parte.
+            if (post.availability === 'sold' && !post.interested.includes(user.id)) {
+                fail('Este artículo ya se vendió');
+            }
+
             const interested = toggleIn(post.interested, user.id);
             post.interested_count = Math.max(0, post.interested_count + (interested ? 1 : -1));
 
@@ -718,9 +886,16 @@
 
             const saved = toggleIn(post.saves, user.id);
             post.saves_count = Math.max(0, post.saves_count + (saved ? 1 : -1));
+
+            // Cuándo lo guardó, para poder ordenar «guardados recientes» por
+            // lo que su nombre dice y no por la fecha de publicación.
+            post.saved_at = post.saved_at || {};
+            if (saved) post.saved_at[user.id] = nowIso();
+            else delete post.saved_at[user.id];
+
             this.save();
 
-            return ok({ saved, saves_count: post.saves_count });
+            return ok({ saved, saves_count: post.saves_count, saved_at: post.saved_at[user.id] || null });
         }
 
         /* --------------------------- Comentarios --------------------------- */
@@ -998,6 +1173,15 @@
                     interested: posts.reduce((sum, p) => sum + p.interested_count, 0),
                     views: posts.reduce((sum, p) => sum + p.views, 0),
                 },
+                availability: {
+                    available: posts.filter((p) => p.availability === 'available').length,
+                    reserved: posts.filter((p) => p.availability === 'reserved').length,
+                    sold: posts.filter((p) => p.availability === 'sold').length,
+                },
+                reports: {
+                    open: this.openReports().length,
+                    total: (this.state.reports || []).length,
+                },
             });
         }
 
@@ -1244,6 +1428,158 @@
             user.total_posts = this.state.posts.filter(
                 (p) => p.author.id === userId && p.status === 'approved'
             ).length;
+        }
+
+        /* ---------------------------- Avisos ---------------------------- */
+
+        /**
+         * Los avisos de quien ha iniciado sesión.
+         *
+         * Se escribían desde el principio — interés, comentarios, decisiones de
+         * moderación — y no había ni una pantalla que los leyera. La señal más
+         * importante del foro, que alguien quiere tu cosa, no llegaba nunca.
+         */
+        listNotifications({ query, token }) {
+            const user = this.requireUser(token);
+
+            const mine = this.state.notifications
+                .filter((n) => n.user_id === user.id)
+                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+            const unread = mine.filter((n) => !n.read).length;
+            const items = query.get('unread') === '1' ? mine.filter((n) => !n.read) : mine;
+
+            return ok({
+                notifications: items.slice(0, 40),
+                unread,
+                total: mine.length,
+            });
+        }
+
+        markNotificationRead({ params, token }) {
+            const user = this.requireUser(token);
+
+            const item = this.state.notifications.find(
+                (n) => n.id === params.id && n.user_id === user.id
+            );
+            if (!item) fail('Aviso no encontrado', 404);
+
+            item.read = true;
+            this.save();
+
+            return ok({ notification: item, unread: this.unreadCount(user.id) });
+        }
+
+        markAllNotificationsRead({ token }) {
+            const user = this.requireUser(token);
+
+            let changed = 0;
+            this.state.notifications.forEach((n) => {
+                if (n.user_id === user.id && !n.read) {
+                    n.read = true;
+                    changed += 1;
+                }
+            });
+
+            this.save();
+            return ok({ marked: changed, unread: 0 });
+        }
+
+        unreadCount(userId) {
+            return this.state.notifications.filter((n) => n.user_id === userId && !n.read).length;
+        }
+
+        /* --------------------------- Denuncias --------------------------- */
+
+        /**
+         * Denunciar una publicación ya visible.
+         *
+         * La IA revisa todo lo que entra, pero lo que se le cuela solo lo
+         * cazaba un administrador que pasara por ahí. Esto pone a la comunidad
+         * en el circuito de moderación que ya existe.
+         */
+        reportPost({ params, body, token }) {
+            const user = this.requireUser(token);
+            const post = this.state.posts.find((p) => p.id === params.id);
+
+            if (!post) fail('Publicación no encontrada', 404);
+            if (post.author.id === user.id) fail('No puedes denunciar tu propia publicación');
+
+            const reason = String(body.reason || '').trim();
+            if (reason.length < 10) fail('Cuéntanos el motivo con al menos 10 caracteres');
+            if (reason.length > 400) fail('El motivo no puede superar los 400 caracteres');
+
+            this.state.reports = this.state.reports || [];
+
+            const already = this.state.reports.find(
+                (r) => r.post_id === post.id && r.reporter_id === user.id && r.status === 'open'
+            );
+            if (already) fail('Ya denunciaste esta publicación; la estamos revisando');
+
+            const report = {
+                id: uid('rep'),
+                post_id: post.id,
+                post_title: post.title,
+                author: post.author.username,
+                reporter_id: user.id,
+                reporter: user.username,
+                category: String(body.category || 'otro'),
+                reason,
+                status: 'open',
+                created_at: nowIso(),
+                resolved_at: null,
+                resolution: null,
+            };
+
+            this.state.reports.unshift(report);
+            this.save();
+
+            return ok({ report, total_open: this.openReports().length });
+        }
+
+        openReports() {
+            return (this.state.reports || []).filter((r) => r.status === 'open');
+        }
+
+        adminReports({ query, token }) {
+            this.requireAdmin(token);
+
+            const status = query.get('status') || 'open';
+            const all = this.state.reports || [];
+
+            const reports = (status === 'all' ? [...all] : all.filter((r) => r.status === status))
+                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+            return ok({
+                reports,
+                total: reports.length,
+                open: this.openReports().length,
+            });
+        }
+
+        /** Cierra una denuncia. La decisión sobre la publicación va aparte. */
+        resolveReport({ params, body, token }) {
+            const admin = this.requireAdmin(token);
+
+            const report = (this.state.reports || []).find((r) => r.id === params.id);
+            if (!report) fail('Denuncia no encontrada', 404);
+            if (report.status !== 'open') fail('Esta denuncia ya estaba resuelta');
+
+            const resolution = String(body.resolution || '').trim();
+            if (resolution.length < 4) fail('Indica qué se hizo con la denuncia');
+
+            report.status = 'resolved';
+            report.resolution = resolution;
+            report.resolved_at = nowIso();
+
+            this.logModeration(admin, 'resolve_report', report.post_id,
+                `Resolvió la denuncia sobre «${report.post_title}»: ${resolution}`);
+
+            this.notify(report.reporter_id, 'report_resolved', report.post_id,
+                `Revisamos tu denuncia sobre «${report.post_title}». ${resolution}`);
+
+            this.save();
+            return ok({ report, open: this.openReports().length });
         }
 
         /* --------------------------- Mensajería --------------------------- */

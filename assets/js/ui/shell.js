@@ -15,6 +15,7 @@
     const ICON = {
         search: '<svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="7.5" cy="7.5" r="5"/><path d="m11.5 11.5 4 4"/></svg>',
         bookmark: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 2.5h10v15l-5-3.5-5 3.5v-15Z"/></svg>',
+        bell: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5a5 5 0 0 0-5 5v3.2L3.5 13.5h13L15 10.7V7.5a5 5 0 0 0-5-5Z"/><path d="M8 16a2 2 0 0 0 4 0"/></svg>',
         map: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 2.5 2.5 5v12.5l5-2.5 5 2.5 5-2.5V2.5l-5 2.5-5-2.5Z"/><path d="M7.5 2.5V15M12.5 5v12.5"/></svg>',
         chat: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 12a2 2 0 0 1-2 2H7l-4 3V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v7Z"/></svg>',
         shield: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5 3.5 5v5c0 3.8 2.7 6.9 6.5 7.5 3.8-.6 6.5-3.7 6.5-7.5V5L10 2.5Z"/><path d="m7.3 10 1.9 1.9 3.5-3.5"/></svg>',
@@ -110,6 +111,24 @@
                         ${ICON.chat}
                         <span class="count-dot hidden" id="msg-count">0</span>
                     </a>
+
+                    <div class="dropdown notifications hidden" id="notifications">
+                        <button class="header-icon-btn" id="notif-trigger" type="button"
+                                data-tooltip="Avisos" aria-label="Avisos"
+                                aria-haspopup="menu" aria-expanded="false" aria-controls="notif-panel">
+                            ${ICON.bell}
+                            <span class="count-dot hidden" id="notif-count">0</span>
+                        </button>
+                        <div class="dropdown-menu notif-panel" id="notif-panel" role="menu" hidden>
+                            <div class="notif-head">
+                                <span class="dropdown-label">Avisos</span>
+                                <button class="notif-readall" id="notif-readall" type="button" hidden>
+                                    Marcar todo como leído
+                                </button>
+                            </div>
+                            <div class="notif-list" id="notif-list" aria-live="polite"></div>
+                        </div>
+                    </div>
 
                     <a class="header-icon-btn hidden" href="admin.html" id="admin-link"
                        data-tooltip="Panel de administración" aria-label="Panel de administración">
@@ -484,6 +503,159 @@
     }
 
     /* ----------------------------------------------------------------------
+       Avisos
+
+       El núcleo los escribía desde el primer día — interés, comentarios,
+       decisiones de moderación — y no había ni una pantalla que los leyera.
+       La señal que sostiene el foro, que alguien quiere tu cosa, no llegaba.
+       ---------------------------------------------------------------------- */
+
+    const NOTIF_ICON = {
+        interest: '🙌',
+        comment: '💬',
+        post_approved: '✅',
+        post_rejected: '⛔',
+        post_pending: '⏳',
+        post_reserved: '🔖',
+        post_sold: '🤝',
+        seller_approved: '🎉',
+        seller_rejected: '📄',
+        report_resolved: '🛡️',
+    };
+
+    /** A dónde lleva cada aviso al tocarlo. */
+    function notificationHref(item) {
+        if (item.post_id) return `publicacion.html?id=${encodeURIComponent(item.post_id)}`;
+        if (String(item.type || '').startsWith('seller_')) return 'perfil.html';
+        return 'index.html';
+    }
+
+    function renderNotifications() {
+        const list = $('#notif-list');
+        if (!list) return;
+
+        const items = store.get('notifications') || [];
+        const readAll = $('#notif-readall');
+        const unread = items.filter((n) => !n.read).length;
+
+        if (readAll) readAll.hidden = unread === 0;
+
+        if (!items.length) {
+            list.innerHTML = `
+                <p class="notif-empty">
+                    Aquí aparecerán las reacciones a tus publicaciones y las
+                    decisiones sobre ellas.
+                </p>`;
+            return;
+        }
+
+        list.innerHTML = items.map((item) => `
+            <a class="notif-item${item.read ? '' : ' is-unread'}"
+               href="${escapeAttr(notificationHref(item))}"
+               data-notif-id="${escapeAttr(item.id)}" role="menuitem">
+                <span class="notif-icon" aria-hidden="true">${NOTIF_ICON[item.type] || '🔔'}</span>
+                <span class="notif-body">
+                    <span class="notif-text">${escapeHtml(item.text)}</span>
+                    <span class="notif-time">${escapeHtml(format.relative(item.created_at))}</span>
+                </span>
+                ${item.read ? '' : '<span class="notif-dot" aria-label="Sin leer"></span>'}
+            </a>`).join('');
+    }
+
+    async function refreshNotifications() {
+        const container = $('#notifications');
+        if (!container) return;
+
+        if (!store.get('user')) {
+            container.classList.add('hidden');
+            store.set({ notifications: [], unreadNotifications: 0 });
+            return;
+        }
+
+        container.classList.remove('hidden');
+
+        const data = await api.getNotifications().catch(() => null);
+        if (!data) return;
+
+        store.set({
+            notifications: data.notifications || [],
+            unreadNotifications: data.unread || 0,
+        });
+    }
+
+    function bindNotifications() {
+        const trigger = $('#notif-trigger');
+        const panel = $('#notif-panel');
+        if (!trigger || !panel) return;
+
+        const close = () => {
+            panel.hidden = true;
+            trigger.setAttribute('aria-expanded', 'false');
+        };
+
+        trigger.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const willOpen = panel.hidden;
+            panel.hidden = !willOpen;
+            trigger.setAttribute('aria-expanded', String(willOpen));
+            // Se repinta al abrir: entre carga y clic pudo llegar algo nuevo.
+            if (willOpen) renderNotifications();
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!panel.hidden && !panel.contains(event.target)) close();
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && !panel.hidden) {
+                close();
+                trigger.focus();
+            }
+        });
+
+        panel.addEventListener('click', async (event) => {
+            const link = event.target.closest('[data-notif-id]');
+            if (!link) return;
+
+            const id = link.dataset.notifId;
+            const item = (store.get('notifications') || []).find((n) => n.id === id);
+            if (!item || item.read) return;
+
+            // Se espera al acuse antes de navegar: si se deja en marcha y la
+            // página cambia, la marca se pierde y el aviso vuelve sin leer.
+            event.preventDefault();
+
+            await api.markNotificationRead(id).catch(() => null);
+
+            store.set({
+                notifications: (store.get('notifications') || [])
+                    .map((n) => (n.id === id ? { ...n, read: true } : n)),
+                unreadNotifications: Math.max(0, (store.get('unreadNotifications') || 1) - 1),
+            });
+
+            global.location.href = link.getAttribute('href');
+        });
+
+        const readAll = $('#notif-readall');
+        if (readAll) {
+            readAll.addEventListener('click', async (event) => {
+                event.stopPropagation();
+
+                const done = await api.markAllNotificationsRead().catch(() => null);
+                if (!done) {
+                    global.toast.error('No se pudieron marcar los avisos');
+                    return;
+                }
+
+                store.set({
+                    notifications: (store.get('notifications') || []).map((n) => ({ ...n, read: true })),
+                    unreadNotifications: 0,
+                });
+            });
+        }
+    }
+
+    /* ----------------------------------------------------------------------
        Contadores e insignias
        ---------------------------------------------------------------------- */
 
@@ -503,7 +675,12 @@
         const user = store.get('user');
 
         if (!user) {
-            store.set({ saved: [], unreadMessages: 0, pendingModeration: 0 });
+            store.set({
+                saved: [], unreadMessages: 0, pendingModeration: 0,
+                notifications: [], unreadNotifications: 0,
+            });
+            const bell = $('#notifications');
+            if (bell) bell.classList.add('hidden');
             return;
         }
 
@@ -518,11 +695,16 @@
             saved: saved?.ids || [],
             unreadMessages: (conversations?.conversations || [])
                 .reduce((sum, c) => sum + (c.unread || 0), 0),
-            // Publicaciones y vendedores esperando revisión, en una sola cifra.
+            // Publicaciones, vendedores y denuncias esperando revisión, en
+            // una sola cifra: es lo que el escudo de la cabecera anuncia.
             pendingModeration: adminStats
-                ? (adminStats.posts.pending + adminStats.sellers.pending)
+                ? (adminStats.posts.pending
+                    + adminStats.sellers.pending
+                    + (adminStats.reports ? adminStats.reports.open : 0))
                 : 0,
         });
+
+        await refreshNotifications();
     }
 
     /* ----------------------------------------------------------------------
@@ -629,11 +811,14 @@
         bindSearch();
         bindMobileMenu();
         bindFooter();
+        bindNotifications();
 
         // Los contadores se repintan solos ante cualquier cambio de estado
         store.subscribe('saved', (list) => updateBadge('saved-count', (list || []).length));
         store.subscribe('unreadMessages', (count) => updateBadge('msg-count', count));
         store.subscribe('pendingModeration', (count) => updateBadge('admin-count', count));
+        store.subscribe('unreadNotifications', (count) => updateBadge('notif-count', count));
+        store.subscribe('notifications', () => renderNotifications());
         store.subscribe('user', (user) => {
             renderUserMenu();
             updatePublishButton(user);

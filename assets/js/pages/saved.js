@@ -23,12 +23,17 @@
     const EXIT_MS = 240;
 
     /**
-     * Sin un `saved_at` en la API no se puede ordenar por el momento en que se
-     * guardó cada publicación: «recientes» usa la fecha de la publicación, que
-     * es el único dato temporal disponible.
+     * «Guardados recientes» ordena por cuándo se guardó, que es lo que su
+     * nombre promete. Durante un tiempo no pudo: la API no registraba el
+     * momento y esto ordenaba por la fecha de publicación, que es otra cosa.
+     * Desde la v4 existe `saved_at`; lo guardado antes de que ese campo
+     * existiera no lo tiene y cae al final en vez de colarse arriba.
      */
     const SORTERS = {
-        recent: (a, b) => new Date(b.created_at) - new Date(a.created_at),
+        recent: (a, b) => {
+            const at = (p) => String(p.saved_at || '');
+            return at(b).localeCompare(at(a)) || (new Date(b.created_at) - new Date(a.created_at));
+        },
         price_asc: (a, b) => Number(a.price) - Number(b.price),
         price_desc: (a, b) => Number(b.price) - Number(a.price),
         commented: (a, b) => (Number(b.comment_count) || 0) - (Number(a.comment_count) || 0),

@@ -371,7 +371,10 @@ async function run() {
     check('registro guarda quién actuó', log.data.log[0].admin_name === 'Administración');
 
     /* ================= INTERACCIONES DEL FORO ================= */
-    const target = feed.data.posts[1];
+    // Sobre un artículo ya vendido el foro no acepta interés nuevo, así que
+    // para probar las interacciones hace falta uno que siga disponible.
+    const target = feed.data.posts.find((p) => p.availability === 'available')
+        || feed.data.posts[1];
 
     const like1 = await api.request(`/api/posts/${target.id}/like`, { method: 'POST', token: buyerToken });
     check('me gusta se activa', like1.data.liked === true);
@@ -483,6 +486,173 @@ async function run() {
 
     const ordersGone = await expectFail(api, '/api/orders', { token: buyerToken });
     check('los pedidos ya no existen', ordersGone && ordersGone.status === 404);
+
+    /* ================= ESTADO DE VENTA ================= */
+    const myPosts = await api.request('/api/posts/mine', { token: sellerToken });
+    const ownApproved = myPosts.data.posts.find((p) => p.status === 'approved');
+
+    check('una publicación nace disponible',
+        myPosts.data.posts.every((p) => ['available', 'reserved', 'sold'].includes(p.availability)));
+
+    if (ownApproved) {
+        const reserved = await api.request(`/api/posts/${ownApproved.id}/availability`, {
+            method: 'PUT', body: { availability: 'reserved' }, token: sellerToken,
+        });
+        check('el vendedor puede reservar', reserved.data.post.availability === 'reserved');
+        check('y queda fechado', !!reserved.data.post.availability_at);
+        check('reservar no toca la moderación', reserved.data.post.status === 'approved');
+
+        const repeat = await expectFail(api, `/api/posts/${ownApproved.id}/availability`, {
+            method: 'PUT', body: { availability: 'reserved' }, token: sellerToken,
+        });
+        check('no se repite el mismo estado', !!repeat);
+
+        const bogus = await expectFail(api, `/api/posts/${ownApproved.id}/availability`, {
+            method: 'PUT', body: { availability: 'regalado' }, token: sellerToken,
+        });
+        check('un estado inventado se rechaza', !!bogus);
+
+        const byStranger = await expectFail(api, `/api/posts/${ownApproved.id}/availability`, {
+            method: 'PUT', body: { availability: 'sold' }, token: buyerToken,
+        });
+        check('otra persona no puede cambiarlo', byStranger && byStranger.status === 403);
+
+        await api.request(`/api/posts/${ownApproved.id}/availability`, {
+            method: 'PUT', body: { availability: 'sold' }, token: sellerToken,
+        });
+        const soldInterest = await expectFail(api, `/api/posts/${ownApproved.id}/interest`, {
+            method: 'POST', token: buyerToken,
+        });
+        check('lo vendido ya no acepta interés', !!soldInterest);
+
+        const onlyAvailable = await api.request('/api/posts?availability=available&per_page=48');
+        check('el feed puede esconder lo vendido',
+            onlyAvailable.data.posts.every((p) => p.availability === 'available'));
+        check('y sigue devolviendo publicaciones', onlyAvailable.data.posts.length > 0);
+
+        await api.request(`/api/posts/${ownApproved.id}/availability`, {
+            method: 'PUT', body: { availability: 'available' }, token: sellerToken,
+        });
+    }
+
+    /* ================= AVISOS ================= */
+    const sellerNotifs = await api.request('/api/notifications', { token: sellerToken });
+    check('el vendedor tiene avisos', sellerNotifs.data.notifications.length > 0,
+        `obtuve ${sellerNotifs.data.notifications.length}`);
+    check('vienen del más reciente al más antiguo',
+        sellerNotifs.data.notifications.every((n, i, all) =>
+            i === 0 || new Date(all[i - 1].created_at) >= new Date(n.created_at)));
+    check('todos son suyos',
+        sellerNotifs.data.notifications.every((n) => n.user_id === sellerLogin.data.user.id));
+
+    const unreadBefore = sellerNotifs.data.unread;
+    check('hay algo sin leer al empezar', unreadBefore > 0, String(unreadBefore));
+
+    const firstUnread = sellerNotifs.data.notifications.find((n) => !n.read);
+    if (firstUnread) {
+        const marked = await api.request(`/api/notifications/${firstUnread.id}/read`, {
+            method: 'POST', token: sellerToken,
+        });
+        check('marcar leído baja el contador', marked.data.unread === unreadBefore - 1,
+            `${marked.data.unread} vs ${unreadBefore - 1}`);
+    }
+
+    const onlyUnread = await api.request('/api/notifications?unread=1', { token: sellerToken });
+    check('se pueden pedir solo los no leídos',
+        onlyUnread.data.notifications.every((n) => !n.read));
+
+    const allRead = await api.request('/api/notifications/read-all', {
+        method: 'POST', token: sellerToken,
+    });
+    check('marcar todo deja el contador a cero', allRead.data.unread === 0);
+
+    const meAfter = await api.request('/api/auth/me', { token: sellerToken });
+    check('y /me lo refleja', meAfter.data.unread_notifications === 0);
+
+    const strangerNotif = firstUnread
+        ? await expectFail(api, `/api/notifications/${firstUnread.id}/read`, {
+            method: 'POST', token: buyerToken,
+        })
+        : null;
+    check('nadie lee los avisos de otro', firstUnread ? !!strangerNotif : true);
+
+    const anonNotifs = await expectFail(api, '/api/notifications');
+    check('sin sesión no hay avisos', anonNotifs && anonNotifs.status === 401);
+
+    /* ================= DENUNCIAS ================= */
+    const reportTarget = feed.data.posts.find((p) => p.author.id !== buyerReg.data.user.id);
+
+    const shortReason = await expectFail(api, `/api/posts/${reportTarget.id}/report`, {
+        method: 'POST', body: { reason: 'malo' }, token: buyerToken,
+    });
+    check('una denuncia sin motivo se rechaza', !!shortReason);
+
+    const report = await api.request(`/api/posts/${reportTarget.id}/report`, {
+        method: 'POST',
+        body: { category: 'engano', reason: 'Las fotos son de otra publicación distinta.' },
+        token: buyerToken,
+    });
+    check('se puede denunciar una publicación', report.data.report.status === 'open');
+    check('la denuncia guarda a quién señala', report.data.report.post_id === reportTarget.id);
+
+    const duplicate = await expectFail(api, `/api/posts/${reportTarget.id}/report`, {
+        method: 'POST', body: { reason: 'Las fotos son de otra publicación distinta.' }, token: buyerToken,
+    });
+    check('no se denuncia dos veces lo mismo', !!duplicate);
+
+    const notMine = await expectFail(api, `/api/posts/${newPostId}/report`, {
+        method: 'POST', body: { reason: 'Motivo suficientemente largo' }, token: sellerToken,
+    });
+    check('no se denuncia lo propio', !!notMine);
+
+    const reportsAsBuyer = await expectFail(api, '/api/admin/reports', { token: buyerToken });
+    check('la cola de denuncias es solo del admin', reportsAsBuyer && reportsAsBuyer.status === 403);
+
+    const reports = await api.request('/api/admin/reports', { token: adminToken });
+    check('el admin ve la denuncia', reports.data.reports.some((r) => r.id === report.data.report.id));
+    check('y cuántas hay abiertas', reports.data.open >= 1);
+
+    const resolved = await api.request(`/api/admin/reports/${report.data.report.id}/resolve`, {
+        method: 'POST', body: { resolution: 'Revisada, la publicación se mantiene' }, token: adminToken,
+    });
+    check('la denuncia se puede cerrar', resolved.data.report.status === 'resolved');
+    check('y deja de contar como abierta', resolved.data.open === 0, String(resolved.data.open));
+
+    const reporterNotified = await api.request('/api/notifications', { token: buyerToken });
+    check('quien denunció recibe respuesta',
+        reporterNotified.data.notifications.some((n) => n.type === 'report_resolved'));
+
+    /* ================= RELACIONADAS ================= */
+    const related = await api.request(`/api/posts/${reportTarget.id}/related`);
+    check('hay publicaciones relacionadas', related.data.related.length > 0);
+    check('ninguna es la propia publicación',
+        related.data.related.every((p) => p.id !== reportTarget.id));
+    check('todas están aprobadas', related.data.related.every((p) => p.status === 'approved'));
+    check('ninguna está vendida',
+        related.data.related.every((p) => p.availability !== 'sold'));
+
+    /* ================= GUARDADOS RECIENTES ================= */
+    const pool = feed.data.posts.filter((p) => p.availability !== 'sold').slice(0, 3);
+    for (const post of pool) {
+        await api.request(`/api/posts/${post.id}/save`, { method: 'POST', token: buyerToken });
+    }
+
+    const savedList = await api.request('/api/posts/saved', { token: buyerToken });
+    check('guardados registra la fecha',
+        savedList.data.posts.every((p) => typeof p.saved_at === 'string' && p.saved_at.length > 0));
+    check('y ordena por lo guardado más recientemente',
+        savedList.data.posts.every((p, i, all) =>
+            i === 0 || all[i - 1].saved_at >= p.saved_at));
+
+    const lastSaved = pool[pool.length - 1];
+    check('lo último guardado va primero',
+        savedList.data.posts[0] && savedList.data.posts[0].id === lastSaved.id,
+        savedList.data.posts[0] && savedList.data.posts[0].id);
+
+    await api.request(`/api/posts/${lastSaved.id}/save`, { method: 'POST', token: buyerToken });
+    const afterUnsave = await api.request('/api/posts/saved', { token: buyerToken });
+    check('al quitar de guardados desaparece la fecha',
+        !afterUnsave.data.posts.some((p) => p.id === lastSaved.id));
 
     /* ================= PERSISTENCIA ================= */
     const api2 = new sandbox.MockAPI();

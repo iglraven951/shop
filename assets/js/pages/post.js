@@ -173,13 +173,66 @@
      * La publicación en detalle: mismas clases que la tarjeta del feed, pero
      * con título principal, texto íntegro e imagen ampliable.
      */
+    /** Quién puede cerrar o reabrir una publicación: su autor y el admin. */
+    function canManage(post) {
+        return Boolean(post.is_mine) || (state.user && state.user.role === 'admin');
+    }
+
+    /**
+     * Control de estado para quien publicó.
+     *
+     * Sin esto una publicación no se puede dar por cerrada nunca: el artículo
+     * se va, el anuncio se queda, y la gente sigue escribiendo por algo que ya
+     * no existe. Es lo que separa un tablón vivo de un cementerio de anuncios.
+     */
+    function availabilityControlMarkup(post) {
+        if (!canManage(post)) return '';
+
+        const current = post.availability || 'available';
+        const options = [
+            ['available', 'Disponible'],
+            ['reserved', 'Reservado'],
+            ['sold', 'Vendido'],
+        ];
+
+        return `
+        <div class="availability-control" role="group" aria-label="Disponibilidad del artículo">
+            <span class="availability-label">Disponibilidad</span>
+            <div class="availability-options">
+                ${options.map(([value, label]) => `
+                <button class="availability-option${value === current ? ' is-active' : ''}"
+                        type="button" data-availability="${value}"
+                        aria-pressed="${value === current}">${escapeHtml(label)}</button>`).join('')}
+            </div>
+        </div>`;
+    }
+
+    /**
+     * Denunciar. Va aquí abajo y no en la barra de acciones a propósito: esa
+     * barra ya lleva cinco botones y en un móvil cada uno mide 51 px (ADR-014).
+     * Un sexto los dejaría por debajo del mínimo táctil.
+     */
+    function reportLinkMarkup(post) {
+        if (post.is_mine || !state.user) return '';
+
+        return `
+        <div class="post-report">
+            <button class="post-report-btn" type="button" id="report-post">
+                Denunciar esta publicación
+            </button>
+        </div>`;
+    }
+
     function articleMarkup(post) {
         // Solo el autor y el administrador ven una publicación sin aprobar,
         // así que la etiqueta de estado es información útil, no un adorno.
         const showStatus = Boolean(post.is_mine) || post.status !== 'approved';
+        const availabilityClass = post.availability && post.availability !== 'available'
+            ? ` is-${post.availability}`
+            : '';
 
         return `
-        <article class="post-card post-detail" data-post-id="${escapeAttr(post.id)}"
+        <article class="post-card post-detail${availabilityClass}" data-post-id="${escapeAttr(post.id)}"
                  data-likes="${escapeAttr(post.likes_count)}"
                  data-interested="${escapeAttr(post.interested_count)}"
                  data-comments="${escapeAttr(post.comment_count)}">
@@ -192,10 +245,13 @@
                 <p class="post-text">${escapeHtml(post.description)}</p>
 
                 <div class="post-tags">
+                    ${UI.availabilityBadge(post)}
                     <span class="badge badge-brand">${escapeHtml(post.category.icon)} ${escapeHtml(post.category.name)}</span>
                     <span class="badge">${escapeHtml(post.condition)}</span>
                     <span class="post-price-tag">${escapeHtml(format.money(post.price))}</span>
                 </div>
+
+                ${availabilityControlMarkup(post)}
             </div>
 
             <button class="post-media post-detail-media" type="button"
@@ -220,7 +276,110 @@
                     <span class="alert-body">${escapeHtml(post.rejection_reason)}</span>
                 </span>
             </div>` : ''}
+
+            ${reportLinkMarkup(post)}
         </article>`;
+    }
+
+    /* Lo que se le dice a quien acaba de cambiar el estado. */
+    const AVAILABILITY_DONE = {
+        available: 'El artículo vuelve a estar disponible',
+        reserved: 'Marcado como reservado. Avisamos a quien mostró interés.',
+        sold: 'Marcado como vendido. Avisamos a quien mostró interés.',
+    };
+
+    function bindAvailability(container, post) {
+        const control = container.querySelector('.availability-control');
+        if (!control) return;
+
+        control.addEventListener('click', async (event) => {
+            const button = event.target.closest('[data-availability]');
+            if (!button || button.classList.contains('is-active')) return;
+
+            const value = button.dataset.availability;
+            const buttons = control.querySelectorAll('[data-availability]');
+
+            buttons.forEach((b) => { b.disabled = true; });
+
+            try {
+                const result = await api.setAvailability(post.id, value);
+
+                // La ficha se vuelve a pintar entera: la insignia, el atenuado
+                // de la foto y el propio control cuelgan del mismo estado.
+                Object.assign(state.post, result.post);
+                renderArticle(state.post);
+                toast.success(AVAILABILITY_DONE[value] || 'Estado actualizado');
+            } catch (error) {
+                buttons.forEach((b) => { b.disabled = false; });
+                toast.error(error.message || 'No se pudo cambiar el estado');
+            }
+        });
+    }
+
+    /**
+     * Denuncia. Pide el motivo en un diálogo porque un botón que denuncia al
+     * primer clic invita al accidente, y porque quien modera necesita saber
+     * qué mirar.
+     */
+    function bindReport(container, post) {
+        const button = container.querySelector('#report-post');
+        if (!button) return;
+
+        button.addEventListener('click', () => {
+            modal.open({
+                title: 'Denunciar publicación',
+                size: 'sm',
+                content: `
+                    <p class="text-secondary">
+                        Cuéntanos qué pasa con «${escapeHtml(post.title)}». Lo revisará
+                        una persona del equipo de moderación.
+                    </p>
+                    <div class="field">
+                        <label class="label" for="report-category">Motivo</label>
+                        <select class="select" id="report-category">
+                            <option value="engano">La publicación engaña</option>
+                            <option value="prohibido">Artículo prohibido</option>
+                            <option value="duplicado">Está repetida</option>
+                            <option value="ofensivo">Contenido ofensivo</option>
+                            <option value="otro">Otro motivo</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label class="label" for="report-reason">Detalles</label>
+                        <textarea class="textarea" id="report-reason" maxlength="400"
+                                  placeholder="Explica brevemente qué has visto (mínimo 10 caracteres)"></textarea>
+                    </div>`,
+                actions: [
+                    { label: 'Cancelar', variant: 'ghost' },
+                    {
+                        label: 'Enviar denuncia',
+                        variant: 'danger',
+                        action: async () => {
+                            const category = $('#report-category');
+                            const reason = $('#report-reason');
+                            if (!reason) return false;
+
+                            try {
+                                await api.reportPost(post.id, {
+                                    category: category ? category.value : 'otro',
+                                    reason: reason.value,
+                                });
+                            } catch (error) {
+                                // Se queda abierto: el motivo escrito no se pierde
+                                // y se puede corregir sin volver a empezar.
+                                toast.error(error.message || 'No se pudo enviar la denuncia');
+                                return false;
+                            }
+
+                            toast.success('Gracias. La denuncia llegó a moderación.');
+                            button.disabled = true;
+                            button.textContent = 'Denuncia enviada';
+                            return true;
+                        },
+                    },
+                ],
+            });
+        });
     }
 
     function renderArticle(post) {
@@ -241,6 +400,9 @@
         UI.bindPostActions(container, {
             onComment: () => focusComposer(),
         });
+
+        bindAvailability(container, post);
+        bindReport(container, post);
     }
 
     /* ======================================================================
@@ -708,10 +870,11 @@
         if (!section || !list) return;
 
         try {
-            const result = await api.getPosts({ category: post.category.id, per_page: 4 });
-            const related = (result.posts || [])
-                .filter((item) => item.id !== post.id)
-                .slice(0, 3);
+            // Primero lo del mismo vendedor y luego lo de la misma categoría,
+            // saltándose lo vendido: quien mira una cosa suele querer ver qué
+            // más tiene esa persona antes que otra igual de otro cualquiera.
+            const result = await api.getRelatedPosts(post.id);
+            const related = (result.related || []).slice(0, 4);
 
             if (!related.length) return;
 

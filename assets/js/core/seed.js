@@ -200,6 +200,14 @@
     ];
 
     /** Comentarios verosímiles para poblar las conversaciones del foro. */
+    /* Estado de venta repartido por el catálogo. Once posiciones para que
+       `seed % 11` reparta: la mayoría disponibles, dos reservadas y una
+       vendida, que es más o menos lo que se ve en un tablón real. */
+    const AVAILABILITY = [
+        'available', 'available', 'available', 'reserved', 'available',
+        'available', 'sold', 'available', 'available', 'reserved', 'available',
+    ];
+
     const COMMENT_TEMPLATES = [
         '¿Sigue disponible? Me interesa mucho.',
         '¿Aceptas una oferta un poco más baja?',
@@ -358,6 +366,13 @@
                 rejection_reason: status === 'rejected'
                     ? 'Las fotos no muestran el estado real del artículo.'
                     : null,
+                /* Estado de venta, distinto de `status`: aquello es moderación
+                   y esto es si el artículo sigue disponible. Una publicación
+                   aprobada puede estar reservada, y una reservada puede volver
+                   a estar libre si el trato se cae. Unas pocas del catálogo
+                   nacen reservadas o vendidas para que el foro se vea vivo. */
+                availability: AVAILABILITY[seed % 11] || 'available',
+                availability_at: null,
                 // Interacciones sociales del foro
                 likes: [],
                 likes_count: seed % 37,
@@ -365,6 +380,8 @@
                 interested_count: seed % 11,
                 saves: [],
                 saves_count: seed % 8,
+                // Cuándo guardó cada persona esta publicación, por su id
+                saved_at: {},
                 comments,
                 comment_count: comments.length,
                 views: 20 + (seed % 400),

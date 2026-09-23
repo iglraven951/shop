@@ -626,6 +626,13 @@
 
 .post-card:hover .post-media img { transform: scale(1.03); }
 
+/* Lo que ya no está disponible se atenúa, pero no se esconde: saber que algo
+   se vendió también es información, y borrarlo dejaría el tablón mintiendo.
+   Solo pierde color la foto — el texto se sigue leyendo igual de bien, que es
+   lo que pide el contraste. */
+.post-card.is-sold .post-media img { filter: saturate(0.2); opacity: 0.6; }
+.post-card.is-reserved .post-media img { filter: saturate(0.6); opacity: 0.85; }
+
 /* --- Pie: reacciones y acciones --- */
 .post-footer {
     display: flex;
