@@ -808,9 +808,9 @@
             submit: async (reason) => {
                 const data = await api.rejectRequest(id, reason);
                 const row = findRow(id);
-                const stays = applyPostUpdate(id, data.post);
+                const stays = applyPostUpdate(id, data.request);
 
-                toast.warning(`«${data.post.title}» fue rechazada. Se avisó a quien la publicó.`);
+                toast.warning(`«${data.request.title}» fue rechazada. Se avisó a quien la publicó.`);
 
                 if (!stays) await fadeOut(row);
                 renderPosts();
@@ -904,7 +904,7 @@
                     : await api.rejectRequest(id, reason);
                 /* eslint-enable no-await-in-loop */
 
-                applyPostUpdate(id, data.post);
+                applyPostUpdate(id, data.request);
                 done += 1;
             } catch (error) {
                 failed += 1;
@@ -1630,7 +1630,7 @@
             confirmLabel: 'Rechazar publicación',
             submit: async (reason) => {
                 const data = await api.rejectRequest(item.post_id, reason);
-                toast.warning(`«${data.post.title}» fue rechazada. Se avisó a quien la publicó.`);
+                toast.warning(`«${data.request.title}» fue rechazada. Se avisó a quien la publicó.`);
                 await afterInboxDecision();
             },
         });

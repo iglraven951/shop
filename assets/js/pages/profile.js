@@ -826,7 +826,7 @@
 
                         try {
                             const data = await api.updateRequest(post.id, values);
-                            const updated = data.post || data;
+                            const updated = data.request || data;
                             const index = state.posts.findIndex((item) => item.id === post.id);
                             if (index !== -1) state.posts[index] = updated;
 

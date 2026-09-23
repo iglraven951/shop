@@ -73,9 +73,18 @@
                     <!-- La publicación, con el texto completo y sus acciones -->
                     <div id="post-article"></div>
 
-                    <!-- Ficha de datos del artículo -->
+                    <!-- Respuestas de los vendedores.
+                         Para quien pidió: las ofertas recibidas y el botón de
+                         aceptar. Para un vendedor: el formulario «Lo tengo».
+                         Lo pinta post.js según quién esté mirando. -->
+                    <section class="post-offers" id="responder" aria-labelledby="offers-title">
+                        <h2 class="post-detail-section-title" id="offers-title">Respuestas</h2>
+                        <div id="offers-body" aria-live="polite"></div>
+                    </section>
+
+                    <!-- Ficha de datos del pedido -->
                     <section class="post-detail-facts" aria-labelledby="facts-title">
-                        <h2 class="post-detail-section-title" id="facts-title">Ficha del artículo</h2>
+                        <h2 class="post-detail-section-title" id="facts-title">Ficha del pedido</h2>
                         <dl class="post-detail-dl" id="post-facts"></dl>
                     </section>
 

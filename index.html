@@ -65,7 +65,7 @@
                 <span class="intro-sub-rule"></span>
             </p>
 
-            <p class="intro-tagline">Lo que ya no usas, alguien lo está buscando.</p>
+            <p class="intro-tagline">Lo que buscas, lo encuentras.</p>
         </div>
 
         <p class="intro-count">
@@ -105,37 +105,37 @@
                 <p class="feed-hero-eyebrow">
                     <span class="feed-hero-rule" aria-hidden="true"></span>
                     <span class="feed-hero-dot" aria-hidden="true"></span>
-                    <span class="feed-hero-eyebrow-text">Foro vecinal · Arequipa, Perú</span>
+                    <span class="feed-hero-eyebrow-text">Comercio inverso · Arequipa, Perú</span>
                     <span class="feed-hero-rule" aria-hidden="true"></span>
                 </p>
 
                 <h1 class="feed-hero-title" id="feed-hero-title">
-                    Lo que ya no usas,
-                    <span class="feed-hero-highlight">alguien lo está buscando</span>
+                    Lo que buscas,
+                    <span class="feed-hero-highlight">lo encuentras</span>
                 </h1>
 
                 <p class="feed-hero-subtitle">
-                    DiscoveryShop es un foro para promocionar artículos de segunda mano de
-                    Arequipa. Aquí no se vende ni se paga nada: publicas, la gente reacciona y
-                    comenta, y el trato lo cierran ustedes por mensaje directo.
+                    Aquí no buscas tú entre catálogos: lo pides y las tiendas de Arequipa te
+                    responden. Describe lo que necesitas, aunque sea algo muy específico, y
+                    espera. Cuando alguien lo tenga, te avisamos.
                 </p>
 
                 <div class="feed-hero-actions">
-                    <button class="btn btn-primary btn-lg" type="button" data-action="scroll-feed">
-                        Ver publicaciones
-                    </button>
-                    <a class="btn btn-secondary btn-lg" href="publicar.html">
-                        Quiero publicar
+                    <a class="btn btn-primary btn-lg" href="publicar.html">
+                        Pedir lo que busco
                     </a>
+                    <button class="btn btn-secondary btn-lg" type="button" data-action="scroll-feed">
+                        Ver qué busca la gente
+                    </button>
                 </div>
 
                 <dl class="feed-stats">
                     <div class="feed-stat">
-                        <dt class="feed-stat-label">Publicaciones activas</dt>
+                        <dt class="feed-stat-label">Pedidos abiertos</dt>
                         <dd class="feed-stat-value" id="stat-posts">—</dd>
                     </div>
                     <div class="feed-stat">
-                        <dt class="feed-stat-label">Vendedores verificados</dt>
+                        <dt class="feed-stat-label">Tiendas que responden</dt>
                         <dd class="feed-stat-value" id="stat-sellers">—</dd>
                     </div>
                     <div class="feed-stat">
@@ -147,7 +147,7 @@
         </section>
 
         <!-- ===================== Feed del foro ===================== -->
-        <section id="feed" class="feed-section" aria-label="Publicaciones del foro">
+        <section id="feed" class="feed-section" aria-label="Pedidos del tablón">
             <div class="page-shell">
 
                 <!-- ---------------- Panel de filtros ----------------
@@ -275,7 +275,7 @@
                     <!-- Estado del artículo -->
                     <details class="filter-group" id="group-condition" open>
                         <summary class="filter-summary">
-                            <span class="filter-summary-name">Estado del artículo</span>
+                            <span class="filter-summary-name">¿En qué estado lo acepta?</span>
                             <span class="filter-summary-value" id="summary-condition">Cualquiera</span>
                             <span class="filter-chevron" aria-hidden="true">
                                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 5.5 3 3 3-3"/></svg>
@@ -285,16 +285,16 @@
                         <div class="filter-body">
                             <div class="filter-options">
                                 <label class="choice">
-                                    <input type="checkbox" name="condition" value="Nuevo">
-                                    <span class="choice-text">Nuevo</span>
+                                    <input type="checkbox" name="condition" value="Solo nuevo">
+                                    <span class="choice-text">Solo nuevo</span>
                                 </label>
                                 <label class="choice">
-                                    <input type="checkbox" name="condition" value="Como nuevo">
-                                    <span class="choice-text">Como nuevo</span>
+                                    <input type="checkbox" name="condition" value="Como nuevo o mejor">
+                                    <span class="choice-text">Como nuevo o mejor</span>
                                 </label>
                                 <label class="choice">
-                                    <input type="checkbox" name="condition" value="Buen estado">
-                                    <span class="choice-text">Buen estado</span>
+                                    <input type="checkbox" name="condition" value="Cualquiera que funcione">
+                                    <span class="choice-text">Cualquiera que funcione</span>
                                 </label>
                             </div>
                         </div>
@@ -304,7 +304,7 @@
                          reservado o ya se vendió. Distinto del estado físico. -->
                     <details class="filter-group" id="group-availability" open>
                         <summary class="filter-summary">
-                            <span class="filter-summary-name">Disponibilidad</span>
+                            <span class="filter-summary-name">Situación del pedido</span>
                             <span class="filter-summary-value" id="summary-availability">Todo</span>
                             <span class="filter-chevron" aria-hidden="true">
                                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 5.5 3 3 3-3"/></svg>
@@ -314,16 +314,16 @@
                         <div class="filter-body">
                             <div class="filter-options">
                                 <label class="choice">
-                                    <input type="checkbox" name="availability" value="available">
-                                    <span class="choice-text">Disponible</span>
+                                    <input type="checkbox" name="availability" value="open">
+                                    <span class="choice-text">Abierto</span>
                                 </label>
                                 <label class="choice">
-                                    <input type="checkbox" name="availability" value="reserved">
-                                    <span class="choice-text">Reservado</span>
+                                    <input type="checkbox" name="availability" value="matched">
+                                    <span class="choice-text">Con oferta aceptada</span>
                                 </label>
                                 <label class="choice">
-                                    <input type="checkbox" name="availability" value="sold">
-                                    <span class="choice-text">Vendido</span>
+                                    <input type="checkbox" name="availability" value="fulfilled">
+                                    <span class="choice-text">Resuelto</span>
                                 </label>
                             </div>
                         </div>
@@ -334,7 +334,7 @@
                 <div class="feed-results">
                     <div class="results-header">
                         <div class="feed-results-heading">
-                            <h2 class="results-title" id="results-title">Todas las publicaciones</h2>
+                            <h2 class="results-title" id="results-title">Lo que busca la gente</h2>
                             <p class="results-count" id="results-count" aria-live="polite" aria-atomic="true">
                                 Cargando publicaciones…
                             </p>

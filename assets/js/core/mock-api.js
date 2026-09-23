@@ -442,6 +442,7 @@
             const categories = (query.get('category') || '').split(',').filter(Boolean);
             const districts = (query.get('district') || '').split(',').filter(Boolean);
             const states = (query.get('state') || '').split(',').filter(Boolean);
+            const conditions = (query.get('condition') || '').split(',').filter(Boolean);
             const minPrice = parseFloat(query.get('min_price') || '');
             const maxPrice = parseFloat(query.get('max_price') || '');
             const buyerId = query.get('buyer_id');
@@ -462,6 +463,7 @@
             if (categories.length) items = items.filter((p) => categories.includes(p.category.id));
             if (districts.length) items = items.filter((p) => districts.includes(p.district));
             if (states.length) items = items.filter((p) => states.includes(p.state || 'open'));
+            if (conditions.length) items = items.filter((p) => conditions.includes(p.condition));
 
             /* El presupuesto es un rango, no un precio, así que el filtro
                busca solapamiento: «hasta 500» tiene que encontrar a quien
@@ -592,11 +594,20 @@
             const district = global.DiscoverySeed.districtByName(districtName);
             const emoji = body.emoji || category.icon;
 
+            /* En qué estado le sirve. Al revés que antes: no describe la
+               mercancía de nadie, sino hasta dónde está dispuesto a ceder
+               quien busca — y es lo primero que un vendedor necesita saber
+               para decidir si le merece la pena contestar. */
+            const condition = MockAPI.CONDITIONS.includes(body.condition)
+                ? body.condition
+                : MockAPI.CONDITIONS[2];
+
             const request = {
                 id: uid('req'),
                 title,
                 description,
                 emoji,
+                condition,
                 /* Una ilustración generada, no una foto: el objeto todavía no
                    existe. Las fotos reales llegan en la oferta del vendedor. */
                 image_url: global.DiscoverySeed.createImage(title, emoji),
@@ -801,6 +812,11 @@
            comprador recibe el aviso, acepta, se abre la conversación, confirma
            la compra y califica. Cada paso deja rastro para el siguiente.
            ==================================================================== */
+
+        /** Hasta dónde cede quien pide. El orden va de más exigente a menos. */
+        static get CONDITIONS() {
+            return ['Solo nuevo', 'Como nuevo o mejor', 'Cualquiera que funcione'];
+        }
 
         /** Estados por los que pasa una oferta. */
         static get OFFER_STATUS() {

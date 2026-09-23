@@ -23,8 +23,8 @@
     const STATS_SAMPLE = 48;
 
     const SORT_OPTIONS = ['recent', 'price_asc', 'price_desc', 'popular', 'interest', 'commented'];
-    const CONDITION_OPTIONS = ['Nuevo', 'Como nuevo', 'Buen estado'];
-    const AVAILABILITY_OPTIONS = ['available', 'reserved', 'sold'];
+    const CONDITION_OPTIONS = ['Solo nuevo', 'Como nuevo o mejor', 'Cualquiera que funcione'];
+    const AVAILABILITY_OPTIONS = ['open', 'matched', 'fulfilled'];
 
     /** Cómo se llama cada estado de venta en la interfaz. */
     const AVAILABILITY_NAMES = {
@@ -124,10 +124,13 @@
             category: f.category,
             district: f.district,
             condition: f.condition,
-            availability: f.availability,
+            state: f.availability,
             min_price: f.min_price,
             max_price: f.max_price,
-            author_id: f.author_id,
+            /* En la URL sigue llamándose `author_id` — hay enlaces por ahí que
+               lo usan — pero la API pregunta por el comprador, que es quien
+               publica el pedido. */
+            ...(forUrl ? { author_id: f.author_id } : { buyer_id: f.author_id }),
             sort: forUrl && f.sort === 'recent' ? '' : f.sort,
         };
     }
@@ -242,16 +245,14 @@
             const sample = data.requests || [];
             const total = data.pagination ? data.pagination.total : sample.length;
 
-            const sellers = new Set(
-                sample
-                    .filter((post) => post.author && post.author.verified)
-                    .map((post) => post.author.id)
-                    .filter(Boolean)
-            );
+            /* Las tiendas que responden no salen de los pedidos: quien publica
+               un pedido es el comprador. Salen del mapa, que es justamente la
+               lista de locales aprobados con actividad. */
+            const map = await api.getMapSellers().catch(() => null);
+            const shops = map && Array.isArray(map.sellers) ? map.sellers.length : 0;
 
             dom.statPosts.textContent = format.number(total);
-            dom.statSellers.textContent =
-                format.number(sellers.size) + (total > sample.length ? '+' : '');
+            dom.statSellers.textContent = format.number(shops);
         } catch (error) {
             /* Las cifras son decorativas: su fallo no rompe la página. */
         }
@@ -312,7 +313,7 @@
 
     function renderHeading(total) {
         const f = state.filters;
-        let title = 'Todas las publicaciones';
+        let title = 'Lo que busca la gente';
 
         if (f.category.length === 1) {
             const category = state.categories.find((c) => c.id === f.category[0]);
@@ -327,8 +328,8 @@
 
         if (f.author_id) {
             title = state.authorName
-                ? `Publicaciones de ${state.authorName}`
-                : 'Publicaciones de este vendedor';
+                ? `Pedidos de ${state.authorName}`
+                : 'Pedidos de esta persona';
         }
 
         // textContent en lugar de innerHTML: el título viene de datos del usuario.
@@ -342,7 +343,7 @@
         const pages = state.pagination ? state.pagination.total_pages : 1;
         const suffix = pages > 1 ? ` · página ${state.page} de ${pages}` : '';
         dom.count.textContent = `${format.number(total)} `
-            + `${format.plural(total, 'publicación encontrada', 'publicaciones encontradas')}${suffix}`;
+            + `${format.plural(total, 'pedido abierto', 'pedidos abiertos')}${suffix}`;
     }
 
     /** Guarda el nombre del autor filtrado para poder nombrarlo en la cabecera. */
@@ -352,8 +353,8 @@
             return;
         }
 
-        const first = state.posts.find((post) => post.author && post.author.username);
-        if (first) state.authorName = first.author.username;
+        const first = state.posts.find((post) => post.buyer && post.buyer.username);
+        if (first) state.authorName = first.buyer.username;
     }
 
     /** Aviso de «estás viendo solo a esta persona», con salida a un clic. */

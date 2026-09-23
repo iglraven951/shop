@@ -20,7 +20,7 @@
 
     const DRAFT_KEY = 'discoveryshop:draft';
 
-    // Los mismos límites que valida el servidor en `createPost`.
+    // Los mismos límites que valida el servidor en `createRequest`.
     const LIMITS = { titleMin: 4, titleMax: 90, descMin: 20, descMax: 1000 };
 
     /** Iconos disponibles para la portada de la publicación. */
@@ -41,7 +41,8 @@
     const FIELD_IDS = {
         title: 'publish-title',
         description: 'publish-description',
-        price: 'publish-price',
+        budget_min: 'publish-budget-min',
+        budget_max: 'publish-budget-max',
         category_id: 'publish-category',
         district: 'publish-district',
     };
@@ -52,29 +53,44 @@
      */
     const RULES = {
         title(value) {
-            if (!value) return 'Escribe un título para tu artículo.';
+            if (!value) return 'Escribe en pocas palabras qué buscas.';
             if (value.length < LIMITS.titleMin) return 'El título debe tener al menos 4 caracteres.';
             if (value.length > LIMITS.titleMax) return 'El título no puede superar los 90 caracteres.';
             return '';
         },
         description(value) {
-            if (!value) return 'Describe tu artículo para que sepan qué vendes.';
-            if (value.length < LIMITS.descMin) return 'Describe el artículo con al menos 20 caracteres.';
+            if (!value) return 'Describe lo que buscas para que puedan reconocerlo.';
+            if (value.length < LIMITS.descMin) return 'Descríbelo con al menos 20 caracteres.';
             if (value.length > LIMITS.descMax) return 'La descripción no puede superar los 1000 caracteres.';
             return '';
         },
-        price(value) {
-            if (!value) return 'Indica el precio que pides.';
+        /* El presupuesto es opcional: hay cosas que uno busca sin saber
+           todavía lo que cuestan, y exigir una cifra solo produce cifras
+           inventadas. Lo que sí se comprueba es que tenga sentido. */
+        budget_min(value, values) {
+            if (!value) return '';
             const amount = Number(value);
-            if (!Number.isFinite(amount) || amount <= 0) return 'El precio debe ser mayor que cero.';
-            if (amount > 999999) return 'Ese precio parece un error: revisa la cifra.';
+            if (!Number.isFinite(amount) || amount < 0) return 'El presupuesto no puede ser negativo.';
+            if (amount > 999999) return 'Esa cifra parece un error: revísala.';
+
+            const max = Number(values && values.budget_max);
+            if (Number.isFinite(max) && max > 0 && amount > max) {
+                return 'El mínimo no puede ser mayor que el máximo.';
+            }
+            return '';
+        },
+        budget_max(value) {
+            if (!value) return '';
+            const amount = Number(value);
+            if (!Number.isFinite(amount) || amount < 0) return 'El presupuesto no puede ser negativo.';
+            if (amount > 999999) return 'Esa cifra parece un error: revísala.';
             return '';
         },
         category_id(value) {
-            return value ? '' : 'Elige una categoría para tu publicación.';
+            return value ? '' : 'Elige una categoría para tu pedido.';
         },
         district(value) {
-            return value ? '' : 'Elige el distrito donde está el artículo.';
+            return value ? '' : 'Elige el distrito donde te viene bien recogerlo.';
         },
     };
 
@@ -103,8 +119,16 @@
         return `${user.id}:${user.role}:${user.seller_status || 'none'}`;
     }
 
+    /**
+     * Cualquiera con cuenta publica un pedido.
+     *
+     * Aquí estaba la puerta que exigía ser vendedor aprobado, y con el modelo
+     * invertido esa puerta sobra: lo que se publica es una necesidad, no
+     * mercancía. Pedir no requiere permiso — ofrecer sí, y esa comprobación
+     * vive ahora donde se responde a un pedido.
+     */
     function canPublish(user) {
-        return !!user && (user.role === 'admin' || user.seller_status === 'approved');
+        return !!user;
     }
 
     function applyUser(user) {
@@ -132,8 +156,8 @@
 
         if (!user) {
             stage.innerHTML = UI.loginGate({
-                title: 'Inicia sesión para publicar',
-                message: 'Publicar artículos en el foro requiere una cuenta. Entra con la tuya '
+                title: 'Inicia sesión para pedir',
+                message: 'Publicar un pedido requiere una cuenta. Entra con la tuya '
                     + 'o crea una: solo te toma un minuto.',
                 icon: '🔐',
             });
@@ -488,7 +512,7 @@
 
     function readValues() {
         const form = q('#publish-form');
-        if (!form) return { title: '', description: '', price: '', category_id: '', condition: '', district: '' };
+        if (!form) return { title: '', description: '', budget_min: '', budget_max: '', category_id: '', condition: '', district: '' };
 
         const data = new FormData(form);
         const text = (key) => String(data.get(key) || '').trim();
@@ -496,7 +520,8 @@
         return {
             title: text('title'),
             description: text('description'),
-            price: text('price'),
+            budget_min: text('budget_min'),
+            budget_max: text('budget_max'),
             category_id: text('category_id'),
             condition: text('condition'),
             district: text('district'),
@@ -564,17 +589,19 @@
         const user = state.user || {};
         const category = findCategory(values.category_id);
         const emoji = state.emoji || (category ? category.icon : '🛍️');
-        const title = values.title || 'Tu artículo';
+        const title = values.title || 'Lo que buscas';
         const district = values.district || user.district || 'Arequipa';
-        const price = Number(values.price);
+        const budgetMin = Number(values.budget_min);
+        const budgetMax = Number(values.budget_max);
 
         return {
             id: 'preview',
             title,
             description: values.description
-                || 'Aquí aparecerá tu descripción: el estado real del artículo, lo que incluyes y por qué lo vendes.',
-            price: Number.isFinite(price) && price > 0 ? price : 0,
-            condition: values.condition || 'Buen estado',
+                || 'Aquí aparecerá tu descripción: qué buscas exactamente, para qué lo quieres y qué detalles importan.',
+            budget_min: Number.isFinite(budgetMin) && budgetMin > 0 ? budgetMin : 0,
+            budget_max: Number.isFinite(budgetMax) && budgetMax > 0 ? budgetMax : 0,
+            condition: values.condition || 'Cualquiera que funcione',
             emoji,
             image_url: global.DiscoverySeed.createImage(title, emoji),
             category: category
@@ -632,7 +659,7 @@
        ====================================================================== */
 
     function hasContent(values) {
-        return !!(values.title || values.description || values.price);
+        return !!(values.title || values.description || values.budget_min || values.budget_max);
     }
 
     function saveDraft(values) {
@@ -677,7 +704,8 @@
 
         setValue('#publish-title', draft.title);
         setValue('#publish-description', draft.description);
-        setValue('#publish-price', draft.price);
+        setValue('#publish-budget-min', draft.budget_min);
+        setValue('#publish-budget-max', draft.budget_max);
         setValue('#publish-category', draft.category_id);
         setValue('#publish-district', draft.district);
 
@@ -837,9 +865,10 @@
             const result = await api.createRequest({
                 title: values.title,
                 description: values.description,
-                price: Number(values.price),
+                budget_min: values.budget_min,
+                budget_max: values.budget_max,
                 category_id: values.category_id,
-                condition: values.condition || 'Buen estado',
+                condition: values.condition || 'Cualquiera que funcione',
                 district: values.district,
                 emoji: state.emoji || (category ? category.icon : ''),
             });
@@ -847,7 +876,7 @@
             clearDraft();
             state.dirty = false;
             disableUnloadGuard();
-            showSuccess(result.post);
+            showSuccess(result.request);
         } catch (error) {
             // El servidor explica por qué bloquea (403 de vendedor no aprobado,
             // 401 de sesión caducada). Se muestra su mensaje tal cual.

@@ -722,3 +722,30 @@
     .publish-emoji:hover,
     .publish-emoji.is-selected { transform: none; }
 }
+
+/* --------------------------------------------------------------------------
+   Presupuesto: un rango, no un precio
+
+   Quien pide no fija un precio, da una horquilla — y puede dejarla en blanco.
+   Los dos campos comparten fila y en móvil se apilan, porque «S/ desde» y
+   «S/ hasta» lado a lado no caben en 360 px sin recortarse.
+   -------------------------------------------------------------------------- */
+.publish-budget {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.publish-budget .publish-price { flex: 1 1 0; min-width: 0; }
+
+.publish-budget-sep {
+    flex: 0 0 auto;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+@media (max-width: 420px) {
+    .publish-budget { flex-wrap: wrap; }
+    .publish-budget .publish-price { flex: 1 1 100%; }
+    .publish-budget-sep { display: none; }
+}

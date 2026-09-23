@@ -230,6 +230,10 @@
     /* Estado de venta repartido por el catálogo. Once posiciones para que
        `seed % 11` reparta: la mayoría disponibles, dos reservadas y una
        vendida, que es más o menos lo que se ve en un tablón real. */
+    /* Hasta dónde cede quien pide: lo primero que un vendedor mira para
+       decidir si le merece la pena contestar. */
+    const ACCEPTS = ['Solo nuevo', 'Como nuevo o mejor', 'Cualquiera que funcione'];
+
     const AVAILABILITY = [
         'available', 'available', 'available', 'reserved', 'available',
         'available', 'sold', 'available', 'available', 'reserved', 'available',
@@ -394,6 +398,7 @@
                 title,
                 description,
                 emoji,
+                condition: ACCEPTS[seed % ACCEPTS.length],
                 /* Una ilustración, no una foto: el objeto todavía no existe —
                    es lo que alguien busca. Las fotos reales las trae la oferta
                    del vendedor, que sí tiene el artículo delante. */
@@ -591,6 +596,7 @@
                     title,
                     description,
                     emoji,
+                    condition: ACCEPTS[(sIndex + k) % ACCEPTS.length],
                     image_url: createImage(title, emoji),
                     budget_min: budgetMin,
                     budget_max: budgetMax,

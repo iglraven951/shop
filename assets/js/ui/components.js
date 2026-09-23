@@ -279,6 +279,7 @@
                 <div class="post-tags">
                     ${availabilityBadge(post)}
                     <span class="badge badge-brand">${escapeHtml(post.category.icon)} ${escapeHtml(post.category.name)}</span>
+                    ${post.condition ? `<span class="badge">${escapeHtml(post.condition)}</span>` : ''}
                     ${budgetTag(post)}
                 </div>
             </div>

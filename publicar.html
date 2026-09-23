@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Publicar artículo · DiscoveryShop</title>
-    <meta name="description" content="Publica tu artículo de segunda mano en el foro de Arequipa: describe su estado real, pon tu precio en soles y elige tu distrito en menos de un minuto.">
+    <title>Cuéntanos qué buscas · DiscoveryShop</title>
+    <meta name="description" content="Pide lo que necesitas y deja que las tiendas de Arequipa te respondan. Describe qué buscas, pon tu presupuesto y elige tu distrito en menos de un minuto.">
     <meta name="theme-color" content="#070c14">
     <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
     <link rel="apple-touch-icon" href="assets/img/logo.png">
@@ -28,12 +28,12 @@
             <header class="publish-head">
                 <p class="publish-eyebrow">
                     <span class="publish-eyebrow-mark" aria-hidden="true"><svg class="brand-svg" viewBox="0 0 40 40" fill="none" aria-hidden="true" focusable="false"><path d="M13.4 10.6 9.1 29.4a1.1 1.1 0 0 0 1.07 1.35h3.23Z" fill="currentColor" opacity="0.5"/><path d="M16.6 11.2V9.4a4.6 4.6 0 0 1 9.2 0v1.8" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><mask id="publicar-mark"><rect width="40" height="40" fill="#fff"/><circle cx="21.3" cy="19.4" r="5.2" fill="none" stroke="#000" stroke-width="2.3"/><path d="m25.2 23.3 4.6 4.6" stroke="#000" stroke-width="2.5" stroke-linecap="round"/></mask><path d="M13.4 10.6h15.9a1.6 1.6 0 0 1 1.6 1.45l1.62 17.1a1.6 1.6 0 0 1-1.6 1.75H10.9a1.1 1.1 0 0 1-1.07-1.35Z" fill="currentColor" mask="url(#publicar-mark)"/></svg></span>
-                    Foro de segunda mano · Arequipa
+                    Comercio inverso · Arequipa
                 </p>
-                <h1 class="publish-title">Publicar artículo</h1>
+                <h1 class="publish-title">Cuéntanos qué buscas</h1>
                 <p class="publish-subtitle">
-                    Cuenta qué vendes, en qué estado está y cuánto pides. Cuanto más claro lo
-                    expliques, menos preguntas tendrás que responder después.
+                    Describe lo que necesitas, aunque sea algo muy específico. Cuanto más claro lo
+                    expliques, mejores respuestas recibirás. Luego solo espera.
                 </p>
             </header>
 
@@ -74,9 +74,9 @@
                     <header class="publish-section-head">
                         <span class="publish-section-step" aria-hidden="true">1</span>
                         <div class="publish-section-text">
-                            <h2 class="publish-section-title">Qué publicas</h2>
+                            <h2 class="publish-section-title">Qué buscas</h2>
                             <p class="publish-section-hint">
-                                Un título honesto y la categoría correcta hacen que te encuentren.
+                                Un título claro y la categoría correcta hacen que te lo encuentren.
                             </p>
                         </div>
                     </header>
@@ -93,7 +93,7 @@
                                 <span class="publish-counter" id="publish-title-counter" aria-hidden="true">0 / 90</span>
                             </div>
                             <input class="input" type="text" id="publish-title" name="title"
-                                   placeholder="Bicicleta montañera aro 29 casi sin uso"
+                                   placeholder="Lámpara vintage de mesa"
                                    maxlength="200" autocomplete="off" spellcheck="true"
                                    aria-describedby="publish-title-hint publish-title-error" required>
                             <p class="field-hint" id="publish-title-hint">Entre 4 y 90 caracteres.</p>
@@ -111,24 +111,24 @@
                                 <option value="">Elige una categoría</option>
                             </select>
                             <p class="field-hint" id="publish-category-hint">
-                                Determina el icono por defecto y dónde aparecerá al filtrar.
+                                Determina el icono por defecto y qué tiendas verán tu pedido.
                             </p>
                             <p class="field-error" id="publish-category-error" aria-live="polite"></p>
                         </div>
 
                         <fieldset class="publish-fieldset">
                             <legend class="label">
-                                Estado del artículo
+                                ¿En qué estado te sirve?
                                 <span class="required" aria-hidden="true">*</span>
                                 <span class="sr-only">(obligatorio)</span>
                             </legend>
 
                             <div class="publish-conditions">
                                 <label class="publish-condition">
-                                    <input type="radio" name="condition" value="Nuevo">
+                                    <input type="radio" name="condition" value="Solo nuevo">
                                     <span class="publish-condition-body">
                                         <span class="publish-condition-name">
-                                            <span aria-hidden="true">✨</span> Nuevo
+                                            <span aria-hidden="true">✨</span> Solo nuevo
                                         </span>
                                         <span class="publish-condition-text">
                                             Sin estrenar, con su caja, etiquetas o precinto original.
@@ -137,25 +137,25 @@
                                 </label>
 
                                 <label class="publish-condition">
-                                    <input type="radio" name="condition" value="Como nuevo">
+                                    <input type="radio" name="condition" value="Como nuevo o mejor">
                                     <span class="publish-condition-body">
                                         <span class="publish-condition-name">
-                                            <span aria-hidden="true">👌</span> Como nuevo
+                                            <span aria-hidden="true">👌</span> Como nuevo o mejor
                                         </span>
                                         <span class="publish-condition-text">
-                                            Lo usaste muy poco y no tiene marcas visibles de uso.
+                                            Usado poco y sin marcas visibles. Aceptas segunda mano cuidada.
                                         </span>
                                     </span>
                                 </label>
 
                                 <label class="publish-condition">
-                                    <input type="radio" name="condition" value="Buen estado" checked>
+                                    <input type="radio" name="condition" value="Cualquiera que funcione" checked>
                                     <span class="publish-condition-body">
                                         <span class="publish-condition-name">
-                                            <span aria-hidden="true">👍</span> Buen estado
+                                            <span aria-hidden="true">👍</span> Cualquiera que funcione
                                         </span>
                                         <span class="publish-condition-text">
-                                            Se usó con normalidad, funciona bien y tiene señales leves de uso.
+                                            Te da igual que tenga señales de uso mientras cumpla su función.
                                         </span>
                                     </span>
                                 </label>
@@ -164,7 +164,7 @@
 
                         <div class="field">
                             <div class="publish-label-row">
-                                <span class="label" id="publish-emoji-label">Icono de la publicación</span>
+                                <span class="label" id="publish-emoji-label">Icono del pedido</span>
                                 <span class="publish-counter" id="publish-emoji-current" aria-hidden="true"></span>
                             </div>
                             <!-- Los botones los genera publish.js a partir de una sola lista -->
@@ -184,7 +184,7 @@
                     <header class="publish-section-head">
                         <span class="publish-section-step" aria-hidden="true">2</span>
                         <div class="publish-section-text">
-                            <h2 class="publish-section-title">Descripción</h2>
+                            <h2 class="publish-section-title">Descríbelo</h2>
                             <p class="publish-section-hint">
                                 Aquí se decide si te escriben o siguen de largo.
                             </p>
@@ -237,7 +237,7 @@
                     <header class="publish-section-head">
                         <span class="publish-section-step" aria-hidden="true">3</span>
                         <div class="publish-section-text">
-                            <h2 class="publish-section-title">Precio y ubicación</h2>
+                            <h2 class="publish-section-title">Presupuesto y zona</h2>
                             <p class="publish-section-hint">
                                 Un precio realista y un distrito claro aceleran la venta.
                             </p>
@@ -247,19 +247,32 @@
                     <div class="publish-section-body">
                         <div class="publish-row">
                             <div class="field">
-                                <label class="label" for="publish-price">
-                                    Precio
-                                    <span class="required" aria-hidden="true">*</span>
-                                    <span class="sr-only">(obligatorio)</span>
+                                <label class="label" for="publish-budget-min">
+                                    Presupuesto
                                 </label>
-                                <div class="publish-price">
-                                    <span class="publish-price-prefix" aria-hidden="true">S/</span>
-                                    <input class="input publish-price-input" type="number" id="publish-price"
-                                           name="price" min="1" step="1" inputmode="decimal"
-                                           placeholder="0" autocomplete="off"
-                                           aria-describedby="publish-price-hint publish-price-error" required>
+                                <div class="publish-budget">
+                                    <div class="publish-price">
+                                        <span class="publish-price-prefix" aria-hidden="true">S/</span>
+                                        <input class="input publish-price-input" type="number" id="publish-budget-min"
+                                               name="budget_min" min="0" step="1" inputmode="decimal"
+                                               placeholder="desde" autocomplete="off"
+                                               aria-label="Presupuesto mínimo en soles"
+                                               aria-describedby="publish-price-hint publish-price-error">
+                                    </div>
+                                    <span class="publish-budget-sep" aria-hidden="true">–</span>
+                                    <div class="publish-price">
+                                        <span class="publish-price-prefix" aria-hidden="true">S/</span>
+                                        <input class="input publish-price-input" type="number" id="publish-budget-max"
+                                               name="budget_max" min="0" step="1" inputmode="decimal"
+                                               placeholder="hasta" autocomplete="off"
+                                               aria-label="Presupuesto máximo en soles"
+                                               aria-describedby="publish-price-hint publish-price-error">
+                                    </div>
                                 </div>
-                                <p class="field-hint" id="publish-price-hint">En soles. Debe ser mayor que cero.</p>
+                                <p class="field-hint" id="publish-price-hint">
+                                    Opcional, pero ayuda: quien tenga lo que buscas sabrá si le encaja.
+                                    Puedes dejarlo en blanco si todavía no tienes idea.
+                                </p>
                                 <p class="field-error" id="publish-price-error" aria-live="polite"></p>
                             </div>
 

@@ -33,6 +33,8 @@
     const state = {
         post: null,
         comments: [],
+        offers: [],
+        deal: null,
         user: null,
         map: null,
     };
@@ -139,16 +141,16 @@
 
         return `
         <div class="post-actions" role="group" aria-label="Acciones de la publicación">
-            <button class="post-action${post.liked ? ' is-active is-like' : ''}" type="button"
-                    data-action="like" data-id="${id}" aria-pressed="${!!post.liked}">
-                <span class="post-action-icon">${post.liked ? I.heartFill : I.heart}</span>
-                <span class="post-action-label">Me gusta</span>
+            <button class="post-action${post.me_too_by_me ? ' is-active is-like' : ''}" type="button"
+                    data-action="me-too" data-id="${id}" aria-pressed="${!!post.me_too_by_me}">
+                <span class="post-action-icon">${post.me_too_by_me ? I.handFill : I.hand}</span>
+                <span class="post-action-label">También lo busco</span>
             </button>
 
-            <button class="post-action${post.interested_by_me ? ' is-active is-interest' : ''}" type="button"
-                    data-action="interest" data-id="${id}" aria-pressed="${!!post.interested_by_me}">
-                <span class="post-action-icon">${post.interested_by_me ? I.handFill : I.hand}</span>
-                <span class="post-action-label">Me interesa</span>
+            <button class="post-action${post.my_offer ? ' is-active is-interest' : ''}" type="button"
+                    data-action="offer" data-id="${id}">
+                <span class="post-action-icon">${post.my_offer ? I.heartFill : I.heart}</span>
+                <span class="post-action-label">${post.my_offer ? 'Ya respondiste' : 'Lo tengo'}</span>
             </button>
 
             <button class="post-action" type="button" data-action="comment" data-id="${id}">
@@ -712,11 +714,11 @@
         const card = $('#seller-card');
         if (!card) return;
 
-        const author = post.author;
+        const author = post.buyer;
         const authorHref = url.build('index.html', { author_id: author.id });
 
         card.innerHTML = `
-            <h2 class="sr-only" id="seller-card-title">Quién publica</h2>
+            <h2 class="sr-only" id="seller-card-title">Quién lo busca</h2>
 
             <div class="seller-card-head">
                 <span class="avatar avatar-lg" aria-hidden="true">${escapeHtml(format.initials(author.username))}</span>
@@ -734,7 +736,7 @@
 
             <dl class="seller-card-stats" id="seller-stats">
                 <div class="seller-card-stat">
-                    <dt class="seller-card-stat-label">Publicaciones</dt>
+                    <dt class="seller-card-stat-label">Pedidos</dt>
                     <dd class="seller-card-stat-value" data-stat="posts">—</dd>
                 </div>
                 <div class="seller-card-stat">
@@ -795,11 +797,11 @@
 
         // La fecha de alta real solo la conocemos si el servidor la envía o si
         // la publicación es nuestra; si no, decimos desde cuándo publica.
-        const accountDate = post.author.created_at
+        const accountDate = post.buyer.created_at
             || (post.is_mine && state.user ? state.user.created_at : null);
 
         try {
-            const result = await api.getRequests({ author_id: post.author.id, per_page: 48 });
+            const result = await api.getRequests({ buyer_id: post.buyer.id, per_page: 48 });
             const total = result.pagination ? result.pagination.total : result.requests.length;
 
             if (postsCell) {
@@ -854,6 +856,384 @@
         } catch (error) {
             // Las relacionadas son un extra: si fallan, la sección no aparece.
         }
+    }
+
+    /* ======================================================================
+       Respuestas al pedido
+
+       Es el tramo central del storyboard: el vendedor responde (panel 8), el
+       comprador ve la oferta y la acepta (paneles 6 y 7), confirma la compra
+       (panel 9) y califica (panel 10). Todo cuelga de esta sección.
+       ====================================================================== */
+
+    /** Estrellas como texto, para una calificación ya puesta. */
+    function starsMarkup(value, { interactive = false } = {}) {
+        const stars = [1, 2, 3, 4, 5].map((n) => {
+            if (!interactive) {
+                return `<span class="rating-star${n <= value ? ' is-on' : ''}" aria-hidden="true">★</span>`;
+            }
+            return `<button class="rating-star is-interactive" type="button"
+                            data-stars="${n}" aria-label="${n} ${n === 1 ? 'estrella' : 'estrellas'}">★</button>`;
+        }).join('');
+
+        return `<span class="rating-stars"${interactive ? ' role="group" aria-label="Calificación"' : ''}>${stars}</span>`;
+    }
+
+    /** Una oferta vista por quien pidió: quién es, cuánto pide y desde dónde. */
+    function offerCardMarkup(offer, request) {
+        const canAct = Boolean(request.is_mine) && offer.status === 'pending'
+            && request.state === 'open';
+
+        const rating = offer.seller.rating_count
+            ? `${starsMarkup(Math.round(offer.seller.rating))}
+               <span class="offer-rating-text">${escapeHtml(String(offer.seller.rating))} ·
+               ${offer.seller.rating_count} ${offer.seller.rating_count === 1 ? 'compra' : 'compras'}</span>`
+            : '<span class="offer-rating-text">Sin calificaciones todavía</span>';
+
+        const photos = (offer.photos || []).slice(0, 4).map((photo) => `
+            <img class="offer-photo" src="${escapeAttr(photo.url)}" alt="" loading="lazy" decoding="async">`).join('');
+
+        return `
+        <article class="offer-card${offer.status === 'accepted' ? ' is-accepted' : ''}"
+                 data-offer-id="${escapeAttr(offer.id)}">
+            <header class="offer-head">
+                <div class="offer-shop">
+                    <span class="offer-shop-name">${escapeHtml(offer.shop_name || offer.seller.username)}</span>
+                    <span class="offer-rating">${rating}</span>
+                </div>
+                <span class="offer-price">${escapeHtml(format.money(offer.price))}</span>
+            </header>
+
+            <p class="offer-message">${escapeHtml(offer.message)}</p>
+
+            ${photos ? `<div class="offer-photos">${photos}</div>` : ''}
+
+            <p class="offer-meta">
+                <span>${UI.icons.pin} ${escapeHtml(offer.district)}</span>
+                ${offer.shop_address_hint ? `<span>${escapeHtml(offer.shop_address_hint)}</span>` : ''}
+                <span>${escapeHtml(format.relative(offer.created_at))}</span>
+            </p>
+
+            ${offer.status === 'accepted' ? `
+            <p class="offer-accepted-note">
+                ✅ Aceptaste esta oferta. Coordina los detalles por la conversación.
+            </p>` : ''}
+
+            ${canAct ? `
+            <div class="offer-actions">
+                <button class="btn btn-primary btn-sm" type="button" data-accept="${escapeAttr(offer.id)}">
+                    Aceptar
+                </button>
+                <button class="btn btn-ghost btn-sm" type="button" data-decline="${escapeAttr(offer.id)}">
+                    Descartar
+                </button>
+            </div>` : ''}
+        </article>`;
+    }
+
+    /** El formulario con el que un vendedor responde: panel 8 del storyboard. */
+    function offerFormMarkup(request) {
+        if (request.my_offer) {
+            return `
+            <div class="offer-mine">
+                <p class="offer-mine-title">Ya respondiste a este pedido</p>
+                ${offerCardMarkup(request.my_offer, request)}
+            </div>`;
+        }
+
+        return `
+        <form class="offer-form" id="offer-form" novalidate>
+            <p class="offer-form-intro">
+                Si tienes lo que busca, díselo. Cuéntale qué tienes, dónde estás y
+                cuánto cuesta: es justo lo que necesita para decidir.
+            </p>
+
+            <div class="field">
+                <label class="label" for="offer-price">
+                    Precio <span class="required" aria-hidden="true">*</span>
+                </label>
+                <div class="publish-price">
+                    <span class="publish-price-prefix" aria-hidden="true">S/</span>
+                    <input class="input publish-price-input" type="number" id="offer-price"
+                           min="1" step="1" inputmode="decimal" placeholder="0" required>
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="label" for="offer-message">
+                    Tu mensaje <span class="required" aria-hidden="true">*</span>
+                </label>
+                <textarea class="textarea" id="offer-message" rows="4" maxlength="700"
+                          placeholder="Hola, soy de mi tienda. Tengo justo lo que buscas, en buen estado. Estamos en…"></textarea>
+                <p class="field-hint">Mínimo 15 caracteres. Di quién eres y dónde estás.</p>
+            </div>
+
+            <div class="field">
+                <label class="label" for="offer-address">Dónde pueden verlo</label>
+                <input class="input" type="text" id="offer-address" maxlength="120"
+                       placeholder="Calle San Francisco 123, Cercado">
+                <p class="field-hint">Opcional. Una referencia basta; no hace falta la dirección exacta.</p>
+            </div>
+
+            <p class="field-error" id="offer-error" aria-live="polite"></p>
+
+            <button class="btn btn-primary" type="submit" id="offer-submit">Enviar mi oferta</button>
+        </form>`;
+    }
+
+    /** El trato en curso: confirmar la compra y calificar (paneles 9 y 10). */
+    function dealMarkup(deal) {
+        if (!deal) return '';
+
+        if (!deal.confirmed_at) {
+            return `
+            <div class="deal-card" data-deal-id="${escapeAttr(deal.id)}">
+                <p class="deal-title">Trato acordado con ${escapeHtml(deal.shop_name || deal.seller_name)}</p>
+                <p class="deal-text">
+                    Cuando tengas el producto en la mano, confírmalo aquí. Eso cierra el
+                    pedido y te deja calificar la experiencia.
+                </p>
+                <p class="deal-price">${escapeHtml(format.money(deal.price))}</p>
+                <button class="btn btn-success" type="button" data-confirm-deal="${escapeAttr(deal.id)}">
+                    Confirmar compra realizada
+                </button>
+            </div>`;
+        }
+
+        if (!deal.rating) {
+            return `
+            <div class="deal-card is-confirmed" data-deal-id="${escapeAttr(deal.id)}">
+                <p class="deal-title">✅ Compra realizada</p>
+                <p class="deal-text">¡Gracias por tu compra! Cuéntanos cómo fue.</p>
+
+                <form class="rating-form" id="rating-form">
+                    <span class="label">Califica tu experiencia</span>
+                    ${starsMarkup(0, { interactive: true })}
+                    <input type="hidden" id="rating-value" value="0">
+                    <textarea class="textarea" id="rating-comment" rows="3" maxlength="500"
+                              placeholder="¿Qué tal fue el trato? ¿Era como lo esperabas?"></textarea>
+                    <p class="field-error" id="rating-error" aria-live="polite"></p>
+                    <button class="btn btn-primary" type="submit">Enviar</button>
+                </form>
+            </div>`;
+        }
+
+        return `
+        <div class="deal-card is-rated">
+            <p class="deal-title">✅ Compra realizada y calificada</p>
+            <p class="deal-rating">${starsMarkup(deal.rating.stars)}</p>
+            ${deal.rating.comment ? `<p class="deal-text">«${escapeHtml(deal.rating.comment)}»</p>` : ''}
+        </div>`;
+    }
+
+    /** Pinta la sección entera según quién mira y en qué punto está el pedido. */
+    function renderOffers() {
+        const body = $('#offers-body');
+        const post = state.post;
+        if (!body || !post) return;
+
+        const user = state.user;
+        const isOwner = Boolean(post.is_mine);
+        const isSeller = Boolean(user && user.seller_status === 'approved');
+
+        // Quien no tiene nada que hacer aquí solo ve cuántas respuestas hay
+        if (!user) {
+            body.innerHTML = `
+                <p class="offers-empty">
+                    ${post.offers_count
+                        ? `${format.number(post.offers_count)} ${post.offers_count === 1 ? 'tienda ha respondido' : 'tiendas han respondido'} a este pedido.`
+                        : 'Todavía nadie ha respondido a este pedido.'}
+                    Inicia sesión para participar.
+                </p>`;
+            return;
+        }
+
+        if (isOwner) {
+            const offers = state.offers || [];
+
+            body.innerHTML = `
+                ${dealMarkup(state.deal)}
+                ${offers.length
+                    ? offers.map((offer) => offerCardMarkup(offer, post)).join('')
+                    : `<p class="offers-empty">
+                           Todavía nadie ha respondido. Te avisaremos en cuanto alguien lo haga.
+                       </p>`}`;
+
+            bindOfferActions(body);
+            return;
+        }
+
+        if (isSeller) {
+            body.innerHTML = offerFormMarkup(post);
+            bindOfferForm(body);
+            return;
+        }
+
+        body.innerHTML = `
+            <p class="offers-empty">
+                ${post.offers_count
+                    ? `${format.number(post.offers_count)} ${post.offers_count === 1 ? 'tienda ha respondido' : 'tiendas han respondido'}.`
+                    : 'Todavía nadie ha respondido.'}
+                Para responder pedidos necesitas una cuenta de vendedor aprobada.
+            </p>`;
+    }
+
+    /** Aceptar, descartar, confirmar la compra y calificar. */
+    function bindOfferActions(container) {
+        container.addEventListener('click', async (event) => {
+            const accept = event.target.closest('[data-accept]');
+            const decline = event.target.closest('[data-decline]');
+            const confirm = event.target.closest('[data-confirm-deal]');
+            const star = event.target.closest('[data-stars]');
+
+            if (star) {
+                const value = Number(star.dataset.stars);
+                const hidden = container.querySelector('#rating-value');
+                if (hidden) hidden.value = String(value);
+                container.querySelectorAll('.rating-star.is-interactive').forEach((s) => {
+                    s.classList.toggle('is-on', Number(s.dataset.stars) <= value);
+                });
+                return;
+            }
+
+            if (accept) {
+                accept.classList.add('is-loading');
+                try {
+                    const result = await api.acceptOffer(accept.dataset.accept);
+                    Object.assign(state.post, result.request);
+                    state.deal = result.deal;
+                    toast.success('Oferta aceptada. Ya pueden coordinar los detalles.');
+                    await loadOffers();
+                    renderArticle(state.post);
+                } catch (error) {
+                    accept.classList.remove('is-loading');
+                    toast.error(error.message || 'No se pudo aceptar la oferta');
+                }
+                return;
+            }
+
+            if (decline) {
+                try {
+                    await api.declineOffer(decline.dataset.decline);
+                    await loadOffers();
+                } catch (error) {
+                    toast.error(error.message || 'No se pudo descartar la oferta');
+                }
+                return;
+            }
+
+            if (confirm) {
+                confirm.classList.add('is-loading');
+                try {
+                    const result = await api.confirmDeal(confirm.dataset.confirmDeal);
+                    state.deal = result.deal;
+                    if (result.request) Object.assign(state.post, result.request);
+                    toast.success('¡Gracias por tu compra!');
+                    renderOffers();
+                    renderArticle(state.post);
+                } catch (error) {
+                    confirm.classList.remove('is-loading');
+                    toast.error(error.message || 'No se pudo confirmar la compra');
+                }
+            }
+        });
+
+        const ratingForm = container.querySelector('#rating-form');
+        if (ratingForm) {
+            ratingForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+
+                const stars = Number((container.querySelector('#rating-value') || {}).value || 0);
+                const error = container.querySelector('#rating-error');
+
+                if (!stars) {
+                    if (error) error.textContent = 'Elige cuántas estrellas le das.';
+                    return;
+                }
+
+                const comment = (container.querySelector('#rating-comment') || {}).value || '';
+
+                try {
+                    const result = await api.rateDeal(state.deal.id, stars, comment);
+                    state.deal = result.deal;
+                    toast.success('Gracias por calificar');
+                    renderOffers();
+                } catch (err) {
+                    if (error) error.textContent = err.message || 'No se pudo enviar la calificación';
+                }
+            });
+        }
+    }
+
+    /** El vendedor envía su oferta. */
+    function bindOfferForm(container) {
+        const form = container.querySelector('#offer-form');
+        if (!form) return;
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const submit = form.querySelector('#offer-submit');
+            const error = form.querySelector('#offer-error');
+            error.textContent = '';
+            submit.classList.add('is-loading');
+
+            try {
+                await api.createOffer(state.post.id, {
+                    price: Number(form.querySelector('#offer-price').value),
+                    message: form.querySelector('#offer-message').value,
+                    shop_address_hint: form.querySelector('#offer-address').value,
+                });
+
+                toast.success('Oferta enviada. Te avisamos si la aceptan.');
+
+                const fresh = await api.getRequest(state.post.id);
+                Object.assign(state.post, fresh.request);
+                renderOffers();
+                renderArticle(state.post);
+            } catch (err) {
+                submit.classList.remove('is-loading');
+                error.textContent = err.message || 'No se pudo enviar la oferta';
+            }
+        });
+    }
+
+    /** Trae las ofertas y el trato en curso, si quien mira puede verlos. */
+    async function loadOffers() {
+        try {
+            await fetchOffers();
+        } catch (error) {
+            /* Las respuestas son la parte central de la ficha: si fallan, hay
+               que decirlo, no dejar un hueco mudo que parezca que no hay nada. */
+            const body = $('#offers-body');
+            if (body) {
+                body.innerHTML = UI.emptyState({
+                    icon: '⚠️',
+                    title: 'No se pudieron cargar las respuestas',
+                    message: error.message || 'Vuelve a intentarlo en un momento.',
+                });
+            }
+            console.error('[DiscoveryShop] loadOffers', error);
+        }
+    }
+
+    async function fetchOffers() {
+        const post = state.post;
+        if (!post) return;
+
+        if (post.is_mine) {
+            const [offers, deals] = await Promise.all([
+                api.getOffers(post.id).catch(() => null),
+                api.getDeals('buyer').catch(() => null),
+            ]);
+
+            state.offers = offers ? offers.offers : [];
+            state.deal = deals
+                ? (deals.deals || []).find((d) => d.request_id === post.id) || null
+                : null;
+        }
+
+        renderOffers();
     }
 
     /* ======================================================================
@@ -1082,7 +1462,7 @@
         let post;
         try {
             const data = await api.getRequest(id);
-            post = UI.normalizePost(data.post);
+            post = UI.normalizePost(data.request);
         } catch (error) {
             const missing = error.status === 404;
 
@@ -1113,6 +1493,7 @@
 
         // Lo accesorio se carga después de que la ficha ya esté en pantalla.
         loadComments(post);
+        loadOffers();
         loadSellerStats(post);
         loadRelated(post);
 

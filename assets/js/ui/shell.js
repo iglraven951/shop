@@ -79,9 +79,9 @@
                     <div class="input-group">
                         <span class="input-icon" aria-hidden="true">${ICON.search}</span>
                         <input type="search" class="input" id="global-search"
-                               placeholder="Buscar productos, categorías o vendedores…"
+                               placeholder="Buscar pedidos, categorías o distritos…"
                                autocomplete="off" role="combobox" aria-expanded="false"
-                               aria-controls="search-suggestions" aria-label="Buscar en DiscoveryShop">
+                               aria-controls="search-suggestions" aria-label="Buscar pedidos en DiscoveryShop">
                         <span class="search-kbd" aria-hidden="true"><kbd>/</kbd></span>
                     </div>
                     <div class="search-suggestions" id="search-suggestions" role="listbox" hidden></div>
