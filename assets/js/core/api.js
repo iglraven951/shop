@@ -353,7 +353,7 @@
         /**
          * @param {object} [filters] - q, category, district, condition,
          *   min_price, max_price, sort, page, per_page, author_id.
-         *   sort: recent | price_asc | price_desc | popular | interest | commented
+         *   sort: recent | budget_asc | budget_desc | popular | interest | commented
          */
         getRequests(filters = {}) {
             return this.request(`/api/requests${this.toQuery(filters)}`);

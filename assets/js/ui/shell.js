@@ -311,7 +311,7 @@
                         <span class="suggestion-title">${escapeHtml(product.title)}</span>
                         <span class="suggestion-meta">${escapeHtml(product.category.name)} · ${escapeHtml(product.location.city)}</span>
                     </span>
-                    <span class="suggestion-price">${escapeHtml(format.money(product.price))}</span>
+                    <span class="suggestion-price">${escapeHtml(UI.budgetText(product))}</span>
                 </button>
             `).join('');
 
@@ -422,7 +422,7 @@
                     <div>
                         <h3 class="footer-heading">Explorar</h3>
                         <div class="footer-links">
-                            <a href="index.html">Todas las publicaciones</a>
+                            <a href="index.html">Todos los pedidos</a>
                             <a href="mapa.html">Tiendas que responden</a>
                             <a href="index.html?sort=popular">Más populares</a>
                             <a href="index.html?sort=recent">Recién publicados</a>
@@ -471,11 +471,11 @@
                     title: 'Cómo funciona DiscoveryShop',
                     content: `
                         <div style="display: flex; flex-direction: column; gap: var(--space-4); font-size: var(--text-sm); color: var(--text-secondary); line-height: 1.7;">
-                            <p><strong style="color: var(--text-primary);">1. Explora el foro.</strong> Las publicaciones aparecen como en una red social: filtra por categoría, distrito, precio y estado del artículo.</p>
-                            <p><strong style="color: var(--text-primary);">2. Reacciona.</strong> Deja tu corazón, marca «Me interesa» para avisar a quien publica, guarda lo que quieras revisar después y comenta tus dudas a la vista de todos.</p>
-                            <p><strong style="color: var(--text-primary);">3. Ubica.</strong> Cada publicación muestra en un mapa real el distrito de Arequipa donde está el artículo. También puedes ver el mapa con todos los vendedores.</p>
-                            <p><strong style="color: var(--text-primary);">4. Conversa y cierra el trato.</strong> Escribe por mensaje directo y acuerden dónde encontrarse. DiscoveryShop no cobra comisiones ni gestiona pagos: solo conecta a las personas.</p>
-                            <p><strong style="color: var(--text-primary);">5. Publica.</strong> Para publicar necesitas una cuenta de vendedor aprobada. Solicítala al registrarte o desde tu perfil, y el equipo la revisa.</p>
+                            <p><strong style="color: var(--text-primary);">1. Mira lo que busca la gente.</strong> Cada publicación es un pedido de alguien: filtra por categoría, distrito, presupuesto y en qué estado lo acepta.</p>
+                            <p><strong style="color: var(--text-primary);">2. Súmate o responde.</strong> Si buscas lo mismo, marca «También lo busco» y contará como demanda. Si lo tienes, pulsa «Lo tengo» y haz tu oferta.</p>
+                            <p><strong style="color: var(--text-primary);">3. Ubica.</strong> Cada pedido muestra en un mapa el distrito de Arequipa donde hace falta. Y el mapa general reúne a las tiendas que ya han resuelto pedidos.</p>
+                            <p><strong style="color: var(--text-primary);">4. Acepta y cierra el trato.</strong> Al aceptar una oferta se abre el chat con esa tienda y acuerdan dónde verse. DiscoveryShop no cobra comisiones ni gestiona pagos: solo conecta a las personas.</p>
+                            <p><strong style="color: var(--text-primary);">5. Pide lo que buscas.</strong> Con una cuenta basta. Para <em>responder</em> pedidos sí hace falta cuenta de tienda aprobada: solicítala al registrarte o desde tu perfil.</p>
                         </div>
                     `,
                     actions: [{ label: 'Entendido', variant: 'primary' }],
@@ -568,7 +568,7 @@
 
     /** A dónde lleva cada aviso al tocarlo. */
     function notificationHref(item) {
-        if (item.post_id) return `publicacion.html?id=${encodeURIComponent(item.post_id)}`;
+        if (item.request_id) return `publicacion.html?id=${encodeURIComponent(item.request_id)}`;
         if (String(item.type || '').startsWith('seller_')) return 'perfil.html';
         return 'index.html';
     }

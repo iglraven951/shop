@@ -227,17 +227,9 @@
     ];
 
     /** Comentarios verosímiles para poblar las conversaciones del foro. */
-    /* Estado de venta repartido por el catálogo. Once posiciones para que
-       `seed % 11` reparta: la mayoría disponibles, dos reservadas y una
-       vendida, que es más o menos lo que se ve en un tablón real. */
     /* Hasta dónde cede quien pide: lo primero que un vendedor mira para
        decidir si le merece la pena contestar. */
     const ACCEPTS = ['Solo nuevo', 'Como nuevo o mejor', 'Cualquiera que funcione'];
-
-    const AVAILABILITY = [
-        'available', 'available', 'available', 'reserved', 'available',
-        'available', 'sold', 'available', 'available', 'reserved', 'available',
-    ];
 
     /* Comentarios públicos sobre un pedido. No negocian precio: eso va por
        privado con quien ya ofreció. Aquí se afina qué es exactamente lo que
@@ -297,15 +289,50 @@
         'photo-1571335746824-742511d49bce', 'photo-1609630875171-b1321377ee65',
     ];
 
+    /* Qué muestra cada foto, por su posición en `PHOTOS`. Se revisaron las
+       cuarenta montándolas en una rejilla numerada dentro de la propia app:
+       repartirlas por índice ponía un pueblo costero en un pedido de AirPods,
+       y la foto existe precisamente para que se reconozca lo que se busca. */
+    const PHOTOS_BY_CATEGORY = {
+        'cat-celulares': [0, 1, 2, 16],
+        'cat-computo': [5, 6, 7, 4],
+        'cat-audio': [8, 10, 11, 9],
+        'cat-gaming': [13, 14, 12],
+        'cat-camaras': [17, 18, 3],
+        'cat-hogar': [15, 21, 20, 36, 22, 19],
+        'cat-moda': [23, 25, 26, 24],
+        'cat-deportes': [27, 28, 29],
+        'cat-instrumentos': [30, 31, 32],
+        'cat-libros': [33, 34],
+        'cat-bebes': [35],
+        'cat-vehiculos': [39, 37, 38],
+    };
+
     /**
      * URL de una foto del catálogo al tamaño pedido.
-     * @param {number} index - Posición de la publicación.
+     * @param {number} index - Posición dentro del grupo; rota si se pasa.
      * @param {number} [w] - Ancho en píxeles; el alto mantiene 4:3.
      */
     function photoUrl(index, w = 640) {
         const id = PHOTOS[index % PHOTOS.length];
         const h = Math.round(w * 0.75);
         return `https://images.unsplash.com/${id}?w=${w}&h=${h}&fit=crop&q=75&fm=jpg`;
+    }
+
+    /**
+     * Foto que ilustra un pedido: del montón de su categoría, rotando.
+     *
+     * Una categoría sin fotos propias cae al reparto por índice, que al menos
+     * da algo; es preferible a devolver nada y dejar el hueco.
+     *
+     * @param {string} categoryId
+     * @param {number} index - Posición del pedido, para ir alternando.
+     * @param {number} [w]
+     */
+    function photoFor(categoryId, index, w = 640) {
+        const group = PHOTOS_BY_CATEGORY[categoryId];
+        if (!group || !group.length) return photoUrl(index, w);
+        return photoUrl(group[Math.abs(index) % group.length], w);
     }
 
     function build() {
@@ -403,7 +430,7 @@
                    de lo que se busca — que es justo lo que ayuda a un vendedor
                    a reconocerlo. El SVG generado queda de respaldo por si la
                    foto no carga, para que nunca haya un hueco roto. */
-                image_url: photoUrl(index, 640),
+                image_url: photoFor(categoryId, index, 640),
                 fallback_url: createImage(title, emoji),
                 budget_min: budgetMin,
                 budget_max: budgetMax,
@@ -483,8 +510,8 @@
                 price,
                 // Las fotos sí son reales: el vendedor tiene el artículo delante
                 photos: [
-                    { id: `ph-${index}-0`, url: photoUrl(index, 900) },
-                    { id: `ph-${index}-1`, url: photoUrl(index + 7, 900) },
+                    { id: `ph-${index}-0`, url: photoFor(request.category.id, index, 900) },
+                    { id: `ph-${index}-1`, url: photoFor(request.category.id, index + 1, 900) },
                 ],
                 shop_name: seller.shop_name,
                 district: seller.district,
@@ -542,6 +569,7 @@
            ------------------------------------------------------------------ */
 
         const deals = [];
+        const conversations = [];
         const RATING_COMMENTS = [
             '¡Todo excelente! El vendedor fue muy amable y el producto es tal como lo esperaba.',
             'Muy buena atención, respondió rápido y el artículo estaba en perfecto estado.',
@@ -551,12 +579,72 @@
             'Me avisó apenas lo tuvo listo y coincidimos en el centro. Impecable.',
         ];
 
+        /* Cómo suena el final de un trato. Quien pidió confirma la cita y
+           la tienda cierra: son las dos frases que faltan para que la compra
+           tenga principio y fin, no solo una estrella. */
+        const CLOSING = [
+            ['Perfecto, ¿te va bien mañana por la tarde?', 'Claro, te espero. Pregunta por mí al entrar.'],
+            ['Me sirve. ¿Hasta qué hora abren hoy?', 'Hasta las 7. Si vienes más tarde, avísame y te espero.'],
+            ['Lo tomo. ¿Aceptan Yape?', 'Sí, Yape o efectivo, lo que prefieras.'],
+            ['¿Me lo puedes guardar hasta el sábado?', 'Sin problema, te lo aparto con tu nombre.'],
+        ];
+
         /** Cierra un pedido con una oferta y deja la compra calificada. */
         function closeDeal(request, offer, stars, ageDays) {
             offer.status = 'accepted';
             request.state = 'fulfilled';
             request.accepted_offer_id = offer.id;
             request.updated_at = new Date(now - ageDays * 24 * hour).toISOString();
+
+            /* La conversación que cerró la compra. Empieza con la oferta tal
+               cual se envió —incluidas sus fotos, que es lo que hace que
+               alguien diga que sí— y termina donde terminan de verdad: una
+               hora y un sitio en Arequipa. */
+            const [reply, close] = CLOSING[(deals.length + stars) % CLOSING.length];
+            const at = (hoursAgo) => new Date(now - (ageDays * 24 + hoursAgo) * hour).toISOString();
+
+            conversations.push({
+                id: `conv-${String(conversations.length + 1).padStart(3, '0')}`,
+                request_id: request.id,
+                request_title: request.title,
+                request_image: request.image_url,
+                offer_id: offer.id,
+                price: offer.price,
+                participants: [request.buyer.id, offer.seller.id],
+                seller: offer.seller,
+                buyer: request.buyer,
+                messages: [
+                    {
+                        id: `msg-${request.id}-1`,
+                        sender_id: offer.seller.id,
+                        sender_name: offer.seller.shop_name || offer.seller.username,
+                        text: offer.message,
+                        photos: offer.photos || [],
+                        read: true,
+                        created_at: at(6),
+                    },
+                    {
+                        id: `msg-${request.id}-2`,
+                        sender_id: request.buyer.id,
+                        sender_name: request.buyer.username,
+                        text: reply,
+                        photos: [],
+                        read: true,
+                        created_at: at(4),
+                    },
+                    {
+                        id: `msg-${request.id}-3`,
+                        sender_id: offer.seller.id,
+                        sender_name: offer.seller.shop_name || offer.seller.username,
+                        text: close,
+                        photos: [],
+                        read: true,
+                        created_at: at(3),
+                    },
+                ],
+                created_at: at(6),
+                updated_at: at(3),
+            });
 
             deals.push({
                 id: `deal-${String(deals.length + 1).padStart(3, '0')}`,
@@ -599,7 +687,7 @@
                     description,
                     emoji,
                     condition: ACCEPTS[(sIndex + k) % ACCEPTS.length],
-                    image_url: photoUrl(sIndex * 3 + k, 640),
+                    image_url: photoFor(category.id, sIndex * 3 + k, 640),
                     fallback_url: createImage(title, emoji),
                     budget_min: budgetMin,
                     budget_max: budgetMax,
@@ -695,7 +783,41 @@
             count: requests.filter((r) => r.category.id === cat.id && r.status === 'approved').length,
         }));
 
-        return { users, requests, offers, deals, categories, districts: DISTRICTS };
+        /* Dos denuncias abiertas. La moderación por denuncia es la única
+           parte del panel que depende de que alguien de fuera actúe, así que
+           sin ejemplos no hay forma de verla funcionar —ni de probarla—. Se
+           eligen pedidos ya aprobados: denunciar algo que aún no se ve no
+           tendría sentido. */
+        const visible = requests.filter((r) => r.status === 'approved' && r.state === 'open');
+        const reports = [
+            ['duplicado', 'Este mismo pedido está publicado dos veces por la misma persona.', 2],
+            ['engano', 'Pide un artículo con un presupuesto imposible; parece que busca engañar a alguien.', 6],
+        ].map(([category, reason, ageDays], i) => {
+            const request = visible[i * 7];
+            if (!request) return null;
+
+            const reporter = buyers[(i + 3) % buyers.length];
+
+            return {
+                id: `rep-${String(i + 1).padStart(3, '0')}`,
+                request_id: request.id,
+                request_title: request.title,
+                author: request.buyer.username,
+                reporter_id: reporter.id,
+                reporter: reporter.username,
+                category,
+                reason,
+                status: 'open',
+                created_at: new Date(now - ageDays * 24 * hour).toISOString(),
+                resolved_at: null,
+                resolution: null,
+            };
+        }).filter(Boolean);
+
+        return {
+            users, requests, offers, deals, conversations, reports,
+            categories, districts: DISTRICTS,
+        };
     }
 
     global.DiscoverySeed = {

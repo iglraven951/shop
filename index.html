@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DiscoveryShop · Foro de artículos de segunda mano en Arequipa</title>
-    <meta name="description" content="Foro arequipeño para promocionar artículos de segunda mano. Publica, comenta y conecta con vecinos de los 18 distritos. Sin comisiones ni pagos en la plataforma.">
+    <title>DiscoveryShop · Lo que buscas, lo encuentras</title>
+    <meta name="description" content="Comercio inverso arequipeño: publica lo que buscas y las tiendas de los 18 distritos te responden con lo que tienen. Sin comisiones ni pagos en la plataforma.">
     <meta name="theme-color" content="#070c14">
     <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
     <link rel="apple-touch-icon" href="assets/img/logo.png">
@@ -91,7 +91,7 @@
                  la portada. Enseñan de qué va el sitio sin pedir atención.
                  El script las llena con lo último publicado y retira el muro
                  si no hay suficientes. Es decoración pura: sin enlaces, sin
-                 títulos ni precios, fuera del árbol de accesibilidad y sin
+                 títulos ni cifras, fuera del árbol de accesibilidad y sin
                  recoger el ratón, para que no estorbe a los botones. -->
             <div class="showcase" id="showcase" aria-hidden="true" hidden>
                 <div class="showcase-track" id="showcase-track"></div>
@@ -187,7 +187,7 @@
                                 </span>
                                 <input class="input" type="search" id="filter-search" autocomplete="off"
                                        maxlength="120" placeholder="Artículo, marca o vendedor…"
-                                       aria-label="Buscar publicaciones en el foro">
+                                       aria-label="Buscar pedidos en el tablón">
                             </div>
                         </div>
                     </details>
@@ -241,10 +241,10 @@
                         </div>
                     </details>
 
-                    <!-- Precio -->
+                    <!-- Presupuesto -->
                     <details class="filter-group" id="group-price" open>
                         <summary class="filter-summary">
-                            <span class="filter-summary-name">Precio</span>
+                            <span class="filter-summary-name">Presupuesto</span>
                             <span class="filter-summary-value" id="summary-price">Cualquiera</span>
                             <span class="filter-chevron" aria-hidden="true">
                                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 5.5 3 3 3-3"/></svg>
@@ -254,16 +254,16 @@
                         <div class="filter-body">
                             <div class="price-inputs">
                                 <input class="input" type="number" id="filter-min-price" min="0" step="10"
-                                       inputmode="numeric" placeholder="Mín." aria-label="Precio mínimo en soles">
+                                       inputmode="numeric" placeholder="Mín." aria-label="Presupuesto mínimo en soles">
                                 <span class="price-separator" aria-hidden="true">—</span>
                                 <input class="input" type="number" id="filter-max-price" min="0" step="10"
-                                       inputmode="numeric" placeholder="Máx." aria-label="Precio máximo en soles">
+                                       inputmode="numeric" placeholder="Máx." aria-label="Presupuesto máximo en soles">
                             </div>
 
                             <button class="btn btn-secondary btn-sm btn-block feed-price-apply" type="button"
-                                    data-action="apply-price">Aplicar precio</button>
+                                    data-action="apply-price">Aplicar presupuesto</button>
 
-                            <div class="price-presets" role="group" aria-label="Rangos de precio rápidos">
+                            <div class="price-presets" role="group" aria-label="Rangos de presupuesto rápidos">
                                 <button class="price-preset" type="button" data-min="" data-max="200">Hasta S/ 200</button>
                                 <button class="price-preset" type="button" data-min="200" data-max="500">S/ 200 – 500</button>
                                 <button class="price-preset" type="button" data-min="500" data-max="1500">S/ 500 – 1500</button>
@@ -302,10 +302,10 @@
 
                     <!-- Disponibilidad: si el artículo sigue libre, está
                          reservado o ya se vendió. Distinto del estado físico. -->
-                    <details class="filter-group" id="group-availability" open>
+                    <details class="filter-group" id="group-situation" open>
                         <summary class="filter-summary">
                             <span class="filter-summary-name">Situación del pedido</span>
-                            <span class="filter-summary-value" id="summary-availability">Todo</span>
+                            <span class="filter-summary-value" id="summary-situation">Todo</span>
                             <span class="filter-chevron" aria-hidden="true">
                                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 5.5 3 3 3-3"/></svg>
                             </span>
@@ -314,15 +314,15 @@
                         <div class="filter-body">
                             <div class="filter-options">
                                 <label class="choice">
-                                    <input type="checkbox" name="availability" value="open">
+                                    <input type="checkbox" name="situation" value="open">
                                     <span class="choice-text">Abierto</span>
                                 </label>
                                 <label class="choice">
-                                    <input type="checkbox" name="availability" value="matched">
+                                    <input type="checkbox" name="situation" value="matched">
                                     <span class="choice-text">Con oferta aceptada</span>
                                 </label>
                                 <label class="choice">
-                                    <input type="checkbox" name="availability" value="fulfilled">
+                                    <input type="checkbox" name="situation" value="fulfilled">
                                     <span class="choice-text">Resuelto</span>
                                 </label>
                             </div>
@@ -336,17 +336,17 @@
                         <div class="feed-results-heading">
                             <h2 class="results-title" id="results-title">Lo que busca la gente</h2>
                             <p class="results-count" id="results-count" aria-live="polite" aria-atomic="true">
-                                Cargando publicaciones…
+                                Cargando pedidos…
                             </p>
                         </div>
 
                         <div class="results-tools">
                             <div class="sort-control">
                                 <label class="label" for="sort-select">Ordenar</label>
-                                <select class="select" id="sort-select" aria-label="Ordenar publicaciones">
+                                <select class="select" id="sort-select" aria-label="Ordenar pedidos">
                                     <option value="recent">Más recientes</option>
-                                    <option value="price_asc">Precio: menor a mayor</option>
-                                    <option value="price_desc">Precio: mayor a menor</option>
+                                    <option value="budget_asc">Presupuesto: menor a mayor</option>
+                                    <option value="budget_desc">Presupuesto: mayor a menor</option>
                                     <option value="popular">Más populares</option>
                                     <option value="interest">Más interesados</option>
                                     <option value="commented">Más comentados</option>
@@ -355,7 +355,7 @@
                         </div>
                     </div>
 
-                    <!-- Aviso de «publicaciones de X»: lo rellena el script -->
+                    <!-- Aviso de «pedidos de X»: lo rellena el script -->
                     <div id="author-notice"></div>
 
                     <div class="active-filters" id="active-filters"></div>

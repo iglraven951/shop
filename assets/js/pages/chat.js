@@ -166,7 +166,7 @@
             : UI.emptyState({
                 icon: '💬',
                 title: 'Aún no tienes conversaciones',
-                message: 'Escribe a quien publica desde cualquier publicación del foro para empezar.',
+                message: 'Aquí aparecerá la conversación con cada tienda cuya oferta aceptes. Empieza publicando lo que buscas.',
                 action: { label: 'Explorar el foro', href: 'index.html' },
             });
     }

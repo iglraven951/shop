@@ -22,15 +22,17 @@
     const SKELETON_COUNT = 4;
     const STATS_SAMPLE = 48;
 
-    const SORT_OPTIONS = ['recent', 'price_asc', 'price_desc', 'popular', 'interest', 'commented'];
+    const SORT_OPTIONS = ['recent', 'budget_asc', 'budget_desc', 'popular', 'interest', 'commented'];
     const CONDITION_OPTIONS = ['Solo nuevo', 'Como nuevo o mejor', 'Cualquiera que funcione'];
     const AVAILABILITY_OPTIONS = ['open', 'matched', 'fulfilled'];
 
     /** Cómo se llama cada estado de venta en la interfaz. */
-    const AVAILABILITY_NAMES = {
-        available: 'Disponible',
-        reserved: 'Reservado',
-        sold: 'Vendido',
+    /* Tienen que coincidir con los valores de las casillas del tablón. */
+    const STATE_NAMES = {
+        open: 'Abierto',
+        matched: 'Con oferta aceptada',
+        fulfilled: 'Resuelto',
+        cancelled: 'Cancelado',
     };
 
     const state = {
@@ -63,7 +65,7 @@
             category: [],
             district: [],
             condition: [],
-            availability: [],
+            situation: [],
             min_price: '',
             max_price: '',
             author_id: '',
@@ -98,7 +100,7 @@
             category: csv(url.param('category', '')),
             district: csv(url.param('district', '')),
             condition: csv(url.param('condition', '')).filter((c) => CONDITION_OPTIONS.includes(c)),
-            availability: csv(url.param('availability', ''))
+            situation: csv(url.param('situation', ''))
                 .filter((v) => AVAILABILITY_OPTIONS.includes(v)),
             min_price: positiveNumber(url.param('min_price', '')),
             max_price: positiveNumber(url.param('max_price', '')),
@@ -124,7 +126,7 @@
             category: f.category,
             district: f.district,
             condition: f.condition,
-            state: f.availability,
+            state: f.situation,
             min_price: f.min_price,
             max_price: f.max_price,
             /* En la URL sigue llamándose `author_id` — hay enlaces por ahí que
@@ -146,7 +148,7 @@
     function countActiveFilters() {
         const f = state.filters;
         let total = f.category.length + f.district.length + f.condition.length
-            + f.availability.length;
+            + f.situation.length;
         if (f.q) total += 1;
         if (f.min_price || f.max_price) total += 1;
         if (f.author_id) total += 1;
@@ -486,13 +488,13 @@
         );
 
         setSummary(
-            dom.summaryAvailability,
+            dom.summarySituation,
             describeSelection(
-                f.availability.map((value) => AVAILABILITY_NAMES[value] || value),
+                f.situation.map((value) => STATE_NAMES[value] || value),
                 'Todo',
                 'seleccionados'
             ),
-            f.availability.length > 0
+            f.situation.length > 0
         );
     }
 
@@ -537,20 +539,20 @@
         });
 
         if (f.min_price || f.max_price) {
-            chips.push(filterChip('price', '', `Precio: ${describePrice()}`));
+            chips.push(filterChip('price', '', `Presupuesto: ${describePrice()}`));
         }
 
         f.condition.forEach((condition) => {
             chips.push(filterChip('condition', condition, `Estado: ${condition}`));
         });
 
-        f.availability.forEach((value) => {
-            chips.push(filterChip('availability', value,
+        f.situation.forEach((value) => {
+            chips.push(filterChip('situation', value,
                 `Disponibilidad: ${AVAILABILITY_NAMES[value] || value}`));
         });
 
         if (f.author_id) {
-            chips.push(filterChip('author_id', '', `Vendedor: ${state.authorName || 'seleccionado'}`));
+            chips.push(filterChip('author_id', '', `Pedidos de ${state.authorName || 'una persona'}`));
         }
 
         if (chips.length > 1) {
@@ -618,8 +620,8 @@
             input.checked = f.condition.includes(input.value);
         });
 
-        $$('input[name="availability"]', dom.panel).forEach((input) => {
-            input.checked = f.availability.includes(input.value);
+        $$('input[name="situation"]', dom.panel).forEach((input) => {
+            input.checked = f.situation.includes(input.value);
         });
 
         syncCheckboxes('category', dom.categoryOptions, f.category);
@@ -655,7 +657,7 @@
             case 'category': f.category = f.category.filter((id) => id !== value); break;
             case 'district': f.district = f.district.filter((name) => name !== value); break;
             case 'condition': f.condition = f.condition.filter((c) => c !== value); break;
-            case 'availability': f.availability = f.availability.filter((v) => v !== value); break;
+            case 'situation': f.situation = f.situation.filter((v) => v !== value); break;
             case 'price': f.min_price = ''; f.max_price = ''; break;
             case 'author_id': f.author_id = ''; state.authorName = ''; break;
             default: return;
@@ -740,8 +742,8 @@
                 state.filters.district = checkedValues('district', dom.districtOptions);
             } else if (input.name === 'condition') {
                 state.filters.condition = checkedValues('condition', dom.panel);
-            } else if (input.name === 'availability') {
-                state.filters.availability = checkedValues('availability', dom.panel);
+            } else if (input.name === 'situation') {
+                state.filters.situation = checkedValues('situation', dom.panel);
             } else {
                 return;
             }
@@ -908,7 +910,7 @@
         dom.summaryDistrict = $('#summary-district');
         dom.summaryPrice = $('#summary-price');
         dom.summaryCondition = $('#summary-condition');
-        dom.summaryAvailability = $('#summary-availability');
+        dom.summarySituation = $('#summary-situation');
     }
 
     async function init() {

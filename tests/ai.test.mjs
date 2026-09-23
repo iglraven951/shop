@@ -212,7 +212,9 @@ async function conversation() {
 
     const search = await bot.respond('hola, quiero un iphone');
     check('encuentra iPhone en el catálogo', search.requests.length > 0, `dio ${search.requests.length}`);
-    check('invita a ver al vendedor', /vendedor/i.test(search.text), search.text.slice(0, 80));
+    /* Ya no invita a ver a un vendedor: lo que encuentra son pedidos de
+       otras personas, y lo que se puede hacer con ellos es sumarse. */
+    check('invita a sumarse al pedido', /también lo busco/i.test(search.text), search.text.slice(0, 80));
     check('ofrece enlace al foro', !!search.link);
     check('propone siguientes pasos', search.suggestions.length > 0);
 
@@ -243,6 +245,86 @@ async function conversation() {
 }
 
 await conversation();
+
+/* ======================================================================
+   El borrador: convertir una frase suelta en un pedido rellenado
+
+   Cada caso salió de escribirle al asistente y mirar qué proponía. Tres de
+   ellos son fallos que tuvo: el título se quedaba con el distrito y el
+   presupuesto dentro, «ando buscando» producía «Busco ando buscando una
+   mesa», y la limpieza del final se comía la «o» de «en buen estado».
+   ====================================================================== */
+
+const DRAFTS = [
+    {
+        phrase: 'busco una lámpara de escritorio barata por Yanahuara, hasta 80 soles',
+        title: 'Lámpara de escritorio barata',
+        category: 'cat-hogar', district: 'Yanahuara', max: 80,
+    },
+    {
+        phrase: 'necesito una bicicleta de montaña rodado 26 en Cayma, entre 300 y 600',
+        title: 'Bicicleta de montaña rodado 26',
+        category: 'cat-deportes', district: 'Cayma', min: 300, max: 600,
+    },
+    {
+        phrase: 'quiero comprar un microondas usado que funcione, hasta 200 soles',
+        title: 'Microondas usado que funcione',
+        category: 'cat-hogar', district: '', max: 200,
+    },
+    {
+        phrase: 'ando buscando una mesa de comedor de madera para 6 personas en Cerro Colorado',
+        title: 'Mesa de comedor de madera para 6 personas',
+        category: 'cat-hogar', district: 'Cerro Colorado',
+    },
+    {
+        phrase: 'hola, me hace falta una impresora que imprima a color, por menos de 300 soles',
+        title: 'Impresora que imprima a color',
+        category: 'cat-computo', district: '', max: 300,
+    },
+    {
+        phrase: 'alguien tiene una guitarra acústica de segunda mano? presupuesto de 400 soles',
+        title: 'Guitarra acústica de segunda mano',
+        category: 'cat-instrumentos', district: '', max: 400,
+    },
+    {
+        phrase: 'coche de bebé en buen estado, zona Miraflores',
+        title: 'Coche de bebé en buen estado',
+        category: 'cat-bebes', district: 'Miraflores',
+    },
+];
+
+for (const item of DRAFTS) {
+    const draft = bot.draftRequest(item.phrase);
+    const short = `«${item.phrase.slice(0, 34)}…»`;
+
+    check(`${short} da el título limpio`, draft.title === item.title,
+        `dio «${draft.title}»`);
+    check(`${short} acierta la categoría`, draft.category_id === item.category,
+        `dio «${draft.category_id}»`);
+    check(`${short} acierta el distrito`, draft.district === item.district,
+        `dio «${draft.district}»`);
+
+    if (item.max !== undefined) {
+        check(`${short} lee el tope de presupuesto`, draft.understood.max_price === item.max,
+            `dio ${draft.understood.max_price}`);
+    }
+    if (item.min !== undefined) {
+        check(`${short} lee el suelo de presupuesto`, draft.understood.min_price === item.min,
+            `dio ${draft.understood.min_price}`);
+    }
+
+    /* La descripción antepone «Busco», así que lo que sigue tiene que ser un
+       sustantivo, no otro verbo: «Busco ando buscando una mesa» fue real. */
+    check(`${short} redacta una descripción en castellano`,
+        /^Busco (un|una|unos|unas|[a-záéíóúñ])/.test(draft.description)
+        && !/^Busco (ando|busco|quiero|necesito|comprar)/i.test(draft.description),
+        draft.description.slice(0, 70));
+
+    check(`${short} no deja el distrito ni el precio en el título`,
+        !/\d\s*soles|hasta \d|entre \d/i.test(draft.title)
+        && (!item.district || !draft.title.includes(item.district)),
+        draft.title);
+}
 
 /* ======================================================================
    Resultado

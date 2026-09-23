@@ -29,13 +29,23 @@
      * Desde la v4 existe `saved_at`; lo guardado antes de que ese campo
      * existiera no lo tiene y cae al final en vez de colarse arriba.
      */
+    /** Techo del presupuesto, o `fallback` si quedó abierto. */
+    function budgetOf(post, fallback) {
+        const max = Number(post.budget_max) || Number(post.budget_min) || 0;
+        return max > 0 ? max : fallback;
+    }
+
     const SORTERS = {
         recent: (a, b) => {
             const at = (p) => String(p.saved_at || '');
             return at(b).localeCompare(at(a)) || (new Date(b.created_at) - new Date(a.created_at));
         },
-        price_asc: (a, b) => Number(a.price) - Number(b.price),
-        price_desc: (a, b) => Number(b.price) - Number(a.price),
+        /* Un presupuesto es un rango. Para ordenar hace falta un número:
+           de menor a mayor manda el techo (cuánto llega a pagar) y de mayor a
+           menor también, que es lo que se compara entre pedidos. Quien no puso
+           cifra queda al final en ambos sentidos, no arriba por ser cero. */
+        budget_asc: (a, b) => budgetOf(a, Infinity) - budgetOf(b, Infinity),
+        budget_desc: (a, b) => budgetOf(b, 0) - budgetOf(a, 0),
         commented: (a, b) => (Number(b.comment_count) || 0) - (Number(a.comment_count) || 0),
     };
 

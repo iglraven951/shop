@@ -19,7 +19,9 @@
     const UI = global.UI;
 
     const TABS = ['datos', 'pedidos'];
-    const CONDITIONS = ['Nuevo', 'Como nuevo', 'Buen estado'];
+    /* Hasta dónde cede quien pide. Tiene que coincidir con MockAPI.CONDITIONS:
+       si no, el desplegable ofrece valores que el servidor no reconoce. */
+    const CONDITIONS = ['Solo nuevo', 'Como nuevo o mejor', 'Cualquiera que funcione'];
     const BIO_MAX = 200;
     const MOTIVATION_MAX = 280;
 
@@ -57,9 +59,13 @@
     }
 
     /** Solo el administrador y el vendedor aprobado pueden publicar. */
+    /**
+     * Pedir algo no necesita permiso: quien tiene cuenta, pide. La cuenta de
+     * vendedor aprobada sirve para lo contrario —responder ofertas—, y eso se
+     * mira en la ficha del pedido, no aquí.
+     */
     function canPublish() {
-        const user = state.user;
-        return !!user && (user.role === 'admin' || user.seller_status === 'approved');
+        return !!state.user;
     }
 
     /** Pastilla de rol: la señal más visible de qué permite la cuenta. */
@@ -180,13 +186,13 @@
 
         return {
             icon: '🏪',
-            title: '¿Quieres vender lo que ya no usas?',
-            message: 'Con una cuenta de vendedor pasas de mirar a publicar. La solicitud es gratuita y la revisa el equipo.',
+            title: '¿Tienes una tienda y quieres responder pedidos?',
+            message: 'Pedir no necesita permiso: ya puedes. Responder sí. Con una cuenta de tienda ofreces lo que tengas a quien lo esté buscando. La solicitud es gratuita y la revisa el equipo.',
             extra: `
                 <ul class="profile-seller-list">
-                    <li>Publica tus artículos en el foro de Arequipa.</li>
-                    <li>Recibe mensajes de quien esté interesado.</li>
-                    <li>Aparece en el mapa de vendedores de tu distrito.</li>
+                    <li>Ofrece lo que tienes a quien ya lo está buscando.</li>
+                    <li>Al aceptarte una oferta se abre el chat con esa persona.</li>
+                    <li>Apareces en el mapa de tiendas de tu distrito.</li>
                 </ul>`,
             actions: '<button class="btn btn-primary" type="button" data-action="apply-seller">Solicitar cuenta de vendedor</button>',
         };
@@ -636,32 +642,14 @@
         </div>`;
     }
 
-    /** Estado vacío distinto según lo que la cuenta pueda hacer. */
-    function emptyForRole() {
-        if (canPublish()) {
-            return UI.emptyState({
-                icon: '🏷️',
-                title: 'Publica tu primer pedido',
-                message: 'Cuenta qué ya no usas, ponle un precio justo y deja que el foro haga el resto.',
-                action: { label: 'Publicar un artículo', href: 'publicar.html' },
-            });
-        }
-
-        const status = state.user.seller_status;
-
-        const message = {
-            pending: 'Tu solicitud de vendedor está en revisión. En cuanto la aprobemos, podrás publicar desde aquí.',
-            rejected: 'Tu solicitud de vendedor fue rechazada. Puedes volver a enviarla cuando quieras.',
-        }[status] || 'Para publicar artículos necesitas una cuenta de vendedor aprobada por el equipo.';
-
-        const action = status === 'pending'
-            ? null
-            : {
-                label: status === 'rejected' ? 'Volver a solicitar' : 'Solicitar cuenta de vendedor',
-                onClick: 'apply-seller',
-            };
-
-        return UI.emptyState({ icon: '🔒', title: 'Todavía no puedes publicar', message, action });
+    /** Nadie tiene todavía ningún pedido: la invitación es la misma para todos. */
+    function emptyRequests() {
+        return UI.emptyState({
+            icon: '🔎',
+            title: 'Publica tu primer pedido',
+            message: 'Di qué estás buscando y cuánto puedes pagar. Las tiendas de Arequipa te responden con lo que tienen.',
+            action: { label: 'Pedir lo que busco', href: 'publicar.html' },
+        });
     }
 
     function renderPosts() {
@@ -671,7 +659,7 @@
         renderCounts(summary);
 
         if (!summary.total) {
-            container.innerHTML = emptyForRole();
+            container.innerHTML = emptyRequests();
             return;
         }
 
@@ -751,14 +739,21 @@
 
             <div class="profile-edit-grid">
                 <div class="field">
-                    <label class="label" for="ep-price">Precio (S/) <span class="required">*</span></label>
-                    <input class="input" id="ep-price" name="price" type="number" min="1" step="0.01"
-                           inputmode="decimal" value="${escapeAttr(post.price)}">
-                    <p class="field-error" data-error-for="price" aria-live="polite"></p>
+                    <label class="label" for="ep-budget-min">Presupuesto desde (S/)</label>
+                    <input class="input" id="ep-budget-min" name="budget_min" type="number" min="0" step="1"
+                           inputmode="decimal" value="${escapeAttr(post.budget_min || '')}">
+                    <p class="field-error" data-error-for="budget_min" aria-live="polite"></p>
                 </div>
 
                 <div class="field">
-                    <label class="label" for="ep-condition">Estado del artículo</label>
+                    <label class="label" for="ep-budget-max">Presupuesto hasta (S/)</label>
+                    <input class="input" id="ep-budget-max" name="budget_max" type="number" min="0" step="1"
+                           inputmode="decimal" value="${escapeAttr(post.budget_max || '')}">
+                    <p class="field-error" data-error-for="budget_max" aria-live="polite"></p>
+                </div>
+
+                <div class="field">
+                    <label class="label" for="ep-condition">¿En qué estado lo aceptas?</label>
                     <select class="select" id="ep-condition" name="condition">
                         ${optionsFrom(CONDITIONS, post.condition)}
                     </select>
@@ -777,24 +772,37 @@
     }
 
     function validateEditForm(form) {
+        /* Un presupuesto vacío es «abierto a propuestas», no un error: hay
+           cosas cuyo precio no se sabe hasta que alguien las ofrece. */
+        const amount = (field) => (field.value.trim() === '' ? null : Number(field.value));
+
         const values = {
             title: form.elements.title.value.trim(),
             description: form.elements.description.value.trim(),
-            price: Number(form.elements.price.value),
+            budget_min: amount(form.elements.budget_min),
+            budget_max: amount(form.elements.budget_max),
             condition: form.elements.condition.value,
             district: form.elements.district.value,
         };
+
+        const negative = (n) => n !== null && (!Number.isFinite(n) || n < 0);
 
         const errors = {
             title: values.title.length < 4
                 ? 'El título debe tener al menos 4 caracteres.'
                 : '',
             description: values.description.length < 20
-                ? 'Describe el artículo con al menos 20 caracteres.'
+                ? 'Describe con al menos 20 caracteres qué estás buscando.'
                 : '',
-            price: !Number.isFinite(values.price) || values.price <= 0
-                ? 'El precio debe ser mayor que cero.'
+            budget_min: negative(values.budget_min)
+                ? 'El presupuesto no puede ser negativo.'
                 : '',
+            budget_max: negative(values.budget_max)
+                ? 'El presupuesto no puede ser negativo.'
+                : (values.budget_min !== null && values.budget_max !== null
+                    && values.budget_min > values.budget_max)
+                    ? 'El mínimo no puede ser mayor que el máximo.'
+                    : '',
         };
 
         let valid = true;
@@ -934,7 +942,7 @@
         const gate = $('#profile-gate');
         gate.innerHTML = UI.loginGate({
             title: 'Tu perfil te está esperando',
-            message: 'Inicia sesión para editar tus datos, seguir el estado de tus publicaciones y solicitar tu cuenta de vendedor.',
+            message: 'Inicia sesión para editar tus datos, seguir el estado de tus pedidos y solicitar tu cuenta de tienda.',
             icon: '🔐',
         });
         gate.hidden = false;

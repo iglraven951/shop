@@ -162,7 +162,7 @@
             budget_min: post.budget_min,
             budget_max: post.budget_max,
             district: post.district,
-            seller: post.buyer.username,
+            asker: post.buyer.username,
             image_url: post.image_url,
             fallback_url: post.fallback_url,
         };
@@ -187,7 +187,7 @@
         return {
             role: 'assistant',
             at: nowIso(),
-            text: 'Hola, soy el asistente de DiscoveryShop. Dime con tus palabras qué artículo buscas —marca, precio o distrito— y lo rastreo en el foro por ti.',
+            text: 'Hola, soy el asistente de DiscoveryShop. Dime con tus palabras qué estás buscando —marca, precio o distrito— y lo rastreo en el foro por ti.',
             posts: [],
             link: null,
             suggestions: ['Busco un celular', '¿Qué hay en Cayma?', '¿Cómo publico un artículo?'],
@@ -269,9 +269,9 @@
                      loading="lazy" decoding="async"${fallbackAttr(post)}>
                 <span class="asst-card-body">
                     <span class="asst-card-title">${escapeHtml(post.title)}</span>
-                    <span class="asst-card-meta">${escapeHtml(post.district)} · ${escapeHtml(post.seller)}</span>
+                    <span class="asst-card-meta">${escapeHtml(post.district)} · ${escapeHtml(post.asker)}</span>
                 </span>
-                <span class="asst-card-price">${escapeHtml(format.money(post.price))}</span>
+                <span class="asst-card-price">${escapeHtml(UI.budgetText(post))}</span>
             </a>`;
         }).join('');
 

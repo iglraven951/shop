@@ -136,6 +136,23 @@
     }
 
     /**
+     * El mismo presupuesto, en texto plano.
+     *
+     * La ficha lo necesita sin etiquetas: en la tabla de datos, en el globo
+     * del mapa y en la descripción que leen los buscadores, una etiqueta HTML
+     * aparecería tal cual.
+     */
+    function budgetText(post) {
+        if (!post.budget_min && !post.budget_max) return 'Abierto a propuestas';
+
+        if (post.budget_min && post.budget_max && post.budget_min !== post.budget_max) {
+            return `${format.money(post.budget_min)} – ${format.money(post.budget_max)}`;
+        }
+
+        return `hasta ${format.money(post.budget_max || post.budget_min)}`;
+    }
+
+    /**
      * Cabecera de la publicación: quién la escribió, desde dónde y cuándo.
      */
     function postHeader(post, options) {
@@ -204,10 +221,21 @@
         return `<div class="post-reactions">${parts.join('')}</div>`;
     }
 
-    /** Barra de acciones del foro. */
+    /** Barra de acciones del tablón. */
     function actionBar(post) {
-        return `
-        <div class="post-actions" role="group" aria-label="Acciones de la publicación">
+        /* En tu propio pedido, las dos primeras acciones no existen: no puedes
+           sumarte a lo que ya pediste ni ofrecerte lo que estás buscando. Lo
+           que sí quieres es ver quién te ha contestado. */
+        const own = post.is_mine
+            ? `
+            <a class="post-action${post.offers_count ? ' is-active is-interest' : ''}"
+               href="publicacion.html?id=${escapeAttr(post.id)}#responder">
+                <span class="post-action-icon">${post.offers_count ? I.heartFill : I.heart}</span>
+                <span class="post-action-label">${post.offers_count
+        ? `${format.number(post.offers_count)} ${format.plural(post.offers_count, 'respuesta', 'respuestas')}`
+        : 'Sin respuestas'}</span>
+            </a>`
+            : `
             <button class="post-action${post.me_too_by_me ? ' is-active is-like' : ''}" type="button"
                     data-action="me-too" data-id="${escapeAttr(post.id)}"
                     aria-pressed="${!!post.me_too_by_me}">
@@ -219,7 +247,11 @@
                     data-action="offer" data-id="${escapeAttr(post.id)}">
                 <span class="post-action-icon">${post.my_offer ? I.heartFill : I.heart}</span>
                 <span class="post-action-label">${post.my_offer ? 'Ya respondiste' : 'Lo tengo'}</span>
-            </button>
+            </button>`;
+
+        return `
+        <div class="post-actions" role="group" aria-label="Acciones del pedido">
+            ${own}
 
             <button class="post-action" type="button"
                     data-action="comment" data-id="${escapeAttr(post.id)}">
@@ -257,14 +289,16 @@
 
         const href = `publicacion.html?id=${encodeURIComponent(post.id)}`;
 
-        // Lo vendido se atenúa en lugar de desaparecer: saber que algo ya se
-        // fue es información, y borrarlo dejaría el foro contando mentiras.
-        const soldClass = post.availability && post.availability !== 'available'
-            ? ` is-${post.availability}`
-            : '';
+        /* Lo ya resuelto se atenúa en lugar de desaparecer: saber que algo
+           ya encontró dueño es información, y borrarlo dejaría el tablón
+           contando mentiras sobre lo que la gente sigue buscando. */
+        const stateClass = post.state && post.state !== 'open' ? ` is-${post.state}` : '';
 
         return `
-        <article class="post-card${soldClass}" data-post-id="${escapeAttr(post.id)}"
+        <article class="post-card${stateClass}" data-post-id="${escapeAttr(post.id)}"
+                 data-me-too="${escapeAttr(post.me_too_count)}"
+                 data-offers="${escapeAttr(post.offers_count)}"
+                 data-comments="${escapeAttr(post.comment_count)}"
                  style="animation-delay: ${Math.min(index * 55, 330)}ms">
 
             ${postHeader(post, { showStatus, showMenu })}
@@ -660,13 +694,13 @@
         // combinados con los que ya estaban en la tarjeta.
         const current = {
             id: postId,
-            likes_count: result.likes_count ?? readCount(card, 'likes'),
-            interested_count: result.interested_count ?? readCount(card, 'interested'),
+            me_too_count: result.me_too_count ?? readCount(card, 'meToo'),
+            offers_count: result.offers_count ?? readCount(card, 'offers'),
             comment_count: readCount(card, 'comments'),
         };
 
-        card.dataset.likes = current.likes_count;
-        card.dataset.interested = current.interested_count;
+        card.dataset.meToo = current.me_too_count;
+        card.dataset.offers = current.offers_count;
 
         const markup = reactionSummary(current);
 
@@ -713,7 +747,7 @@
         statusBadge,
         availabilityBadge,
         budgetTag,
-        budgetTag,
+        budgetText,
         verifiedBadge,
         normalizePost,
         emptyState,

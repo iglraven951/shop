@@ -199,6 +199,10 @@
         match = text.match(new RegExp(`(?:menos de|hasta|maximo|max|bajo|no mas de)\\s*(?:s/)?\\s*${num}`));
         if (match) return { max_price: clean(match[1]) };
 
+        // «tengo un presupuesto de 400 soles»: de las formas más naturales
+        match = text.match(new RegExp(`presupuesto\\s+(?:de\\s+)?(?:s/)?\\s*${num}`));
+        if (match) return { max_price: clean(match[1]) };
+
         match = text.match(new RegExp(`(?:mas de|desde|minimo|min|sobre)\\s*(?:s/)?\\s*${num}`));
         if (match) return { min_price: clean(match[1]) };
 
@@ -571,22 +575,24 @@
             const what = u.query || (cat ? cat.toLowerCase() : 'eso');
             return {
                 ...empty,
-                text: `Por ahora no hay publicaciones de ${what}${detail ? ` ${detail}` : ''}. El foro cambia a diario, así que vale la pena volver a mirar. ¿Quieres que busque algo parecido?`,
-                link: 'index.html',
-                linkLabel: 'Ver todo el catálogo',
+                text: `Nadie está pidiendo ${what}${detail ? ` ${detail}` : ''} ahora mismo. Serías la primera persona: publícalo y las tiendas de Arequipa lo verán. ¿O prefieres que busque algo parecido?`,
+                link: 'publicar.html',
+                linkLabel: 'Pedir lo que busco',
                 suggestions: suggestionsFor(u, false),
             };
         }
 
         const n = result.total;
-        const plural = n === 1 ? 'publicación' : 'publicaciones';
-        const what = u.query ? `«${u.query}»` : (cat ? cat.toLowerCase() : 'tu búsqueda');
+        const plural = n === 1 ? 'pedido' : 'pedidos';
+        const people = n === 1 ? 'Otra persona está buscando' : `Otras ${n} personas están buscando`;
+        const open = n === 1 ? 'Ábrelo' : 'Ábrelos';
+        const what = u.query ? `«${u.query}»` : (cat ? cat.toLowerCase() : 'lo mismo que tú');
 
         let text;
         if (result.relaxed) {
-            text = `No encontré exactamente eso, pero sí ${n} ${plural} parecidas. Échales un vistazo: si alguna te sirve, haz clic para ver la información del vendedor.`;
+            text = `Eso exacto no lo pide nadie, pero hay ${n} ${plural} parecidos. Si alguno es lo mismo que buscas, marca «También lo busco»: cuanta más gente lo pida, más motivos tiene una tienda para responder.`;
         } else {
-            text = `Sí, tenemos ${n} ${plural} que ${n === 1 ? 'coincide' : 'coinciden'} con ${what}${detail ? ` ${detail}` : ''}. Haz clic en la que te interese para ver la información del vendedor y escribirle.`;
+            text = `${people} ${what}${detail ? ` ${detail}` : ''}. ${open} para sumarte con «También lo busco», o publica el tuyo si lo quieres con otras condiciones.`;
         }
 
         return {
@@ -594,7 +600,7 @@
             requests: result.requests,
             total: n,
             link,
-            linkLabel: n > result.requests.length ? `Ver los ${n} pedidos` : 'Ver en el foro',
+            linkLabel: n > result.requests.length ? `Ver los ${n} pedidos` : 'Ver en el tablón',
             suggestions: suggestionsFor(u, true),
         };
     }
@@ -627,30 +633,83 @@
 
     const GENERIC_ASKS = ['para cuándo lo necesitas', 'en qué distrito te viene bien recogerlo'];
 
-    /** Título en condiciones a partir de lo que la persona escribió. */
-    function titleFrom(message, understood) {
-        const raw = String(message || '')
-            .replace(/^\s*(hola[, ]*)?(busco|quiero|necesito|estoy buscando|me hace falta)\s+/i, '')
-            .replace(/\s+/g, ' ')
-            .trim();
+    /* Con lo que la gente abre una petición en Arequipa. Va del más largo al
+       más corto para que «me hace falta» no lo corte antes «me». */
+    const ASKING_VERBS = [
+        'me gustaría conseguir', 'me gustaría encontrar', 'ando buscando',
+        'estoy buscando', 'me hace falta', 'me gustaría', 'quién tiene',
+        'quien tiene', 'alguien tiene', 'necesitaría', 'hace falta',
+        'quisiera', 'querría', 'necesito', 'busco', 'buscando', 'buscar',
+        'quiero', 'ocupo', 'preciso',
+    ];
 
-        let base = raw || understood.query || '';
-        if (!base) return '';
+    /* Y con lo que la continúan: «quiero comprar», «busco conseguir». */
+    const ASKING_TAILS = ['comprar', 'conseguir', 'encontrar', 'adquirir', 'que me vendan'];
 
-        /* El distrito tiene su propio campo. Repetirlo al final del título solo
-           lo alarga: «Lámpara dorada, por Cayma» en un pedido que ya dice
-           Cayma. Se corta por texto, sin expresión regular, porque el nombre
-           del distrito lo pone el usuario y podría traer caracteres raros. */
-        if (understood.district) {
-            const lower = base.toLowerCase();
-            ['por ', 'en ', 'de '].forEach((preposition) => {
-                const tail = preposition + understood.district.toLowerCase();
-                if (!lower.endsWith(tail)) return;
-                base = base.slice(0, base.length - tail.length).replace(/[,;\s]+$/, '');
-            });
+    /* Cláusulas de dinero. Todas piden o una palabra de cantidad o «soles»,
+       para que «rodado 26» y «para 6 personas» sobrevivan intactos. */
+    const PRICE_CLAUSES = [
+        /\b(entre|de)\s+s?\/?\s*\d[\d.,]*\s*(soles)?\s+(y|a)\s+s?\/?\s*\d[\d.,]*\s*(soles)?/gi,
+        /\b(por|de)?\s*menos de\s+s?\/?\s*\d[\d.,]*\s*(soles)?/gi,
+        /\b(hasta|máximo|maximo|desde|sobre|como)\s+(de\s+)?s?\/?\s*\d[\d.,]*\s*(soles)?/gi,
+        /\b(unos|unas|como)?\s*s\/\s*\d[\d.,]*/gi,
+        /\b\d[\d.,]*\s*soles\b/gi,
+        /\bpresupuesto\s+de\s+[^,.;]*/gi,
+    ];
+
+    /** Quita `needle` y la preposición que lo introduce, sin distinguir tildes de caja. */
+    function stripPhrase(text, needle) {
+        if (!needle) return text;
+
+        const lower = text.toLowerCase();
+        const at = lower.indexOf(needle.toLowerCase());
+        if (at === -1) return text;
+
+        let from = at;
+        for (const preposition of ['por ', 'en ', 'zona ', 'de ', 'para ']) {
+            const start = at - preposition.length;
+            if (start >= 0 && lower.slice(start, at) === preposition) { from = start; break; }
         }
 
-        const cut = base.slice(0, 90).replace(/[.,;:]+$/, '');
+        return `${text.slice(0, from)} ${text.slice(at + needle.length)}`;
+    }
+
+    /** Deja solo la cosa que se busca: sin verbo, sin precio y sin distrito. */
+    function subjectFrom(message, understood) {
+        let base = String(message || '').replace(/\s+/g, ' ').trim();
+        if (!base) return String(understood.query || '').trim();
+
+        base = base.replace(/^\s*hola[,!.\s]+/i, '');
+
+        // El verbo con el que se pide, y el infinitivo que lo acompaña
+        const lower = base.toLowerCase();
+        const verb = ASKING_VERBS.find((v) => lower.startsWith(`${v} `));
+        if (verb) base = base.slice(verb.length).trim();
+
+        const tail = ASKING_TAILS.find((t) => base.toLowerCase().startsWith(`${t} `));
+        if (tail) base = base.slice(tail.length).trim();
+
+        PRICE_CLAUSES.forEach((clause) => { base = base.replace(clause, ' '); });
+        base = stripPhrase(base, understood.district);
+
+        return base
+            .replace(/\s+/g, ' ')
+            .replace(/\s+([,.;:])/g, '$1')
+            /* La conjunción suelta del final se va, pero exigiendo el espacio
+               que la separa: sin él, «en buen estado» perdía su última «o». */
+            .replace(/\s+(y|o|que|de|en|con|para)\s*$/i, '')
+            .replace(/[\s,;:.¿?¡!]+$/, '')
+            .trim();
+    }
+
+    /** Título en condiciones: el asunto sin su artículo, que en un tablón sobra. */
+    function titleFrom(message, understood) {
+        const subject = subjectFrom(message, understood);
+        if (!subject) return '';
+
+        const naked = subject.replace(/^(un|una|unos|unas|el|la|los|las)\s+/i, '');
+        const cut = naked.slice(0, 90).replace(/[.,;:]+$/, '');
+
         return cut.charAt(0).toUpperCase() + cut.slice(1);
     }
 
@@ -682,9 +741,10 @@
 
         const asks = [...(ASK_BY_CATEGORY[categoryId] || []), ...GENERIC_ASKS].slice(0, 4);
         const title = titleFrom(message, understood);
+        const subject = subjectFrom(message, understood);
 
         const description = [
-            title ? `Busco ${title.charAt(0).toLowerCase()}${title.slice(1)}.` : '',
+            subject ? `Busco ${subject.charAt(0).toLowerCase()}${subject.slice(1)}.` : '',
             understood.district ? `Estoy por ${understood.district}.` : '',
             asks.length ? `Detalles que importan: ${asks.join(', ')}.` : '',
         ].filter(Boolean).join(' ');

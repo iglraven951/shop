@@ -59,7 +59,7 @@
     <div id="app-footer"></div>
 
     <!-- ==================================================================
-         Formulario de publicación (solo para vendedores aprobados)
+         Formulario del pedido (cualquier cuenta puede publicar uno)
          ================================================================== -->
     <template id="publish-form-template">
         <div class="publish-layout">
@@ -235,7 +235,7 @@
                             </div>
                             <textarea class="textarea publish-textarea" id="publish-description" name="description"
                                       rows="7" maxlength="2000" spellcheck="true"
-                                      placeholder="Lo compré hace dos años y lo usé poco. Funciona perfecto, solo tiene un rayón en la base que no se nota. Incluye cargador original y su caja. Lo vendo porque me mudo."
+                                      placeholder="Busco una bicicleta de montaña rodado 26, para uso diario por Cayma. No me importa que esté usada mientras frene bien y no tenga la horquilla doblada. Si viene con luces, mejor. La necesito para esta quincena."
                                       aria-describedby="publish-description-hint publish-description-error" required></textarea>
                             <p class="field-hint" id="publish-description-hint">Entre 20 y 1000 caracteres.</p>
                             <p class="field-error" id="publish-description-error" aria-live="polite"></p>
@@ -247,16 +247,16 @@
                                 <p class="alert-title">Tres cosas que siempre conviene decir</p>
                                 <ul class="publish-tip-list alert-body">
                                     <li>
-                                        <strong>El estado real.</strong> Si tiene un rayón, la batería
-                                        rinde menos o falta una pieza, dilo tú antes de que lo pregunten.
+                                        <strong>Para qué lo quieres.</strong> Una tienda puede
+                                        ofrecerte algo mejor que lo que pediste si sabe para qué es.
                                     </li>
                                     <li>
-                                        <strong>Qué incluyes.</strong> Caja, cargador, accesorios,
-                                        garantía o comprobante: todo eso sube el valor de tu publicación.
+                                        <strong>Qué no te vale.</strong> Medida, color, versión o
+                                        marca que descartas: ahorra ofertas que no te sirven.
                                     </li>
                                     <li>
-                                        <strong>Por qué lo vendes.</strong> «Me mudo», «ya tengo otro»
-                                        o «mi hija dejó las clases» dan confianza y evitan sospechas.
+                                        <strong>Para cuándo.</strong> «Lo necesito esta semana» o
+                                        «no tengo prisa» cambia por completo quién te responde.
                                     </li>
                                 </ul>
                             </div>
@@ -264,14 +264,14 @@
                     </div>
                 </section>
 
-                <!-- ---------------- 3 · Precio y ubicación ---------------- -->
+                <!-- ---------------- 3 · Presupuesto y zona ---------------- -->
                 <section class="publish-section">
                     <header class="publish-section-head">
                         <span class="publish-section-step" aria-hidden="true">3</span>
                         <div class="publish-section-text">
                             <h2 class="publish-section-title">Presupuesto y zona</h2>
                             <p class="publish-section-hint">
-                                Un precio realista y un distrito claro aceleran la venta.
+                                Una cifra realista y un distrito claro hacen que te respondan antes.
                             </p>
                         </div>
                     </header>

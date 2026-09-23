@@ -630,8 +630,11 @@
    se vendió también es información, y borrarlo dejaría el tablón mintiendo.
    Solo pierde color la foto — el texto se sigue leyendo igual de bien, que es
    lo que pide el contraste. */
-.post-card.is-sold .post-media img { filter: saturate(0.2); opacity: 0.6; }
-.post-card.is-reserved .post-media img { filter: saturate(0.6); opacity: 0.85; }
+/* Un pedido cerrado sigue en el tablón, apagado: cuenta lo que la gente
+   buscaba y quién lo resolvió, que es la memoria del sitio. */
+.post-card.is-fulfilled .post-media img,
+.post-card.is-cancelled .post-media img { filter: saturate(0.2); opacity: 0.6; }
+.post-card.is-matched .post-media img { filter: saturate(0.6); opacity: 0.85; }
 
 /* --- Pie: reacciones y acciones --- */
 .post-footer {
@@ -1340,16 +1343,30 @@
         transform: translateX(6px);
     }
 
-    /* El contenido necesita sitio para no acabar debajo de la barra, y los
-       botones flotantes tienen que subirse por encima de ella. */
-    body.has-bottom-nav { padding-bottom: 56px; }
-
-    body.has-bottom-nav .filters-fab,
-    body.has-bottom-nav .asst-fab {
-        bottom: calc(56px + var(--ds-inset-bottom, 0px) + var(--space-4));
+    /* Alto real de la barra: los 56 px del botón más lo que el sistema
+       reserva abajo para sus gestos. Fuera de esta consulta vale cero, así que
+       una pantalla puede descontarlo siempre sin preguntar si hay barra. */
+    body.has-bottom-nav {
+        --ds-bottom-nav: calc(56px + var(--ds-inset-bottom, 0px));
     }
 
+    /* El contenido necesita sitio para no acabar debajo de la barra, y los
+       botones flotantes tienen que subirse por encima de ella. */
+    body.has-bottom-nav { padding-bottom: var(--ds-bottom-nav); }
+
+    /* `.ds-assistant` es el contenedor fijo; el botón vive dentro y no
+       tiene posición propia, así que subir `.asst-fab` no movía nada y el
+       botón se quedaba justo encima de «Perfil». */
+    body.has-bottom-nav .filters-fab,
+    body.has-bottom-nav .ds-assistant,
     body.has-bottom-nav .toast-stack {
-        bottom: calc(56px + var(--ds-inset-bottom, 0px) + var(--space-4));
+        bottom: calc(var(--ds-bottom-nav) + var(--space-4));
+    }
+
+    /* El cajón del mapa se apoya en el borde inferior y vive en una capa por
+       encima de la barra: sin subirlo la tapa entera y deja esa pantalla sin
+       salida, que es donde más falta hace volver. */
+    body.has-bottom-nav .map-panel {
+        bottom: var(--ds-bottom-nav);
     }
 }

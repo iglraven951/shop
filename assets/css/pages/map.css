@@ -18,8 +18,8 @@
     max-width: 1500px;
     margin-inline: auto;
     padding: var(--space-5);
-    height: calc(100vh - var(--map-chrome));
-    height: calc(100dvh - var(--map-chrome));
+    height: calc(100vh - var(--map-chrome) - var(--ds-bottom-nav));
+    height: calc(100dvh - var(--map-chrome) - var(--ds-bottom-nav));
     min-height: 520px;
 }
 
@@ -805,20 +805,36 @@
         right: 0;
         bottom: 0;
         z-index: var(--z-overlay);
-        max-height: 72vh;
+        /* Cerrado mide justo el asa. Se anima el alto y no la posición
+           porque el panel recorta lo que sobra: con `transform` la mitad
+           escondida se seguía pintando encima de la barra inferior. */
+        max-height: 48px;
         border-radius: var(--radius-xl) var(--radius-xl) 0 0;
         border-bottom: 0;
         box-shadow: var(--shadow-xl);
-        transform: translateY(calc(100% - 48px));
-        transition: transform var(--duration-base) var(--ease-out);
+        transition: max-height var(--duration-base) var(--ease-out);
     }
 
     .map-panel.is-open {
-        transform: translateY(0);
+        max-height: 72vh;
     }
 
     .map-sheet-handle {
         display: flex;
+    }
+
+    /* La atribución vive en la esquina inferior derecha del mapa, justo donde
+       se apoyan el asa del cajón y el botón del asistente. Se pasa a la
+       izquierda y por encima del asa: la licencia exige que se lea. */
+    .map-stage .leaflet-bottom.leaflet-right {
+        right: auto;
+        left: 0;
+        bottom: 48px;
+    }
+
+    .map-stage .leaflet-control-attribution {
+        border-top-left-radius: 0;
+        border-top-right-radius: var(--radius-xs);
     }
 
     .map-list {

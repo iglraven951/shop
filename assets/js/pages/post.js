@@ -226,14 +226,12 @@
         // Solo el autor y el administrador ven una publicación sin aprobar,
         // así que la etiqueta de estado es información útil, no un adorno.
         const showStatus = Boolean(post.is_mine) || post.status !== 'approved';
-        const availabilityClass = post.availability && post.availability !== 'available'
-            ? ` is-${post.availability}`
-            : '';
+        const stateClass = post.state && post.state !== 'open' ? ` is-${post.state}` : '';
 
         return `
-        <article class="post-card post-detail${availabilityClass}" data-post-id="${escapeAttr(post.id)}"
-                 data-likes="${escapeAttr(post.likes_count)}"
-                 data-interested="${escapeAttr(post.interested_count)}"
+        <article class="post-card post-detail${stateClass}" data-post-id="${escapeAttr(post.id)}"
+                 data-me-too="${escapeAttr(post.me_too_count)}"
+                 data-offers="${escapeAttr(post.offers_count)}"
                  data-comments="${escapeAttr(post.comment_count)}">
 
             ${UI.postHeader(post, { showStatus, showMenu: false })}
@@ -247,7 +245,7 @@
                     ${UI.availabilityBadge(post)}
                     <span class="badge badge-brand">${escapeHtml(post.category.icon)} ${escapeHtml(post.category.name)}</span>
                     <span class="badge">${escapeHtml(post.condition)}</span>
-                    <span class="post-price-tag">${escapeHtml(format.money(post.price))}</span>
+                    ${UI.budgetTag(post)}
                 </div>
 
                 ${availabilityControlMarkup(post)}
@@ -307,9 +305,9 @@
                     <div class="field">
                         <label class="label" for="report-category">Motivo</label>
                         <select class="select" id="report-category">
-                            <option value="engano">La publicación engaña</option>
-                            <option value="prohibido">Artículo prohibido</option>
-                            <option value="duplicado">Está repetida</option>
+                            <option value="engano">El pedido engaña</option>
+                            <option value="prohibido">Busca algo prohibido</option>
+                            <option value="duplicado">Está repetido</option>
                             <option value="ofensivo">Contenido ofensivo</option>
                             <option value="otro">Otro motivo</option>
                         </select>
@@ -385,9 +383,9 @@
 
         const rows = [
             ['Categoría', `${post.category.icon} ${post.category.name}`],
-            ['Estado del artículo', post.condition],
+            ['Acepta', post.condition],
             ['Distrito', `${post.district}, Arequipa`],
-            ['Precio', format.money(post.price)],
+            ['Presupuesto', UI.budgetText(post)],
             ['Visitas', format.number(post.views)],
             ['Publicado', format.relative(post.created_at)],
         ];
@@ -457,8 +455,8 @@
         if (!stats) return;
 
         const markup = UI.reactionSummary({
-            likes_count: Number(article.dataset.likes) || 0,
-            interested_count: Number(article.dataset.interested) || 0,
+            me_too_count: Number(article.dataset.meToo) || 0,
+            offers_count: Number(article.dataset.offers) || 0,
             comment_count: value,
         });
 
@@ -587,7 +585,7 @@
         const temporaryId = `tmp-${Date.now()}`;
         const optimistic = {
             id: temporaryId,
-            post_id: state.post.id,
+            request_id: state.post.id,
             author: {
                 id: state.user.id,
                 username: state.user.username,
@@ -1286,7 +1284,7 @@
             <div class="post-map-popup">
                 <p class="post-map-popup-district">${escapeHtml(post.district)}, Arequipa</p>
                 <p class="post-map-popup-title">${escapeHtml(post.title)}</p>
-                <p class="post-map-popup-price">${escapeHtml(format.money(post.price))}</p>
+                <p class="post-map-popup-price">${escapeHtml(UI.budgetText(post))}</p>
             </div>`;
     }
 
@@ -1404,7 +1402,7 @@
         const meta = document.querySelector('meta[name="description"]');
         if (!meta) return;
 
-        const summary = `${post.title} · ${post.condition} · ${format.money(post.price)} `
+        const summary = `${post.title} · ${post.condition} · ${UI.budgetText(post)} `
             + `en ${post.district}, Arequipa. ${post.description}`;
 
         meta.setAttribute(

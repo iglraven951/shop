@@ -28,8 +28,8 @@
    las fotos reales del catálogo, la bandeja de la IA y los ajustes; la v4 trae
    el estado de venta, la fecha de guardado, las denuncias y los avisos que ya
    se escribían pero que nadie llegaba a ver. */
-    const STORAGE_KEY = 'discoveryshop:db:v5';
-    const SCHEMA_VERSION = 5;
+    const STORAGE_KEY = 'discoveryshop:db:v6';
+    const SCHEMA_VERSION = 6;
 
     /* ----------------------------------------------------------------------
        Utilidades
@@ -155,10 +155,11 @@
                 categories: seed.categories,
                 districts: seed.districts,
                 sessions: {},
-                conversations: [],
+                // Los tratos ya cerrados vienen con la conversación que los cerró
+                conversations: seed.conversations || [],
                 notifications: [],
-                // Denuncias de la comunidad sobre publicaciones ya visibles
-                reports: [],
+                // Denuncias de la comunidad sobre pedidos ya visibles
+                reports: seed.reports || [],
                 // Registro de decisiones de moderación, humanas y de la IA
                 moderation_log: [],
                 // Avisos de la IA dirigidos al administrador
@@ -498,11 +499,22 @@
             const offersOf = (request) =>
                 (this.state.offers || []).filter((o) => o.request_id === request.id).length;
 
+            /** Techo del presupuesto, o `fallback` si quedó abierto. */
+            const ceiling = (request, fallback) => {
+                const max = Number(request.budget_max) || Number(request.budget_min) || 0;
+                return max > 0 ? max : fallback;
+            };
+
             switch (sort) {
-                // Por presupuesto: para un vendedor, saber cuánto está dispuesto
-                // a pagar quien pide es la primera criba.
-                case 'price_asc': return sorted.sort((a, b) => a.budget_max - b.budget_max);
-                case 'price_desc': return sorted.sort((a, b) => b.budget_max - a.budget_max);
+                /* Por presupuesto: para un vendedor, saber cuánto está dispuesto
+                   a pagar quien pide es la primera criba. Quien no puso cifra
+                   queda al final en los dos sentidos: dejarlo valer cero lo
+                   pondría el primero en «de menor a mayor», que es lo contrario
+                   de lo que busca quien ordena así. */
+                case 'budget_asc':
+                    return sorted.sort((a, b) => ceiling(a, Infinity) - ceiling(b, Infinity));
+                case 'budget_desc':
+                    return sorted.sort((a, b) => ceiling(b, 0) - ceiling(a, 0));
                 // Lo que más gente busca
                 case 'popular': return sorted.sort((a, b) => b.me_too_count - a.me_too_count);
                 // Lo que nadie ha respondido todavía: la mejor oportunidad
@@ -753,6 +765,14 @@
             ['title', 'description', 'district'].forEach((key) => {
                 if (body[key]) request[key] = body[key];
             });
+
+            /* El estado que se acepta es lo primero que mira un vendedor para
+               decidir si contesta. Se deja cambiar, pero solo a uno de los
+               tres reconocidos: un valor inventado dejaría el pedido fuera
+               del filtro del tablón sin que nadie se enterase. */
+            if (body.condition && MockAPI.CONDITIONS.includes(body.condition)) {
+                request.condition = body.condition;
+            }
 
             if (body.budget_min !== undefined && body.budget_min !== '') {
                 const min = Number(body.budget_min);
@@ -1689,7 +1709,10 @@
                 .filter((u) => (status === 'all' ? !!u.seller_status : u.seller_status === status))
                 .map((u) => ({
                     ...this.publicUser(u),
-                    post_count: this.state.requests.filter((p) => p.buyer.id === u.id).length,
+                    /* De un vendedor interesa lo que ha respondido, no lo que
+                       ha pedido: es lo que dice si la cuenta está viva. */
+                    offer_count: (this.state.offers || []).filter((o) => o.seller.id === u.id).length,
+                    request_count: this.state.requests.filter((p) => p.buyer.id === u.id).length,
                 }))
                 .sort((a, b) => new Date(a.applied_at || a.created_at) - new Date(b.applied_at || b.created_at));
 

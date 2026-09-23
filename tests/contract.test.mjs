@@ -263,6 +263,115 @@ routes.forEach((route) => {
 });
 
 /* ----------------------------------------------------------------------
+   Las claves que promete cada respuesta
+
+   Lo que rompió esta migración una y otra vez no fue un método que faltara
+   —eso ya lo caza el bloque anterior— sino una clave renombrada. La página
+   seguía compilando, leía `undefined` y lo pintaba sin quejarse.
+
+   Si una clave cambia de nombre, se cambia aquí y la lista dice qué páginas
+   hay que revisar. Se comprueban las que alguna página lee, no todas.
+   ---------------------------------------------------------------------- */
+
+const api = new sandbox.MockAPI();
+api.latency = 0;
+
+const session = await api.request('/api/auth/login', {
+    method: 'POST', body: { email: 'admin@discoveryshop.pe', password: 'demo1234' },
+});
+const token = session.data.access_token;
+
+/** ¿Están todas estas claves en el objeto? */
+function promises(label, object, keys, who) {
+    const missing = keys.filter((k) => !(k in (object || {})));
+    check(`${label} promete sus claves`, missing.length === 0,
+        `faltan [${missing.join(', ')}] · las lee ${who}`);
+}
+
+const oneRequest = (await api.request('/api/requests?per_page=1')).data.requests[0];
+promises('un pedido', oneRequest, [
+    'id', 'title', 'description', 'condition', 'image_url', 'fallback_url',
+    'budget_min', 'budget_max', 'category', 'buyer', 'district', 'location',
+    'status', 'state', 'offers_count', 'me_too_count', 'saves_count',
+    'comment_count', 'views', 'created_at',
+], 'feed.js, post.js, components.js, saved.js, profile.js');
+
+const stats = (await api.request('/api/admin/stats', { token })).data;
+promises('las cifras del panel', stats, [
+    'requests', 'sellers', 'users', 'activity', 'lifecycle', 'offers', 'deals', 'reports',
+], 'admin.js');
+promises('las cifras de pedidos', stats.requests, ['total', 'approved', 'pending', 'rejected'], 'admin.js');
+promises('el ciclo de vida', stats.lifecycle, ['open', 'matched', 'fulfilled', 'cancelled'], 'admin.js');
+promises('la actividad', stats.activity, ['comments', 'me_too', 'views'], 'admin.js');
+
+const sellers = (await api.request('/api/admin/sellers', { token })).data.sellers;
+promises('un vendedor del panel', sellers[0], [
+    'id', 'username', 'email', 'district', 'seller_status', 'offer_count', 'request_count',
+], 'admin.js');
+
+const mapSeller = (await api.request('/api/map/sellers')).data.sellers[0];
+promises('una tienda del mapa', mapSeller, [
+    'id', 'username', 'shop_name', 'district', 'location', 'rating', 'rating_count',
+    'deal_count', 'offer_count', 'preview',
+], 'map.js');
+
+/* Los que nacen de una acción: se provoca la acción para poder mirarlos. */
+const buyer = await api.request('/api/auth/login', {
+    method: 'POST', body: { email: 'patricia@discoveryshop.pe', password: 'demo1234' },
+});
+const buyerToken = buyer.data.access_token;
+
+const inbox = (await api.request('/api/chat/conversations', { token: buyerToken })).data.conversations;
+promises('una conversación', inbox[0], [
+    'id', 'request_id', 'request_title', 'request_image', 'offer_id', 'price',
+    'participants', 'seller', 'buyer', 'messages', 'last_message', 'unread',
+], 'chat.js');
+promises('un mensaje', inbox[0] && inbox[0].messages[0], [
+    'id', 'sender_id', 'sender_name', 'text', 'photos', 'read', 'created_at',
+], 'chat.js');
+
+const openRequest = (await api.request('/api/requests?per_page=48')).data.requests
+    .find((r) => r.state === 'open' && r.buyer.id !== buyer.data.user.id);
+
+if (openRequest) {
+    const reported = await api.request(`/api/requests/${openRequest.id}/report`, {
+        method: 'POST', token: buyerToken,
+        body: { category: 'otro', reason: 'Comprobación del contrato de claves' },
+    });
+    promises('una denuncia', reported.data.report, [
+        'id', 'request_id', 'request_title', 'author', 'reporter', 'category',
+        'reason', 'status', 'created_at',
+    ], 'admin.js');
+}
+
+const aiInbox = (await api.request('/api/admin/inbox', { token })).data;
+if (aiInbox && Array.isArray(aiInbox.items) && aiInbox.items.length) {
+    promises('un aviso de la IA', aiInbox.items[0], [
+        'id', 'request_id', 'request_title', 'author', 'decision', 'reason',
+        'confidence', 'message', 'read', 'created_at',
+    ], 'admin.js');
+}
+
+/* Nombres del modelo de venta que ya no existen en ninguna respuesta. Se
+   busca la lectura de la propiedad —`.post_id`, `['post_id']`, o la clave de
+   un objeto literal— y no la palabra suelta: `availabilityBadge()` lee
+   `post.state` y no tiene por qué cambiar de nombre para demostrarlo. */
+const RETIRED = ['post_title', 'post_id', 'post_count', 'likes_count',
+    'interested_count', 'availability', 'original_price'];
+
+const readsProperty = (source, name) => new RegExp(
+    `\\.${name}\\b|\\['${name}'\\]|\\["${name}"\\]|(^|[{,]\\s*)${name}\\s*:`, 'm'
+).test(source);
+
+[...pageScripts.map((f) => `assets/js/pages/${f}`),
+    'assets/js/ui/components.js', 'assets/js/ui/shell.js',
+    'assets/js/ui/assistant-widget.js'].forEach((rel) => {
+    const source = read(rel);
+    const found = RETIRED.filter((name) => readsProperty(source, name));
+    check(`${path.basename(rel)} no lee claves retiradas`, found.length === 0, found.join(', '));
+});
+
+/* ----------------------------------------------------------------------
    Resultado
    ---------------------------------------------------------------------- */
 

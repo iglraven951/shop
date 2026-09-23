@@ -146,7 +146,7 @@ async function run() {
         cheap.data.requests.every((x) => x.budget_min <= 500));
 
     /* ================= ORDENACIÓN ================= */
-    const asc = await api.request('/api/requests?sort=price_asc&per_page=48');
+    const asc = await api.request('/api/requests?sort=budget_asc&per_page=48');
     const ascBudgets = asc.data.requests.map((x) => x.budget_max);
     check('orden por presupuesto ascendente',
         ascBudgets.every((v, i) => i === 0 || ascBudgets[i - 1] <= v));
@@ -553,6 +553,134 @@ async function run() {
         const missing = await expectFail(api, gone);
         check(`${gone} sigue sin existir`, missing && missing.status === 404);
     }
+
+    /* ================= LO QUE SE ROMPIÓ EN SILENCIO =================
+       Todo lo de este bloque pasó de verdad. Ninguno lanzaba una excepción:
+       leer una clave que no existe devuelve `undefined`, y `undefined`
+       se pinta tan ricamente como «S/ 0.00» o como nada. */
+
+    /* Un pedido no tiene precio. Si alguna vez vuelve a tenerlo, la interfaz
+       lo pintaría como cero en toda la ficha sin que nadie se entere. */
+    const shape = (await api.request('/api/requests?per_page=1')).data.requests[0];
+    for (const gone of ['price', 'availability', 'likes_count', 'interested_count']) {
+        check(`un pedido no trae «${gone}»`, shape[gone] === undefined,
+            `vino ${JSON.stringify(shape[gone])}`);
+    }
+    for (const needed of ['budget_min', 'budget_max', 'state', 'me_too_count', 'offers_count']) {
+        check(`un pedido sí trae «${needed}»`, shape[needed] !== undefined);
+    }
+
+    /* El panel de administración lee estas claves. Cuando `posts` pasó a
+       llamarse `requests`, el panel murió entero al primer render. */
+    const statsShape = (await api.request('/api/admin/stats', { token: adminToken })).data;
+    check('las cifras del panel traen «requests»', !!statsShape.requests
+        && typeof statsShape.requests.pending === 'number');
+    check('las cifras del panel traen «activity.me_too»',
+        typeof statsShape.activity.me_too === 'number');
+    check('las cifras del panel ya no traen «posts»', statsShape.posts === undefined);
+
+    const sellersShape = (await api.request('/api/admin/sellers', { token: adminToken })).data;
+    check('de un vendedor interesa lo que ha respondido',
+        typeof sellersShape.sellers[0].offer_count === 'number');
+
+    /* Ordenar por presupuesto: quien no puso cifra va al final en los dos
+       sentidos. Contarlo como cero lo pondría el primero en «de menor a
+       mayor», que es justo lo contrario de lo que se pidió. */
+    const ceiling = (r) => Number(r.budget_max) || Number(r.budget_min) || 0;
+    const ascList = (await api.request('/api/requests?sort=budget_asc&per_page=48')).data.requests;
+    const descList = (await api.request('/api/requests?sort=budget_desc&per_page=48')).data.requests;
+    const withBudget = (list) => list.filter((r) => ceiling(r) > 0).map(ceiling);
+
+    check('de menor a mayor, el presupuesto sube',
+        withBudget(ascList).every((v, i, a) => i === 0 || a[i - 1] <= v));
+    check('de mayor a menor, el presupuesto baja',
+        withBudget(descList).every((v, i, a) => i === 0 || a[i - 1] >= v));
+    check('un presupuesto abierto no se cuela arriba en «de menor a mayor»',
+        ascList.length === 0 || ceiling(ascList[0]) > 0);
+
+    /* Editar: el formulario mandaba un precio que el servidor ni miraba, así
+       que el presupuesto no había forma de corregirlo. */
+    const editable = (await api.request('/api/requests/mine', { token: buyerToken }))
+        .data.requests.find((r) => r.state === 'open');
+
+    if (editable) {
+        const edited = await api.request(`/api/requests/${editable.id}`, {
+            method: 'PUT', token: buyerToken,
+            body: { budget_min: 111, budget_max: 222, condition: 'Solo nuevo' },
+        });
+        const saved = edited.data.request || edited.data;
+        check('editar guarda el presupuesto', saved.budget_min === 111 && saved.budget_max === 222,
+            `${saved.budget_min}–${saved.budget_max}`);
+        check('editar guarda el estado que se acepta', saved.condition === 'Solo nuevo', saved.condition);
+
+        const bogus = await api.request(`/api/requests/${editable.id}`, {
+            method: 'PUT', token: buyerToken, body: { condition: 'Con purpurina' },
+        });
+        check('un estado inventado no entra',
+            (bogus.data.request || bogus.data).condition === 'Solo nuevo');
+    }
+
+    /* Una compra sin conversación es imposible en este modelo: el chat nace
+       al aceptar la oferta. Los datos de demostración lo incumplían y la
+       bandeja de Mensajes salía vacía para todo el mundo. */
+    const freshDeals = api.state.deals || [];
+    const freshConvs = api.state.conversations || [];
+    check('hay tratos de ejemplo', freshDeals.length > 0);
+    check('cada trato cerrado tiene su conversación',
+        freshDeals.every((d) => freshConvs.some((c) => c.offer_id === d.offer_id)),
+        `${freshDeals.length} tratos · ${freshConvs.length} conversaciones`);
+    check('en la conversación están los dos',
+        freshConvs.every((c) => c.participants.length === 2
+            && c.participants.every((p) => api.state.users.some((u) => u.id === p))));
+    check('la conversación empieza por la oferta de la tienda',
+        freshConvs.every((c) => c.messages.length > 0
+            && c.messages[0].sender_id === c.seller.id));
+    check('la bandeja de una compradora de ejemplo no está vacía', await (async () => {
+        const login = await api.request('/api/auth/login', {
+            method: 'POST', body: { email: 'patricia@discoveryshop.pe', password: 'demo1234' },
+        });
+        const inbox = await api.request('/api/chat/conversations', { token: login.data.access_token });
+        return inbox.data.conversations.length > 0;
+    })());
+
+    /* ================= LAS FOTOS, CADA UNA EN LO SUYO =================
+       La foto de un pedido está para que una tienda reconozca de un vistazo
+       qué le piden. Repartidas por índice, un pedido de AirPods enseñaba un
+       pueblo costero, y una foto que no viene a cuento estorba más que un
+       hueco vacío. */
+    const seedSource = fs.readFileSync(path.join(ROOT, 'assets/js/core/seed.js'), 'utf8');
+
+    const photoIds = [...seedSource.match(/const PHOTOS = \[([\s\S]*?)\];/)[1]
+        .matchAll(/'([^']+)'/g)].map((m) => m[1]);
+
+    const groups = {};
+    const groupBlock = seedSource.match(/const PHOTOS_BY_CATEGORY = \{([\s\S]*?)\};/)[1];
+    for (const line of groupBlock.split('\n')) {
+        const m = line.match(/'([\w-]+)':\s*\[([\d,\s]+)\]/);
+        if (m) groups[m[1]] = m[2].split(',').map((n) => Number(n.trim()));
+    }
+
+    const seedCategories = sandbox.DiscoverySeed.CATEGORIES.map((c) => c.id);
+    check('todas las categorías tienen fotos propias',
+        seedCategories.every((id) => (groups[id] || []).length > 0),
+        seedCategories.filter((id) => !(groups[id] || []).length).join(', '));
+
+    const used = Object.values(groups).flat();
+    check('ninguna foto está en dos categorías', new Set(used).size === used.length);
+    check('todas las fotos del catálogo se usan', new Set(used).size === photoIds.length,
+        `${new Set(used).size} repartidas de ${photoIds.length}`);
+
+    const photoIndex = (url) => photoIds.findIndex((photoId) => url.includes(photoId));
+
+    const allRequests = (await api.request('/api/requests?per_page=48')).data.requests;
+    const strays = allRequests.filter(
+        (r) => !(groups[r.category.id] || []).includes(photoIndex(r.image_url))
+    );
+    check('cada pedido enseña una foto de su categoría', strays.length === 0,
+        strays.slice(0, 3).map((r) => `${r.category.id}: ${r.title}`).join(' · '));
+
+    check('y todos tienen respaldo por si la foto no carga',
+        allRequests.every((r) => typeof r.fallback_url === 'string' && r.fallback_url.length > 20));
 
     /* ================= PERSISTENCIA ================= */
     const api2 = new sandbox.MockAPI();

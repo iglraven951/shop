@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel de moderación · DiscoveryShop</title>
-    <meta name="description" content="Panel de moderación de DiscoveryShop: aprueba o rechaza las publicaciones pendientes y las solicitudes de cuenta de vendedor del foro de Arequipa.">
+    <meta name="description" content="Panel de moderación de DiscoveryShop: aprueba o rechaza los pedidos pendientes, las solicitudes de cuenta de vendedor y las denuncias.">
     <meta name="theme-color" content="#070c14">
     <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
     <link rel="apple-touch-icon" href="assets/img/logo.png">
@@ -71,7 +71,7 @@
                         <p class="admin-eyebrow">Equipo de moderación</p>
                         <h1 class="admin-title">Panel de administración</h1>
                         <p class="admin-subtitle">
-                            La IA revisa cada publicación en cuanto se envía: aquí ves lo que
+                            La IA revisa cada pedido en cuanto se envía: aquí ves lo que
                             decidió, resuelves lo que dejó en duda y atiendes las solicitudes
                             de cuenta de vendedor.
                         </p>
@@ -96,7 +96,7 @@
                                 <span class="admin-metric-pulse" aria-hidden="true"></span>
                             </span>
                             <span class="admin-metric-value" data-metric="posts-pending">—</span>
-                            <span class="admin-metric-label">Publicaciones pendientes</span>
+                            <span class="admin-metric-label">Pedidos pendientes</span>
                             <span class="admin-metric-hint">
                                 <span>Ir a la cola</span>
                                 <svg class="admin-metric-arrow" width="14" height="14" viewBox="0 0 16 16"
@@ -135,7 +135,7 @@
                                 <span class="admin-metric-pulse" aria-hidden="true"></span>
                             </span>
                             <span class="admin-metric-value" data-metric="posts-doubt">—</span>
-                            <span class="admin-metric-label">Publicaciones en duda</span>
+                            <span class="admin-metric-label">Pedidos en duda</span>
                             <span class="admin-metric-hint">
                                 <span>Ver lo que dijo la IA</span>
                                 <svg class="admin-metric-arrow" width="14" height="14" viewBox="0 0 16 16"
@@ -150,15 +150,24 @@
                     <!-- Nivel 2: contexto. Ni piden acción ni deben competir por la mirada. -->
                     <div class="admin-metrics-secondary">
                         <div class="admin-metric admin-metric-compact">
-                            <span class="admin-metric-icon" aria-hidden="true">✅</span>
-                            <span class="admin-metric-value" data-metric="posts-approved">—</span>
-                            <span class="admin-metric-label">Publicaciones activas</span>
+                            <span class="admin-metric-icon" aria-hidden="true">🔎</span>
+                            <span class="admin-metric-value" data-metric="posts-open">—</span>
+                            <span class="admin-metric-label">Esperando respuesta</span>
+                        </div>
+
+                        <!-- La única cifra que dice si esto funciona: de todo lo que
+                             se pidió, cuánto acabó encontrándose. -->
+                        <div class="admin-metric admin-metric-compact">
+                            <span class="admin-metric-icon" aria-hidden="true">🤝</span>
+                            <span class="admin-metric-value" data-metric="posts-fulfilled">—</span>
+                            <span class="admin-metric-label">Pedidos resueltos</span>
+                            <span class="admin-metric-hint" data-metric="fulfilled-detail"></span>
                         </div>
 
                         <div class="admin-metric admin-metric-compact">
                             <span class="admin-metric-icon" aria-hidden="true">🚫</span>
                             <span class="admin-metric-value" data-metric="posts-rejected">—</span>
-                            <span class="admin-metric-label">Publicaciones rechazadas</span>
+                            <span class="admin-metric-label">Pedidos rechazados</span>
                         </div>
 
                         <div class="admin-metric admin-metric-compact">
@@ -219,13 +228,13 @@
                                 Pendientes <span class="admin-filter-count" data-count="posts-pending"></span>
                             </button>
                             <button class="segmented-item" type="button" data-post-status="approved" aria-pressed="false">
-                                Aprobadas <span class="admin-filter-count" data-count="posts-approved"></span>
+                                Aprobados <span class="admin-filter-count" data-count="posts-approved"></span>
                             </button>
                             <button class="segmented-item" type="button" data-post-status="rejected" aria-pressed="false">
-                                Rechazadas <span class="admin-filter-count" data-count="posts-rejected"></span>
+                                Rechazados <span class="admin-filter-count" data-count="posts-rejected"></span>
                             </button>
                             <button class="segmented-item" type="button" data-post-status="all" aria-pressed="false">
-                                Todas <span class="admin-filter-count" data-count="posts-total"></span>
+                                Todos <span class="admin-filter-count" data-count="posts-total"></span>
                             </button>
                         </div>
 
@@ -314,9 +323,9 @@
                          aria-labelledby="tab-denuncias" tabindex="0" hidden>
 
                     <p class="admin-panel-intro">
-                        Cada denuncia señala una publicación que ya es visible. Resolverla
+                        Cada denuncia señala un pedido que ya es visible. Resolverla
                         cierra el aviso y responde a quien lo envió; aprobar o retirar la
-                        publicación se sigue haciendo desde «Publicaciones».
+                        pedido se sigue haciendo desde «Pedidos».
                     </p>
 
                     <div class="admin-toolbar">
@@ -345,7 +354,7 @@
                          aria-labelledby="tab-ia" tabindex="0" hidden>
 
                     <p class="admin-panel-intro">
-                        La IA de la plataforma revisa cada publicación en cuanto se envía.
+                        La IA de la plataforma revisa cada pedido en cuanto se envía.
                         Cuando lo tiene claro decide sola; cuando no, la deja en duda y te
                         la trae aquí para que la resuelvas tú.
                     </p>

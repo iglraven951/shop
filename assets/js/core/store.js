@@ -157,15 +157,6 @@
                 .join('') || '?';
         },
 
-        /** Porcentaje de descuento, o 0 si no hay rebaja real. */
-        discount(product) {
-            if (!product || !product.original_price) return 0;
-            if (product.original_price <= product.price) return 0;
-            return Math.round(
-                ((product.original_price - product.price) / product.original_price) * 100
-            );
-        },
-
         /** Pluraliza respetando el género de la palabra en español. */
         plural(count, singular, plural) {
             return count === 1 ? singular : plural;

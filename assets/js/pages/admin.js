@@ -25,20 +25,20 @@
 
     /** Cómo se lee cada motivo de denuncia en pantalla. */
     const REPORT_CATEGORIES = {
-        engano: 'La pedido engaña',
-        prohibido: 'Artículo prohibido',
-        duplicado: 'Está repetida',
+        engano: 'El pedido engaña',
+        prohibido: 'Busca algo prohibido',
+        duplicado: 'Está repetido',
         ofensivo: 'Contenido ofensivo',
         otro: 'Otro motivo',
     };
 
     /** Motivos que el equipo escribe una y otra vez: un clic rellena el campo. */
     const REJECTION_PRESETS = [
-        'Las fotos no muestran el artículo real',
+        'No se entiende qué está buscando',
         'La descripción es insuficiente',
-        'El precio no corresponde al artículo',
+        'El presupuesto no es realista para lo que pide',
         'Contenido no permitido en el foro',
-        'Publicación duplicada',
+        'Pedido duplicado',
     ];
 
     // El servidor exige 8 caracteres; validamos aquí para no gastar una petición.
@@ -287,7 +287,7 @@
             renderMetrics(stats);
 
             // Mantiene al día la insignia de la cabecera inyectada por shell.js.
-            store.set({ pendingModeration: stats.posts.pending + stats.sellers.pending });
+            store.set({ pendingModeration: stats.requests.pending + stats.sellers.pending });
         } catch (error) {
             toast.error(error.message);
         }
@@ -326,26 +326,39 @@
     }
 
     function renderMetrics(stats) {
-        const activity = stats.activity.comments + stats.activity.interested + stats.activity.views;
+        const activity = stats.activity.comments + stats.activity.me_too + stats.activity.views;
         const sellersTotal = stats.sellers.approved + stats.sellers.pending + stats.sellers.rejected;
 
-        setMetric('posts-pending', format.number(stats.posts.pending));
+        setMetric('posts-pending', format.number(stats.requests.pending));
         setMetric('sellers-pending', format.number(stats.sellers.pending));
         setMetric('posts-doubt', format.number(state.doubt.count));
-        setMetric('posts-approved', format.number(stats.posts.approved));
-        setMetric('posts-rejected', format.number(stats.posts.rejected));
+        /* El ciclo de vida, no el estado de moderación: «aprobado» incluye
+           lo que ya se resolvió, y esa cifra solo sabe subir. */
+        const life = stats.lifecycle || { open: 0, matched: 0, fulfilled: 0, cancelled: 0 };
+        const closed = life.fulfilled + life.matched;
+        const live = life.open + closed;
+
+        setMetric('posts-open', format.number(life.open));
+        setMetric('posts-fulfilled', format.number(life.fulfilled));
+        setMetric(
+            'fulfilled-detail',
+            live > 0
+                ? `${Math.round((closed / live) * 100)} % de lo pedido encuentra respuesta`
+                : 'Todavía no hay pedidos que medir'
+        );
+        setMetric('posts-rejected', format.number(stats.requests.rejected));
         setMetric('users-total', format.number(stats.users.total));
         setMetric('activity-total', format.number(activity));
         setMetric(
             'activity-detail',
             `${format.number(stats.activity.comments)} comentarios · `
-            + `${format.number(stats.activity.interested)} interesados · `
+            + `${format.number(stats.activity.me_too)} «también lo busco» · `
             + `${format.number(stats.activity.views)} visitas`
         );
 
         // Solo se tiñen de aviso si de verdad hay trabajo esperando.
         const postsCard = $('[data-metric-card="posts-pending"]');
-        if (postsCard) postsCard.classList.toggle('is-warning', stats.posts.pending > 0);
+        if (postsCard) postsCard.classList.toggle('is-warning', stats.requests.pending > 0);
 
         const sellersCard = $('[data-metric-card="sellers-pending"]');
         if (sellersCard) sellersCard.classList.toggle('is-brand', stats.sellers.pending > 0);
@@ -353,10 +366,10 @@
         const doubtCard = $('[data-metric-card="posts-doubt"]');
         if (doubtCard) doubtCard.classList.toggle('is-accent', state.doubt.count > 0);
 
-        setCount('posts-pending', stats.posts.pending);
-        setCount('posts-approved', stats.posts.approved);
-        setCount('posts-rejected', stats.posts.rejected);
-        setCount('posts-total', stats.posts.total);
+        setCount('posts-pending', stats.requests.pending);
+        setCount('posts-approved', stats.requests.approved);
+        setCount('posts-rejected', stats.requests.rejected);
+        setCount('posts-total', stats.requests.total);
         setCount('sellers-pending', stats.sellers.pending);
         setCount('sellers-approved', stats.sellers.approved);
         setCount('sellers-rejected', stats.sellers.rejected);
@@ -368,7 +381,7 @@
         setCount('reports-open', reports.open);
         setCount('reports-total', reports.total);
 
-        setTabCount('pedidos', stats.posts.pending);
+        setTabCount('pedidos', stats.requests.pending);
         setTabCount('vendedores', stats.sellers.pending);
         setTabCount('denuncias', reports.open);
     }
@@ -488,8 +501,8 @@
             <article class="admin-report${report.status === 'open' ? ' is-open' : ''}"
                      data-report-id="${escapeAttr(report.id)}">
                 <div class="admin-report-head">
-                    <a class="admin-report-title" href="publicacion.html?id=${escapeAttr(report.post_id)}">
-                        ${escapeHtml(report.post_title)}
+                    <a class="admin-report-title" href="publicacion.html?id=${escapeAttr(report.request_id)}">
+                        ${escapeHtml(report.request_title)}
                     </a>
                     <span class="badge ${report.status === 'open' ? 'badge-warning' : 'badge-success'}">
                         ${report.status === 'open' ? 'Abierta' : 'Resuelta'}
@@ -996,7 +1009,7 @@
     function sellerCard(seller) {
         const status = seller.seller_status;
         const applied = seller.applied_at || seller.created_at;
-        const posts = Number(seller.post_count) || 0;
+        const answered = Number(seller.offer_count) || 0;
         const id = escapeAttr(seller.id);
 
         return `
@@ -1014,7 +1027,7 @@
                 ${fact('Distrito', seller.district || 'Sin distrito')}
                 ${fact('Teléfono', seller.phone || 'No indicado')}
                 ${fact('Solicitud', format.relative(applied))}
-                ${fact('Pedidos', `${format.number(posts)} ${format.plural(posts, 'pedido', 'pedidos')}`)}
+                ${fact('Ha respondido', `${format.number(answered)} ${format.plural(answered, 'pedido', 'pedidos')}`)}
             </dl>
 
             ${seller.seller_motivation ? `
@@ -1373,7 +1386,7 @@
         const doubts = fresh.filter((item) => item.decision === 'pending').length;
 
         const message = fresh.length === 1
-            ? `La IA revisó «${newest.post_title}».`
+            ? `La IA revisó «${newest.request_title}».`
             : `La IA revisó ${format.number(fresh.length)} pedidos mientras no estabas`
               + `${doubts ? `, ${format.number(doubts)} de ellas en duda` : ''}.`;
 
@@ -1413,7 +1426,7 @@
 
         // Solo se ofrece resolver lo que de verdad sigue esperando: si ya se
         // decidió desde la cola, los botones aquí solo darían un error.
-        const unresolved = item.decision === 'pending' && state.doubt.ids.has(item.post_id);
+        const unresolved = item.decision === 'pending' && state.doubt.ids.has(item.request_id);
 
         return `
         <article class="admin-ai-msg is-${escapeAttr(item.decision)}${item.read ? '' : ' is-unread'}"
@@ -1440,7 +1453,7 @@
                         <span aria-hidden="true">📲</span>
                         <span>Enviar a mi WhatsApp</span>
                     </button>
-                    <a class="btn btn-ghost btn-sm" href="publicacion.html?id=${escapeAttr(item.post_id)}"
+                    <a class="btn btn-ghost btn-sm" href="publicacion.html?id=${escapeAttr(item.request_id)}"
                        target="_blank" rel="noopener">Ver pedido</a>
                     ${unresolved ? `
                     <button class="btn btn-success btn-sm" type="button" data-inbox-approve="${id}">
@@ -1611,8 +1624,8 @@
         if (!item) return;
 
         try {
-            const { post } = await api.approveRequest(item.post_id);
-            toast.success(`«${post.title}» fue aprobada y ya es visible en el feed.`);
+            const { request } = await api.approveRequest(item.request_id);
+            toast.success(`«${request.title}» ya es visible en el tablón.`);
             await afterInboxDecision();
         } catch (error) {
             toast.error(error.message);
@@ -1625,12 +1638,12 @@
 
         openReasonDialog({
             title: 'Rechazar pedido',
-            subject: item.post_title,
+            subject: item.request_title,
             note: 'Quien publicó recibirá este motivo tal cual. Sé claro y respetuoso.',
             confirmLabel: 'Rechazar pedido',
             submit: async (reason) => {
-                const data = await api.rejectRequest(item.post_id, reason);
-                toast.warning(`«${data.request.title}» fue rechazado. Se avisó a quien la publicó.`);
+                const data = await api.rejectRequest(item.request_id, reason);
+                toast.warning(`«${data.request.title}» fue rechazado. Se avisó a quien lo publicó.`);
                 await afterInboxDecision();
             },
         });
