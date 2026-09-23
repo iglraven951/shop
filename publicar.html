@@ -69,6 +69,38 @@
                 <!-- Aviso de borrador recuperado (lo rellena publish.js) -->
                 <div id="publish-draft-slot"></div>
 
+                <!-- ---------------- Ayuda de la IA ----------------
+                     Lo difícil aquí no es buscar, es explicar qué buscas. Se
+                     escribe en una línea y el asistente propone título,
+                     categoría, icono y una horquilla de presupuesto sacada de
+                     lo que otros han pedido. Todo queda editable: propone,
+                     no decide. -->
+                <section class="publish-assist" aria-labelledby="assist-title">
+                    <div class="publish-assist-head">
+                        <span class="publish-assist-icon" aria-hidden="true">✨</span>
+                        <div>
+                            <h2 class="publish-assist-title" id="assist-title">Dilo con tus palabras</h2>
+                            <p class="publish-assist-hint">
+                                Escribe lo que buscas en una línea y relleno el formulario por ti.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="publish-assist-row">
+                        <input class="input" type="text" id="assist-input"
+                               placeholder="Busco una lámpara vintage de mesa, dorada, para el escritorio"
+                               maxlength="200" autocomplete="off">
+                        <button class="btn btn-secondary" type="button" id="assist-run">
+                            Rellenar
+                        </button>
+                    </div>
+
+                    <div class="publish-assist-chips" id="assist-chips" role="group"
+                         aria-label="Ejemplos de lo que puedes pedir"></div>
+
+                    <p class="publish-assist-result" id="assist-result" role="status"></p>
+                </section>
+
                 <!-- ---------------- 1 · Qué publicas ---------------- -->
                 <section class="publish-section">
                     <header class="publish-section-head">

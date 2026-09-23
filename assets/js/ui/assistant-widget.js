@@ -159,9 +159,10 @@
         return {
             id: post.id,
             title: post.title,
-            price: post.price,
+            budget_min: post.budget_min,
+            budget_max: post.budget_max,
             district: post.district,
-            seller: post.author.username,
+            seller: post.buyer.username,
             image_url: post.image_url,
             fallback_url: post.fallback_url,
         };
@@ -286,8 +287,8 @@
         const own = message.role === 'user';
         const parts = [`<span class="asst-text">${escapeHtml(message.text)}</span>`];
 
-        if (!own && Array.isArray(message.posts) && message.posts.length) {
-            parts.push(resultsMarkup(message.posts));
+        if (!own && Array.isArray(message.requests) && message.requests.length) {
+            parts.push(resultsMarkup(message.requests));
         }
 
         if (!own && message.link) {
@@ -442,7 +443,7 @@
                 role: 'assistant',
                 at: nowIso(),
                 text: reply.text,
-                posts: (reply.posts || []).map(compactPost),
+                requests: (reply.requests || []).map(compactPost),
                 link: reply.link || null,
                 linkLabel: reply.linkLabel || 'Ver en el foro',
                 suggestions: Array.isArray(reply.suggestions) ? reply.suggestions : [],

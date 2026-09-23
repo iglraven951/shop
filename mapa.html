@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mapa de vendedores · DiscoveryShop</title>
-    <meta name="description" content="Mira en el mapa de Arequipa dónde están los vendedores verificados con publicaciones activas. Filtra por distrito y categoría y escríbeles al instante.">
+    <title>Mapa de tiendas · DiscoveryShop</title>
+    <meta name="description" content="Mira en el mapa de Arequipa qué tiendas verificadas responden pedidos. Filtra por distrito y categoría antes de pedir lo que buscas.">
     <meta name="theme-color" content="#070c14">
     <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
     <link rel="apple-touch-icon" href="assets/img/logo.png">
@@ -49,9 +49,9 @@
             <!-- ==================== Cabecera compacta ==================== -->
             <header class="map-topbar">
                 <div class="map-topbar-text">
-                    <h1 class="map-title">Vendedores en Arequipa</h1>
+                    <h1 class="map-title">Tiendas que responden</h1>
                     <p class="map-subtitle" id="map-summary" aria-live="polite">
-                        Cargando el mapa de vendedores…
+                        Cargando el mapa de tiendas…
                     </p>
                 </div>
 
@@ -69,7 +69,7 @@
                 <span class="map-notice-icon" aria-hidden="true">🛰️</span>
                 <span>
                     No se pudo cargar el mapa interactivo (revisa tu conexión).
-                    Mientras tanto, aquí tienes a todos los vendedores agrupados por distrito.
+                    Mientras tanto, aquí tienes todas las tiendas agrupadas por distrito.
                 </span>
             </p>
 
@@ -77,14 +77,14 @@
             <div class="map-layout">
 
                 <!-- ---------- Panel lateral: filtros y lista ---------- -->
-                <aside class="map-panel" id="map-panel" aria-label="Filtros y lista de vendedores">
+                <aside class="map-panel" id="map-panel" aria-label="Filtros y lista de tiendas">
                     <button class="map-sheet-handle"
                             id="sheet-handle"
                             type="button"
                             aria-expanded="false"
                             aria-controls="map-panel">
                         <span class="map-sheet-grip" aria-hidden="true"></span>
-                        <span class="map-sheet-label" id="sheet-handle-label">Ver lista de vendedores</span>
+                        <span class="map-sheet-label" id="sheet-handle-label">Ver lista de tiendas</span>
                     </button>
 
                     <div class="map-filters">
@@ -125,11 +125,11 @@
                         </button>
                     </div>
 
-                    <div class="map-list" id="seller-list" aria-label="Vendedores encontrados"></div>
+                    <div class="map-list" id="seller-list" aria-label="Tiendas encontradas"></div>
                 </aside>
 
                 <!-- ---------- Escenario: el mapa ---------- -->
-                <section class="map-stage" id="map-stage" aria-label="Mapa de vendedores de Arequipa">
+                <section class="map-stage" id="map-stage" aria-label="Mapa de tiendas de Arequipa">
                     <div class="map-canvas"
                          id="sellers-map"
                          role="application"
@@ -162,7 +162,7 @@
                     <div class="map-legend" id="map-legend">
                         <span class="map-legend-sample" aria-hidden="true">4</span>
                         <span class="map-legend-text">
-                            El número indica cuántas publicaciones activas tiene el vendedor.
+                            El número indica cuántos pedidos ha resuelto esa tienda.
                             Al alejar el mapa, los marcadores se agrupan por distrito.
                         </span>
                     </div>

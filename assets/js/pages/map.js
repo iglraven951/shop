@@ -196,7 +196,8 @@
     function applySearch() {
         const needle = normalize(state.filters.q).trim();
         state.visible = needle
-            ? state.sellers.filter((seller) => normalize(seller.username).includes(needle))
+            ? state.sellers.filter((seller) =>
+                normalize(`${seller.shop_name || ''} ${seller.username}`).includes(needle))
             : state.sellers.slice();
     }
 
@@ -281,18 +282,18 @@
 
     function sellerItem(seller) {
         const active = seller.id === state.activeId;
-        const count = Number(seller.post_count) || 0;
-        const postWord = format.plural(count, 'publicación', 'publicaciones');
+        const count = Number(seller.deal_count) || 0;
+        const postWord = format.plural(count, 'pedido resuelto', 'pedidos resueltos');
 
         return `
         <button class="map-seller${active ? ' is-active' : ''}"
                 type="button"
                 data-seller-id="${escapeAttr(seller.id)}"
                 aria-pressed="${active ? 'true' : 'false'}">
-            <span class="avatar map-seller-avatar" aria-hidden="true">${escapeHtml(format.initials(seller.username))}</span>
+            <span class="avatar map-seller-avatar" aria-hidden="true">${escapeHtml(format.initials(seller.shop_name || seller.username))}</span>
             <span class="map-seller-body">
                 <span class="map-seller-name">
-                    <span class="truncate">${escapeHtml(seller.username)}</span>
+                    <span class="truncate">${escapeHtml(seller.shop_name || seller.username)}</span>
                     ${UI.verifiedBadge(seller)}
                 </span>
                 <span class="map-seller-meta">
@@ -377,8 +378,8 @@
     }
 
     function popupHtml(seller) {
-        const count = Number(seller.post_count) || 0;
-        const postWord = format.plural(count, 'publicación', 'publicaciones');
+        const count = Number(seller.deal_count) || 0;
+        const postWord = format.plural(count, 'pedido resuelto', 'pedidos resueltos');
         const previews = (seller.preview || []).slice(0, PREVIEW_LIMIT);
         const signedIn = Boolean(store.get('user'));
         const firstPost = previews.length ? previews[0].id : '';
@@ -389,10 +390,10 @@
         return `
         <div class="map-popup">
             <div class="map-popup-head">
-                <span class="avatar avatar-sm" aria-hidden="true">${escapeHtml(format.initials(seller.username))}</span>
+                <span class="avatar avatar-sm" aria-hidden="true">${escapeHtml(format.initials(seller.shop_name || seller.username))}</span>
                 <div class="map-popup-ident">
                     <p class="map-popup-name">
-                        <span class="truncate">${escapeHtml(seller.username)}</span>
+                        <span class="truncate">${escapeHtml(seller.shop_name || seller.username)}</span>
                         ${UI.verifiedBadge(seller)}
                     </p>
                     <p class="map-popup-meta">
@@ -423,17 +424,17 @@
        ====================================================================== */
 
     function fallbackSeller(seller) {
-        const count = Number(seller.post_count) || 0;
-        const postWord = format.plural(count, 'publicación', 'publicaciones');
+        const count = Number(seller.deal_count) || 0;
+        const postWord = format.plural(count, 'pedido resuelto', 'pedidos resueltos');
         const href = `index.html?author_id=${encodeURIComponent(seller.id)}`;
 
         return `
         <li class="map-fallback-seller">
             <a class="map-fallback-link" href="${escapeAttr(href)}">
-                <span class="avatar map-seller-avatar" aria-hidden="true">${escapeHtml(format.initials(seller.username))}</span>
+                <span class="avatar map-seller-avatar" aria-hidden="true">${escapeHtml(format.initials(seller.shop_name || seller.username))}</span>
                 <span class="map-seller-body">
                     <span class="map-seller-name">
-                        <span class="truncate">${escapeHtml(seller.username)}</span>
+                        <span class="truncate">${escapeHtml(seller.shop_name || seller.username)}</span>
                         ${UI.verifiedBadge(seller)}
                     </span>
                     <span class="map-seller-meta">
@@ -502,7 +503,7 @@
     }
 
     function sellerIcon(seller) {
-        const count = Number(seller.post_count) || 0;
+        const count = Number(seller.deal_count) || 0;
         const verified = seller.verified ? 'true' : 'false';
 
         return global.L.divIcon({

@@ -398,10 +398,145 @@
         form.addEventListener('submit', handleSubmit);
         q('#publish-cancel').addEventListener('click', handleCancel);
 
+        bindAssistant();
         restoreDraft();
         syncEmojiFromCategory();
         refreshAll();
         enableUnloadGuard();
+    }
+
+    /* ======================================================================
+       Ayuda de la IA
+
+       Propone; no decide. Rellena los campos vacíos a partir de una frase y
+       deja todo editable, porque quien pide sabe mejor que nadie qué necesita
+       — lo que no sabe es qué datos le van a preguntar.
+       ====================================================================== */
+
+    /** Ejemplos con los que arrancar, uno por cada tipo de cosa que se pide. */
+    const ASSIST_EXAMPLES = [
+        'Una lámpara vintage de mesa, dorada',
+        'iPhone 13 en buen estado, hasta 2000 soles',
+        'Bicicleta montañera aro 29 por Cayma',
+        'Guitarra acústica para empezar',
+    ];
+
+    function bindAssistant() {
+        const input = q('#assist-input');
+        const run = q('#assist-run');
+        const chips = q('#assist-chips');
+        if (!input || !run) return;
+
+        if (chips) {
+            chips.innerHTML = ASSIST_EXAMPLES.map((example) => `
+                <button class="publish-assist-chip" type="button" data-example="${escapeAttr(example)}">
+                    ${escapeHtml(example)}
+                </button>`).join('');
+
+            chips.addEventListener('click', (event) => {
+                const chip = event.target.closest('[data-example]');
+                if (!chip) return;
+                input.value = chip.dataset.example;
+                runAssistant();
+            });
+        }
+
+        run.addEventListener('click', runAssistant);
+        input.addEventListener('keydown', (event) => {
+            if (event.key !== 'Enter') return;
+            event.preventDefault();
+            runAssistant();
+        });
+    }
+
+    /** Escribe en un campo solo si está vacío, y avisa de lo que tocó. */
+    function fillIfEmpty(selector, value, label, touched) {
+        if (!value) return;
+        const node = q(selector);
+        if (!node || String(node.value || '').trim()) return;
+        node.value = value;
+        touched.push(label);
+    }
+
+    async function runAssistant() {
+        const input = q('#assist-input');
+        const result = q('#assist-result');
+        const phrase = String(input.value || '').trim();
+
+        if (phrase.length < 4) {
+            if (result) result.textContent = 'Escribe un poco más para que pueda ayudarte.';
+            return;
+        }
+
+        const assistant = global.DiscoveryAssistant;
+        if (!assistant || typeof assistant.draftRequest !== 'function') {
+            if (result) result.textContent = 'El asistente no está disponible en esta página.';
+            return;
+        }
+
+        const draft = assistant.draftRequest(phrase);
+        const touched = [];
+
+        fillIfEmpty('#publish-title', draft.title, 'el título', touched);
+        fillIfEmpty('#publish-description', draft.description, 'la descripción', touched);
+
+        if (draft.category_id) {
+            const select = q('#publish-category');
+            if (select && !select.value) {
+                select.value = draft.category_id;
+                touched.push('la categoría');
+                syncEmojiFromCategory();
+            }
+        }
+
+        if (draft.district) {
+            const select = q('#publish-district');
+            if (select && [...select.options].some((o) => o.value === draft.district)) {
+                select.value = draft.district;
+                touched.push('el distrito');
+            }
+        }
+
+        const radio = q(`input[name="condition"][value="${draft.condition}"]`);
+        if (radio && !radio.checked) {
+            radio.checked = true;
+            touched.push('en qué estado lo aceptas');
+        }
+
+        /* El presupuesto no se lo inventa: sale de lo que otras personas han
+           pedido en la misma categoría. Sin muestra suficiente, no sugiere. */
+        let budgetNote = '';
+        if (draft.category_id) {
+            try {
+                const similar = await api.getRequests({ category: draft.category_id, per_page: 48 });
+                const suggested = assistant.suggestBudget(similar.requests || []);
+
+                if (suggested) {
+                    const min = q('#publish-budget-min');
+                    const max = q('#publish-budget-max');
+
+                    if (min && !min.value) min.value = String(suggested.min);
+                    if (max && !max.value) max.value = String(suggested.max);
+
+                    budgetNote = ` El presupuesto sale de lo que han pedido otras `
+                        + `${suggested.sample} personas en esa categoría; cámbialo si no te cuadra.`;
+                }
+            } catch (error) {
+                /* Sin sugerencia de presupuesto el borrador sigue sirviendo. */
+            }
+        }
+
+        state.dirty = true;
+        refreshAll();
+
+        if (result) {
+            result.textContent = touched.length
+                ? `Rellené ${touched.join(', ')}.${budgetNote} Revísalo y cámbialo a tu gusto.`
+                : 'Los campos ya tenían contenido, así que no toqué nada.';
+        }
+
+        const title = q('#publish-title');
+        if (title) title.focus();
     }
 
     function fillCategories() {

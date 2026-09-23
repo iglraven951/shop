@@ -114,8 +114,8 @@
         if (!query) return state.conversations;
 
         return state.conversations.filter((conversation) => {
-            const seller = String(conversation.seller?.username || '').toLowerCase();
-            const title = String(conversation.post_title || '').toLowerCase();
+            const seller = String(conversation.seller?.shop_name || conversation.seller?.username || '').toLowerCase();
+            const title = String(conversation.request_title || '').toLowerCase();
             return seller.includes(query) || title.includes(query);
         });
     }
@@ -130,14 +130,14 @@
         <button class="chat-item${active ? ' is-active' : ''}" type="button"
                 data-id="${escapeAttr(conversation.id)}"
                 ${active ? 'aria-current="true"' : ''}>
-            <img class="chat-item-thumb" src="${escapeAttr(conversation.post_image)}"
+            <img class="chat-item-thumb" src="${escapeAttr(conversation.request_image)}"
                  alt="" loading="lazy" decoding="async">
             <span class="chat-item-body">
                 <span class="chat-item-row">
-                    <span class="chat-item-name truncate">${escapeHtml(conversation.seller?.username || 'Vendedor')}</span>
+                    <span class="chat-item-name truncate">${escapeHtml(conversation.seller?.shop_name || conversation.seller?.username || 'Tienda')}</span>
                     <span class="chat-item-time">${escapeHtml(format.relative(conversation.updated_at))}</span>
                 </span>
-                <span class="chat-item-post truncate">${escapeHtml(conversation.post_title)}</span>
+                <span class="chat-item-post truncate">${escapeHtml(conversation.request_title)}</span>
                 <span class="chat-item-row">
                     <span class="chat-item-preview truncate">${escapeHtml(preview)}</span>
                     ${unread > 0
@@ -200,10 +200,16 @@
 
     function renderHead(conversation) {
         const seller = conversation.seller || {};
-        // En un foro de trato en persona, el distrito dice más que ningún otro dato.
-        const meta = seller.verified
-            ? 'Vendedor verificado'
-            : `Vendedor · ${seller.district || 'Arequipa'}`;
+
+        /* El storyboard pone «En línea» bajo el nombre del local. No lo
+           ponemos: no hay dato de presencia y fingirlo haría que alguien
+           esperase una respuesta inmediata que quizá no llega. Lo que sí
+           tenemos vale más para decidir si fiarse — cuántas compras lleva
+           resueltas ese local y dónde está. */
+        const meta = seller.rating_count
+            ? `★ ${Number(seller.rating).toFixed(1)} · ${seller.rating_count} `
+                + `${seller.rating_count === 1 ? 'compra' : 'compras'} · ${seller.district || 'Arequipa'}`
+            : `${seller.verified ? 'Tienda verificada' : 'Tienda'} · ${seller.district || 'Arequipa'}`;
 
         dom.head.innerHTML = `
             <button class="chat-back" type="button" data-action="back"
@@ -214,19 +220,19 @@
                 </svg>
             </button>
 
-            <span class="avatar chat-peer-avatar" aria-hidden="true">${escapeHtml(format.initials(seller.username))}</span>
+            <span class="avatar chat-peer-avatar" aria-hidden="true">${escapeHtml(format.initials(seller.shop_name || seller.username))}</span>
 
             <span class="chat-peer">
-                <span class="chat-peer-name truncate">${escapeHtml(seller.username || 'Vendedor')}</span>
+                <span class="chat-peer-name truncate">${escapeHtml(seller.shop_name || seller.username || 'Tienda')}</span>
                 <span class="chat-peer-meta truncate">${escapeHtml(meta)}</span>
             </span>
 
-            <a class="chat-post" href="publicacion.html?id=${escapeAttr(conversation.post_id)}"
-               aria-label="Ver la publicación «${escapeAttr(conversation.post_title)}»">
-                <img class="chat-post-thumb" src="${escapeAttr(conversation.post_image)}" alt="" decoding="async">
+            <a class="chat-post" href="publicacion.html?id=${escapeAttr(conversation.request_id)}"
+               aria-label="Ver el pedido «${escapeAttr(conversation.request_title)}»">
+                <img class="chat-post-thumb" src="${escapeAttr(conversation.request_image)}" alt="" decoding="async">
                 <span class="chat-post-info">
-                    <span class="chat-post-title truncate">${escapeHtml(conversation.post_title)}</span>
-                    <span class="chat-post-price">${escapeHtml(format.money(conversation.post_price))}</span>
+                    <span class="chat-post-title truncate">${escapeHtml(conversation.request_title)}</span>
+                    <span class="chat-post-price">${escapeHtml(format.money(conversation.price))}</span>
                 </span>
             </a>`;
     }
@@ -255,11 +261,21 @@
             ? ''
             : `<span class="avatar avatar-sm chat-msg-avatar" aria-hidden="true">${escapeHtml(format.initials(message.sender_name))}</span>`;
 
+        /* Las fotos del artículo viajan en el primer mensaje, el de la oferta.
+           Es el panel 8 del storyboard: el vendedor dice el precio, dónde está
+           y adjunta fotos — y esas fotos son lo primero que se mira. */
+        const photos = Array.isArray(message.photos) && message.photos.length
+            ? `<div class="chat-bubble-photos">${message.photos.slice(0, 4).map((photo) => `
+                <img class="chat-bubble-photo" src="${escapeAttr(photo.url)}"
+                     alt="Foto del artículo ofrecido" loading="lazy" decoding="async">`).join('')}</div>`
+            : '';
+
         return `
         <div class="${classes}">
             ${avatar}
             <div class="chat-bubble">
                 <p class="chat-bubble-text">${text}</p>
+                ${photos}
                 ${status}
             </div>
         </div>`;

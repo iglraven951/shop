@@ -679,3 +679,24 @@
     .chat-item { padding: var(--space-2); gap: var(--space-2); }
     .chat-quick-chip { padding-inline: var(--space-3); }
 }
+
+/* --------------------------------------------------------------------------
+   Fotos dentro de una burbuja
+
+   Llegan con la oferta: el vendedor adjunta lo que tiene. Se muestran en una
+   rejilla pequeña dentro del globo, sin desbordarlo ni empujar el texto.
+   -------------------------------------------------------------------------- */
+.chat-bubble-photos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+    gap: var(--space-2);
+    margin-top: var(--space-2);
+    max-width: 260px;
+}
+
+.chat-bubble-photo {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+}

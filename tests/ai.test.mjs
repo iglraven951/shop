@@ -208,27 +208,27 @@ async function conversation() {
     api.mock.latency = 0;
 
     const hello = await bot.respond('hola');
-    check('saluda sin buscar nada', hello.posts.length === 0 && hello.text.length > 20);
+    check('saluda sin buscar nada', hello.requests.length === 0 && hello.text.length > 20);
 
     const search = await bot.respond('hola, quiero un iphone');
-    check('encuentra iPhone en el catálogo', search.posts.length > 0, `dio ${search.posts.length}`);
+    check('encuentra iPhone en el catálogo', search.requests.length > 0, `dio ${search.requests.length}`);
     check('invita a ver al vendedor', /vendedor/i.test(search.text), search.text.slice(0, 80));
     check('ofrece enlace al foro', !!search.link);
     check('propone siguientes pasos', search.suggestions.length > 0);
 
     const typo = await bot.respond('busco un ifone');
-    check('encuentra pese a la errata', typo.posts.length > 0, `dio ${typo.posts.length}`);
+    check('encuentra pese a la errata', typo.requests.length > 0, `dio ${typo.requests.length}`);
 
     const priced = await bot.respond('laptop por menos de 4000');
     check('respeta el tope de precio',
-        priced.posts.every((p) => p.price <= 4000),
-        priced.posts.map((p) => p.price).join(', '));
+        priced.requests.every((p) => p.budget_min <= 4000),
+        priced.requests.map((p) => p.price).join(', '));
 
     const district = await bot.respond('que hay en Cayma');
-    check('filtra por distrito', district.posts.every((p) => p.district === 'Cayma') || district.posts.length === 0);
+    check('filtra por distrito', district.requests.every((p) => p.district === 'Cayma') || district.requests.length === 0);
 
     const nothing = await bot.respond('quiero un submarino nuclear');
-    check('admite cuando no hay nada', nothing.posts.length === 0, `dio ${nothing.posts.length}`);
+    check('admite cuando no hay nada', nothing.requests.length === 0, `dio ${nothing.requests.length}`);
     check('no se inventa resultados', !/tenemos \d/i.test(nothing.text), nothing.text.slice(0, 60));
 
     const howTo = await bot.respond('como publico un articulo');
@@ -238,7 +238,7 @@ async function conversation() {
     const map = await bot.respond('donde estan los vendedores');
     check('lleva al mapa', String(map.link).startsWith('mapa.html'), map.link);
 
-    console.log(`\n  ejemplo: «quiero un iphone» → ${search.posts.length} resultados`);
+    console.log(`\n  ejemplo: «quiero un iphone» → ${search.requests.length} resultados`);
     console.log(`  respuesta: ${search.text.slice(0, 96)}…`);
 }
 

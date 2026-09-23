@@ -80,6 +80,13 @@
             // Un término largo contenido cuenta: «iphone15» contiene «iphone»
             if (goal.length >= 4 && token.includes(goal)) return true;
             if (token.length >= 4 && goal.includes(token)) return true;
+
+            /* La primera letra tiene que coincidir. Sin esto, «lámpara» y
+               «cámara» quedan a distancia 2 y el asistente clasificaba una
+               lámpara en Cámaras. Quien escribe deprisa se come letras o las
+               cambia de sitio; casi nunca se equivoca en la primera. */
+            if (token[0] !== goal[0]) return false;
+
             return editDistance(token, goal, tolerance(goal)) <= tolerance(goal);
         });
     }
@@ -105,7 +112,11 @@
             'lente', 'tripode', 'fotografia', 'reflex', 'dslr', 'mirrorless'],
         'cat-hogar': ['cafetera', 'aspiradora', 'licuadora', 'microondas', 'refrigeradora',
             'televisor', 'tele', 'tv', 'smart', 'freidora', 'airfryer', 'cocina', 'horno',
-            'lavadora', 'ventilador'],
+            'lavadora', 'ventilador',
+            // Muebles y decoración: en el comercio inverso se piden mucho, y
+            // sin estas palabras el asistente no sabía dónde ponerlos.
+            'lampara', 'mueble', 'mesa', 'silla', 'escritorio', 'repisa',
+            'sofa', 'colchon', 'cama', 'espejo', 'alfombra', 'cortina', 'vajilla'],
         'cat-moda': ['zapatillas', 'zapatos', 'nike', 'adidas', 'puma', 'reebok', 'casaca',
             'chaqueta', 'polo', 'camisa', 'pantalon', 'jean', 'reloj', 'casio', 'mochila',
             'cartera', 'lentes', 'ropa'],
@@ -338,7 +349,7 @@
     /**
      * Busca en el catálogo con lo entendido, aflojando los filtros si hace
      * falta: es preferible ofrecer algo cercano a decir «no hay nada».
-     * @returns {Promise<{posts: Array, total: number, relaxed: boolean, filters: object}>}
+     * @returns {Promise<{requests: Array, total: number, relaxed: boolean, filters: object}>}
      */
     async function search(understood) {
         const api = global.api;
@@ -354,27 +365,27 @@
             sort: 'recent',
         };
 
-        let data = await api.getPosts(base);
+        let data = await api.getRequests(base);
 
         // Sin resultados: se quita el término libre y se confía en la categoría
-        if (!data.posts.length && base.q && base.category) {
-            data = await api.getPosts({ ...base, q: undefined });
-            if (data.posts.length) {
+        if (!data.requests.length && base.q && base.category) {
+            data = await api.getRequests({ ...base, q: undefined });
+            if (data.requests.length) {
                 return { ...data, total: data.pagination.total, relaxed: true, filters: { ...base, q: undefined } };
             }
         }
 
         // Sigue sin nada: se sueltan precio y distrito
-        if (!data.posts.length && (base.min_price || base.max_price || base.district)) {
+        if (!data.requests.length && (base.min_price || base.max_price || base.district)) {
             const loose = { ...base, min_price: undefined, max_price: undefined, district: undefined };
-            data = await api.getPosts(loose);
-            if (data.posts.length) {
+            data = await api.getRequests(loose);
+            if (data.requests.length) {
                 return { ...data, total: data.pagination.total, relaxed: true, filters: loose };
             }
         }
 
         return {
-            posts: data.posts,
+            requests: data.requests,
             total: data.pagination.total,
             relaxed: false,
             filters: base,
@@ -462,14 +473,14 @@
     /**
      * Responde a un mensaje.
      * @param {string} message
-     * @returns {Promise<{text: string, posts: Array, link: string|null,
+     * @returns {Promise<{text: string, requests: Array, link: string|null,
      *                    suggestions: string[], total: number}>}
      */
     async function respond(message) {
         const u = understand(message);
         const has = (intent) => u.intents.includes(intent);
 
-        const empty = { posts: [], link: null, total: 0 };
+        const empty = { requests: [], link: null, total: 0 };
 
         /* --- Cortesía: solo si no hay nada más que atender --- */
         const onlyCourtesy = u.intents.length > 0
@@ -556,7 +567,7 @@
         const detail = describeFilters(u);
         const cat = categoryName(u.category);
 
-        if (!result.posts.length) {
+        if (!result.requests.length) {
             const what = u.query || (cat ? cat.toLowerCase() : 'eso');
             return {
                 ...empty,
@@ -580,12 +591,143 @@
 
         return {
             text,
-            posts: result.posts,
+            requests: result.requests,
             total: n,
             link,
-            linkLabel: n > result.posts.length ? `Ver las ${n} publicaciones` : 'Ver en el foro',
+            linkLabel: n > result.requests.length ? `Ver los ${n} pedidos` : 'Ver en el foro',
             suggestions: suggestionsFor(u, true),
         };
+    }
+
+    /* ----------------------------------------------------------------------
+       Ayuda para redactar un pedido
+
+       En el comercio inverso lo difícil no es buscar, es explicar qué buscas.
+       Quien llega escribe «una lámpara vintage dorada» y se encuentra seis
+       campos vacíos. Esto convierte esa frase en un borrador: título,
+       categoría, icono, hasta dónde cede y un esqueleto de descripción con
+       las preguntas que un vendedor va a hacer de todos modos.
+       ---------------------------------------------------------------------- */
+
+    /** Lo que un vendedor necesita saber, por categoría, para poder ofrecer. */
+    const ASK_BY_CATEGORY = {
+        'cat-celulares': ['capacidad', 'si lo quieres liberado', 'estado de la batería'],
+        'cat-computo': ['para qué lo vas a usar', 'memoria y almacenamiento', 'si necesitas cargador'],
+        'cat-audio': ['con cable o inalámbrico', 'si necesitas estuche'],
+        'cat-gaming': ['qué accesorios te hacen falta', 'si quieres juegos incluidos'],
+        'cat-camaras': ['si necesitas lente', 'cuántos disparos aceptas'],
+        'cat-hogar': ['medidas o capacidad', 'color', 'si lo recoges tú'],
+        'cat-moda': ['talla', 'color'],
+        'cat-deportes': ['talla o medida', 'para qué uso'],
+        'cat-instrumentos': ['si eres principiante', 'si necesitas funda'],
+        'cat-libros': ['edición o año', 'si aceptas subrayados'],
+        'cat-bebes': ['edad del niño o niña', 'si necesitas que esté lavado'],
+        'cat-vehiculos': ['medida', 'año', 'si tiene papeles en regla'],
+    };
+
+    const GENERIC_ASKS = ['para cuándo lo necesitas', 'en qué distrito te viene bien recogerlo'];
+
+    /** Título en condiciones a partir de lo que la persona escribió. */
+    function titleFrom(message, understood) {
+        const raw = String(message || '')
+            .replace(/^\s*(hola[, ]*)?(busco|quiero|necesito|estoy buscando|me hace falta)\s+/i, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+
+        let base = raw || understood.query || '';
+        if (!base) return '';
+
+        /* El distrito tiene su propio campo. Repetirlo al final del título solo
+           lo alarga: «Lámpara dorada, por Cayma» en un pedido que ya dice
+           Cayma. Se corta por texto, sin expresión regular, porque el nombre
+           del distrito lo pone el usuario y podría traer caracteres raros. */
+        if (understood.district) {
+            const lower = base.toLowerCase();
+            ['por ', 'en ', 'de '].forEach((preposition) => {
+                const tail = preposition + understood.district.toLowerCase();
+                if (!lower.endsWith(tail)) return;
+                base = base.slice(0, base.length - tail.length).replace(/[,;\s]+$/, '');
+            });
+        }
+
+        const cut = base.slice(0, 90).replace(/[.,;:]+$/, '');
+        return cut.charAt(0).toUpperCase() + cut.slice(1);
+    }
+
+    /**
+     * Convierte una frase suelta en un borrador de pedido.
+     *
+     * No inventa presupuesto: eso lo pone quien llama, con lo que de verdad
+     * han pedido otros en esa categoría. Aquí solo se lee la frase.
+     *
+     * @param {string} message
+     * @returns {{title: string, category_id: string, emoji: string,
+     *            condition: string, district: string, description: string,
+     *            asks: string[], understood: object}}
+     */
+    function draftRequest(message) {
+        const understood = understand(message);
+        const categoryId = understood.category || '';
+
+        const category = (global.DiscoverySeed && global.DiscoverySeed.CATEGORIES || [])
+            .find((c) => c.id === categoryId);
+
+        /* Lo que el buscador entiende como «condición del artículo» aquí
+           significa otra cosa: hasta dónde cede quien pide. */
+        const condition = {
+            'Nuevo': 'Solo nuevo',
+            'Como nuevo': 'Como nuevo o mejor',
+            'Buen estado': 'Cualquiera que funcione',
+        }[understood.condition] || 'Cualquiera que funcione';
+
+        const asks = [...(ASK_BY_CATEGORY[categoryId] || []), ...GENERIC_ASKS].slice(0, 4);
+        const title = titleFrom(message, understood);
+
+        const description = [
+            title ? `Busco ${title.charAt(0).toLowerCase()}${title.slice(1)}.` : '',
+            understood.district ? `Estoy por ${understood.district}.` : '',
+            asks.length ? `Detalles que importan: ${asks.join(', ')}.` : '',
+        ].filter(Boolean).join(' ');
+
+        return {
+            title,
+            category_id: categoryId,
+            emoji: category ? category.icon : '',
+            condition,
+            district: understood.district || '',
+            description,
+            asks,
+            understood,
+        };
+    }
+
+    /**
+     * Horquilla de presupuesto sugerida a partir de lo que otros han pedido
+     * en la misma categoría. Es un dato real, no una corazonada: si no hay
+     * con qué compararlo, no se sugiere nada.
+     *
+     * @param {Array<{budget_min: number, budget_max: number}>} requests
+     * @returns {{min: number, max: number, sample: number}|null}
+     */
+    function suggestBudget(requests) {
+        const values = (requests || [])
+            .filter((r) => Number(r.budget_min) > 0 || Number(r.budget_max) > 0)
+            .map((r) => ({ min: Number(r.budget_min) || 0, max: Number(r.budget_max) || 0 }));
+
+        if (values.length < 3) return null;
+
+        const median = (list) => {
+            const sorted = [...list].sort((a, b) => a - b);
+            const mid = Math.floor(sorted.length / 2);
+            return sorted.length % 2 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
+        };
+
+        const min = median(values.map((v) => v.min).filter(Boolean));
+        const max = median(values.map((v) => v.max).filter(Boolean));
+
+        if (!min && !max) return null;
+
+        return { min: min || 0, max: max || min, sample: values.length };
     }
 
     global.DiscoveryAssistant = {
@@ -597,6 +739,8 @@
         search,
         respond,
         feedLink,
+        draftRequest,
+        suggestBudget,
         BRANDS,
         INTENTS,
     };
