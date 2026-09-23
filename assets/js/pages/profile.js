@@ -18,7 +18,7 @@
     const modal = global.modal;
     const UI = global.UI;
 
-    const TABS = ['datos', 'publicaciones'];
+    const TABS = ['datos', 'pedidos'];
     const CONDITIONS = ['Nuevo', 'Como nuevo', 'Buen estado'];
     const BIO_MAX = 200;
     const MOTIVATION_MAX = 280;
@@ -336,7 +336,7 @@
             global.location.hash = name;
         }
 
-        if (name === 'publicaciones') openPostsTab();
+        if (name === 'pedidos') openPostsTab();
     }
 
     function bindTabs() {
@@ -526,7 +526,7 @@
     }
 
     /* ----------------------------------------------------------------------
-       Pestaña «Mis publicaciones»
+       Pestaña «Mis pedidos»
        ---------------------------------------------------------------------- */
 
     function loadPosts() {
@@ -602,7 +602,7 @@
             return;
         }
 
-        const parts = [`${format.number(summary.total)} ${format.plural(summary.total, 'publicación', 'publicaciones')}`];
+        const parts = [`${format.number(summary.total)} ${format.plural(summary.total, 'publicación', 'pedidos')}`];
         if (summary.pending) parts.push(`${format.number(summary.pending)} en revisión`);
         if (summary.rejected) parts.push(`${format.number(summary.rejected)} ${format.plural(summary.rejected, 'rechazada', 'rechazadas')}`);
         hint.textContent = `${parts.join(' · ')}.`;
@@ -641,7 +641,7 @@
         if (canPublish()) {
             return UI.emptyState({
                 icon: '🏷️',
-                title: 'Publica tu primer artículo',
+                title: 'Publica tu primer pedido',
                 message: 'Cuenta qué ya no usas, ponle un precio justo y deja que el foro haga el resto.',
                 action: { label: 'Publicar un artículo', href: 'publicar.html' },
             });

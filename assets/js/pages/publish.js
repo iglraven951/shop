@@ -742,7 +742,7 @@
             category: category
                 ? { id: category.id, name: category.name, icon: category.icon }
                 : { id: null, name: 'Sin categoría', icon: '📦' },
-            author: {
+            buyer: {
                 id: user.id || null,
                 username: user.username || 'Tú',
                 avatar_url: user.avatar_url || null,

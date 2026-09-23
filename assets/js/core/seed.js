@@ -399,10 +399,12 @@
                 description,
                 emoji,
                 condition: ACCEPTS[seed % ACCEPTS.length],
-                /* Una ilustración, no una foto: el objeto todavía no existe —
-                   es lo que alguien busca. Las fotos reales las trae la oferta
-                   del vendedor, que sí tiene el artículo delante. */
-                image_url: createImage(title, emoji),
+                /* Una foto de referencia: no es el objeto de nadie, es un ejemplo
+                   de lo que se busca — que es justo lo que ayuda a un vendedor
+                   a reconocerlo. El SVG generado queda de respaldo por si la
+                   foto no carga, para que nunca haya un hueco roto. */
+                image_url: photoUrl(index, 640),
+                fallback_url: createImage(title, emoji),
                 budget_min: budgetMin,
                 budget_max: budgetMax,
                 category: { id: category.id, name: category.name, icon: category.icon },
@@ -597,7 +599,8 @@
                     description,
                     emoji,
                     condition: ACCEPTS[(sIndex + k) % ACCEPTS.length],
-                    image_url: createImage(title, emoji),
+                    image_url: photoUrl(sIndex * 3 + k, 640),
+                    fallback_url: createImage(title, emoji),
                     budget_min: budgetMin,
                     budget_max: budgetMax,
                     category: { id: category.id, name: category.name, icon: category.icon },

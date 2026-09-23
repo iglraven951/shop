@@ -1285,3 +1285,71 @@
 }
 
 .scrim[hidden] { display: none; }
+
+/* --------------------------------------------------------------------------
+   Navegación inferior (móvil)
+
+   El panel 7 del storyboard. Solo aparece en pantallas estrechas: en un
+   escritorio la cabecera ya tiene sitio para todo y una barra abajo sería
+   ruido. Se apoya en los mismos tokens que el resto, así que no introduce
+   ningún color ni medida nueva.
+   -------------------------------------------------------------------------- */
+.bottom-nav { display: none; }
+
+@media (max-width: 860px) {
+    .bottom-nav {
+        position: fixed;
+        inset: auto 0 0 0;
+        z-index: var(--z-sticky);
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        background: var(--bg-overlay);
+        border-top: 1px solid var(--border-default);
+        /* En la app, por encima de la barra de gestos del sistema */
+        padding-bottom: var(--ds-inset-bottom, 0px);
+        backdrop-filter: blur(12px);
+    }
+
+    .bottom-nav-item {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        /* 56 px: por encima del mínimo táctil con el texto incluido */
+        min-height: 56px;
+        padding: var(--space-2) var(--space-1);
+        color: var(--text-muted);
+        transition: color var(--duration-fast) var(--ease-out);
+    }
+
+    .bottom-nav-item:hover { color: var(--text-secondary); }
+    .bottom-nav-item.is-active { color: var(--brand); }
+
+    .bottom-nav-label {
+        font-size: var(--text-3xs);
+        font-weight: 600;
+        letter-spacing: var(--tracking-wide);
+    }
+
+    .bottom-nav-item .count-dot {
+        position: absolute;
+        top: 6px;
+        left: 50%;
+        transform: translateX(6px);
+    }
+
+    /* El contenido necesita sitio para no acabar debajo de la barra, y los
+       botones flotantes tienen que subirse por encima de ella. */
+    body.has-bottom-nav { padding-bottom: 56px; }
+
+    body.has-bottom-nav .filters-fab,
+    body.has-bottom-nav .asst-fab {
+        bottom: calc(56px + var(--ds-inset-bottom, 0px) + var(--space-4));
+    }
+
+    body.has-bottom-nav .toast-stack {
+        bottom: calc(56px + var(--ds-inset-bottom, 0px) + var(--space-4));
+    }
+}

@@ -16,6 +16,8 @@
         search: '<svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="7.5" cy="7.5" r="5"/><path d="m11.5 11.5 4 4"/></svg>',
         bookmark: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 2.5h10v15l-5-3.5-5 3.5v-15Z"/></svg>',
         bell: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5a5 5 0 0 0-5 5v3.2L3.5 13.5h13L15 10.7V7.5a5 5 0 0 0-5-5Z"/><path d="M8 16a2 2 0 0 0 4 0"/></svg>',
+        home: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5 10 3l7 5.5V16a1 1 0 0 1-1 1h-3.5v-5h-5v5H4a1 1 0 0 1-1-1V8.5Z"/></svg>',
+        orders: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 3h9a1 1 0 0 1 1 1v13l-2.2-1.6L11 17l-1-1.6L9 17l-2.3-1.6L4.5 17V4a1 1 0 0 1 1-1Z"/><path d="M8 7h4M8 10.5h4"/></svg>',
         map: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 2.5 2.5 5v12.5l5-2.5 5 2.5 5-2.5V2.5l-5 2.5-5-2.5Z"/><path d="M7.5 2.5V15M12.5 5v12.5"/></svg>',
         chat: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 12a2 2 0 0 1-2 2H7l-4 3V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v7Z"/></svg>',
         shield: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5 3.5 5v5c0 3.8 2.7 6.9 6.5 7.5 3.8-.6 6.5-3.7 6.5-7.5V5L10 2.5Z"/><path d="m7.3 10 1.9 1.9 3.5-3.5"/></svg>',
@@ -49,10 +51,10 @@
 
     const NAV_LINKS = [
         { href: 'index.html', label: 'Inicio' },
-        { href: 'mapa.html', label: 'Mapa de vendedores' },
-        { href: 'guardados.html', label: 'Guardados' },
+        { href: 'mapa.html', label: 'Tiendas que responden' },
+        { href: 'guardados.html', label: 'Mis pedidos' },
         { href: 'mensajes.html', label: 'Mensajes' },
-        { href: 'publicar.html', label: 'Publicar artículo' },
+        { href: 'publicar.html', label: 'Pedir lo que busco' },
         { href: 'perfil.html', label: 'Mi perfil' },
     ];
 
@@ -71,7 +73,7 @@
                     <span class="brand-mark" aria-hidden="true">${LOGO}</span>
                     <span>
                         <span class="brand-name">DiscoveryShop</span>
-                        <span class="brand-tagline">Compra · Vende · Conecta</span>
+                        <span class="brand-tagline">Lo que buscas, lo encuentras</span>
                     </span>
                 </a>
 
@@ -89,19 +91,19 @@
 
                 <nav class="header-actions" aria-label="Acciones de usuario">
                     <a class="btn btn-primary btn-sm header-publish" href="publicar.html" id="publish-btn">
-                        ${ICON.plus}<span>Publicar</span>
+                        ${ICON.plus}<span>Pedir</span>
                     </a>
 
                     <button class="header-icon-btn" id="theme-toggle" type="button"
                             data-tooltip="Cambiar tema" aria-label="Cambiar tema"></button>
 
                     <a class="header-icon-btn" href="mapa.html"
-                       data-tooltip="Mapa de vendedores" aria-label="Mapa de vendedores">
+                       data-tooltip="Tiendas que responden" aria-label="Tiendas que responden">
                         ${ICON.map}
                     </a>
 
                     <a class="header-icon-btn" href="guardados.html"
-                       data-tooltip="Guardados" aria-label="Publicaciones guardadas">
+                       data-tooltip="Mis pedidos" aria-label="Mis pedidos">
                         ${ICON.bookmark}
                         <span class="count-dot hidden" id="saved-count">0</span>
                     </a>
@@ -168,8 +170,8 @@
                 <a class="dropdown-item" href="perfil.html" role="menuitem">
                     ${ICON.user}<span>Mi perfil</span>
                 </a>
-                <a class="dropdown-item" href="perfil.html#publicaciones" role="menuitem">
-                    ${ICON.store}<span>Mis publicaciones</span>
+                <a class="dropdown-item" href="perfil.html#pedidos" role="menuitem">
+                    ${ICON.store}<span>Mis pedidos</span>
                 </a>
                 <a class="dropdown-item" href="guardados.html" role="menuitem">
                     ${ICON.bookmark}<span>Guardados</span>
@@ -421,7 +423,7 @@
                         <h3 class="footer-heading">Explorar</h3>
                         <div class="footer-links">
                             <a href="index.html">Todas las publicaciones</a>
-                            <a href="mapa.html">Mapa de vendedores</a>
+                            <a href="mapa.html">Tiendas que responden</a>
                             <a href="index.html?sort=popular">Más populares</a>
                             <a href="index.html?sort=recent">Recién publicados</a>
                         </div>
@@ -500,6 +502,47 @@
                 setTimeout(() => global.location.reload(), 900);
             });
         }
+    }
+
+    /* ----------------------------------------------------------------------
+       Navegación inferior (solo en móvil)
+
+       Es el panel 7 del storyboard: Inicio · Pedidos · Mensajes · Perfil. En
+       un teléfono la cabecera solo deja sitio para el logo y el buscador, y
+       las cuatro cosas que se usan a diario quedaban a dos toques dentro del
+       menú. Aquí están a uno.
+       ---------------------------------------------------------------------- */
+
+    const BOTTOM_NAV = [
+        { href: 'index.html', label: 'Inicio', icon: 'home', match: ['index.html', ''] },
+        { href: 'guardados.html', label: 'Pedidos', icon: 'orders', match: ['guardados.html'] },
+        { href: 'mensajes.html', label: 'Mensajes', icon: 'chat', match: ['mensajes.html'], badge: 'nav-msg-count' },
+        { href: 'perfil.html', label: 'Perfil', icon: 'user', match: ['perfil.html'] },
+    ];
+
+    function mountBottomNav() {
+        if (document.getElementById('bottom-nav')) return;
+
+        const page = (global.location.pathname.split('/').pop() || 'index.html');
+
+        const nav = document.createElement('nav');
+        nav.className = 'bottom-nav';
+        nav.id = 'bottom-nav';
+        nav.setAttribute('aria-label', 'Navegación principal');
+
+        nav.innerHTML = BOTTOM_NAV.map((item) => {
+            const active = item.match.includes(page);
+            return `
+            <a class="bottom-nav-item${active ? ' is-active' : ''}" href="${item.href}"
+               ${active ? 'aria-current="page"' : ''}>
+                <span class="bottom-nav-icon" aria-hidden="true">${ICON[item.icon]}</span>
+                <span class="bottom-nav-label">${escapeHtml(item.label)}</span>
+                ${item.badge ? `<span class="count-dot hidden" id="${item.badge}">0</span>` : ''}
+            </a>`;
+        }).join('');
+
+        document.body.appendChild(nav);
+        document.body.classList.add('has-bottom-nav');
     }
 
     /* ----------------------------------------------------------------------
@@ -806,6 +849,8 @@
         const footerSlot = $('#app-footer');
         if (footerSlot) footerSlot.outerHTML = footerMarkup();
 
+        mountBottomNav();
+
         bindTheme();
         bindScrollState();
         bindSearch();
@@ -815,7 +860,10 @@
 
         // Los contadores se repintan solos ante cualquier cambio de estado
         store.subscribe('saved', (list) => updateBadge('saved-count', (list || []).length));
-        store.subscribe('unreadMessages', (count) => updateBadge('msg-count', count));
+        store.subscribe('unreadMessages', (count) => {
+            updateBadge('msg-count', count);
+            updateBadge('nav-msg-count', count);
+        });
         store.subscribe('pendingModeration', (count) => updateBadge('admin-count', count));
         store.subscribe('unreadNotifications', (count) => updateBadge('notif-count', count));
         store.subscribe('notifications', () => renderNotifications());

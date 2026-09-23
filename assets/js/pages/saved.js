@@ -85,8 +85,8 @@
         const total = state.posts.length;
 
         dom.count.textContent = total === 0
-            ? 'No tienes publicaciones guardadas'
-            : `${format.number(total)} ${format.plural(total, 'publicación guardada', 'publicaciones guardadas')}`;
+            ? 'No tienes pedidos guardados'
+            : `${format.number(total)} ${format.plural(total, 'pedido guardado', 'pedidos guardados')}`;
     }
 
     function renderEmpty() {
@@ -94,9 +94,9 @@
         dom.actions.hidden = true;
         dom.state.innerHTML = UI.emptyState({
             icon: '🔖',
-            title: 'Todavía no has guardado nada',
-            message: 'Pulsa «Guardar» en cualquier publicación para tenerla aquí a mano.',
-            action: { label: 'Explorar el foro', href: 'index.html' },
+            title: 'Todavía no has guardado ningún pedido',
+            message: 'Pulsa «Guardar» en cualquier pedido para tenerlo aquí a mano.',
+            action: { label: 'Ver qué busca la gente', href: 'index.html' },
         });
     }
 
@@ -191,8 +191,8 @@
 
         const confirmed = await modal.confirm({
             title: 'Vaciar guardados',
-            message: `Se quitarán ${total} ${format.plural(total, 'publicación', 'publicaciones')} de tu lista. `
-                + 'Seguirán publicadas en el foro y podrás volver a guardarlas cuando quieras.',
+            message: `Se quitarán ${total} ${format.plural(total, 'pedido', 'pedidos')} de tu lista. `
+                + 'Seguirán abiertos en el tablón y podrás volver a guardarlos cuando quieras.',
             confirmLabel: 'Sí, vaciar',
             cancelLabel: 'Conservar',
             danger: true,
@@ -227,7 +227,7 @@
         state.clearing = false;
 
         if (failed) {
-            toast.error(`No pudimos quitar ${failed} ${format.plural(failed, 'publicación', 'publicaciones')}. Inténtalo de nuevo.`);
+            toast.error(`No pudimos quitar ${failed} ${format.plural(failed, 'pedido', 'pedidos')}. Inténtalo de nuevo.`);
         } else {
             toast.success('Tu lista de guardados quedó vacía');
         }

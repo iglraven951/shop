@@ -608,9 +608,13 @@
                 description,
                 emoji,
                 condition,
-                /* Una ilustración generada, no una foto: el objeto todavía no
-                   existe. Las fotos reales llegan en la oferta del vendedor. */
+                /* Un pedido nuevo no trae foto: el objeto todavía no existe y
+                   nadie va a subir la foto de algo que no tiene. Se ilustra
+                   con el icono elegido sobre un degradado, que se genera aquí
+                   mismo y no depende de ninguna red. Las fotos reales llegan
+                   después, en la oferta del vendedor, que sí lo tiene delante. */
                 image_url: global.DiscoverySeed.createImage(title, emoji),
+                fallback_url: global.DiscoverySeed.createImage(title, emoji),
                 budget_min: hasBudget ? budgetMin : 0,
                 budget_max: hasBudget ? (budgetMax || budgetMin) : 0,
                 category: { id: category.id, name: category.name, icon: category.icon },

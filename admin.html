@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel de administración · DiscoveryShop</title>
+    <title>Panel de moderación · DiscoveryShop</title>
     <meta name="description" content="Panel de moderación de DiscoveryShop: aprueba o rechaza las publicaciones pendientes y las solicitudes de cuenta de vendedor del foro de Arequipa.">
     <meta name="theme-color" content="#070c14">
     <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
@@ -181,7 +181,7 @@
                     <button class="admin-tab is-active" type="button" role="tab" data-tab="publicaciones"
                             id="tab-publicaciones" aria-controls="panel-publicaciones" aria-selected="true">
                         <span aria-hidden="true">📝</span>
-                        <span>Publicaciones</span>
+                        <span>Pedidos</span>
                         <span class="admin-tab-count" data-tab-count="publicaciones" hidden></span>
                     </button>
                     <button class="admin-tab" type="button" role="tab" data-tab="vendedores"
@@ -214,7 +214,7 @@
                          aria-labelledby="tab-publicaciones" tabindex="0">
 
                     <div class="admin-toolbar">
-                        <div class="segmented admin-filters" role="group" aria-label="Filtrar publicaciones por estado">
+                        <div class="segmented admin-filters" role="group" aria-label="Filtrar pedidos por estado">
                             <button class="segmented-item" type="button" data-post-status="pending" aria-pressed="true">
                                 Pendientes <span class="admin-filter-count" data-count="posts-pending"></span>
                             </button>

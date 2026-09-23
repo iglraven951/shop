@@ -1,7 +1,7 @@
 /**
  * DiscoveryShop · Panel de administración
  *
- * Dos colas de trabajo —publicaciones y solicitudes de vendedor— más la
+ * Dos colas de trabajo —pedidos y solicitudes de vendedor— más la
  * bandeja de la IA, que cuenta lo que ha decidido por su cuenta. El acceso se
  * resuelve antes de pintar cualquier dato: sin sesión se invita a entrar, y
  * con sesión sin permisos se explica el porqué. Ninguna cifra ni botón de
@@ -21,11 +21,11 @@
     const toast = global.toast;
     const modal = global.modal;
 
-    const TABS = ['publicaciones', 'vendedores', 'denuncias', 'ia', 'historial'];
+    const TABS = ['pedidos', 'vendedores', 'denuncias', 'ia', 'historial'];
 
     /** Cómo se lee cada motivo de denuncia en pantalla. */
     const REPORT_CATEGORIES = {
-        engano: 'La publicación engaña',
+        engano: 'La pedido engaña',
         prohibido: 'Artículo prohibido',
         duplicado: 'Está repetida',
         ofensivo: 'Contenido ofensivo',
@@ -75,23 +75,23 @@
     const EMPTY_POSTS = {
         pending: {
             icon: '✅',
-            title: 'No hay publicaciones pendientes',
+            title: 'No hay pedidos pendientes',
             message: 'Todo al día. Cuando alguien publique un artículo aparecerá aquí para su revisión.',
         },
         approved: {
             icon: '📭',
-            title: 'Todavía no hay publicaciones aprobadas',
+            title: 'Todavía no hay pedidos aprobadas',
             message: 'En cuanto apruebes la primera, se mostrará en esta lista.',
         },
         rejected: {
             icon: '🙌',
-            title: 'No hay publicaciones rechazadas',
-            message: 'Ninguna publicación ha sido rechazada hasta ahora.',
+            title: 'No hay pedidos rechazadas',
+            message: 'Ninguna pedido ha sido rechazada hasta ahora.',
         },
         all: {
             icon: '📭',
-            title: 'Todavía no hay publicaciones',
-            message: 'El foro está vacío. Las publicaciones de los vendedores aparecerán aquí.',
+            title: 'Todavía no hay pedidos',
+            message: 'El foro está vacío. Las pedidos de los vendedores aparecerán aquí.',
         },
     };
 
@@ -111,18 +111,18 @@
     const EMPTY_INBOX = {
         all: {
             icon: '🤖',
-            title: 'La IA aún no ha revisado ninguna publicación',
+            title: 'La IA aún no ha revisado ninguna pedido',
             message: 'En cuanto alguien publique un artículo, su decisión aparecerá aquí como un mensaje.',
         },
         approved: {
             icon: '✅',
             title: 'Todavía no ha aprobado nada',
-            message: 'Cuando una publicación encaje claramente con el foro, la IA la aprobará y te lo contará aquí.',
+            message: 'Cuando una pedido encaje claramente con el foro, la IA la aprobará y te lo contará aquí.',
         },
         rejected: {
             icon: '🙌',
             title: 'Todavía no ha rechazado nada',
-            message: 'Ninguna publicación ha dado motivos para rechazarla de forma automática.',
+            message: 'Ninguna pedido ha dado motivos para rechazarla de forma automática.',
         },
         pending: {
             icon: '👌',
@@ -164,7 +164,7 @@
 
     const state = {
         user: null,
-        tab: 'publicaciones',
+        tab: 'pedidos',
         stats: null,
         posts: { status: 'pending', q: '', items: [], loaded: false },
         sellers: { status: 'pending', items: [], loaded: false },
@@ -180,7 +180,7 @@
             // pulsar «Actualizar» volvería a cantar lo mismo.
             announced: new Set(),
         },
-        // Publicaciones que siguen esperando a una persona. Se usa dos veces:
+        // Pedidos que siguen esperando a una persona. Se usa dos veces:
         // para la métrica de dudas y para saber si un aviso todavía se puede
         // resolver desde su propia burbuja.
         doubt: { ids: new Set(), count: 0 },
@@ -294,7 +294,7 @@
     }
 
     /**
-     * Relee la cola pendiente para saber cuántas publicaciones dejó la IA en
+     * Relee la cola pendiente para saber cuántas pedidos dejó la IA en
      * duda y cuáles siguen sin resolver.
      *
      * Las estadísticas generales cuentan todo lo pendiente sin distinguir quién
@@ -368,7 +368,7 @@
         setCount('reports-open', reports.open);
         setCount('reports-total', reports.total);
 
-        setTabCount('publicaciones', stats.posts.pending);
+        setTabCount('pedidos', stats.posts.pending);
         setTabCount('vendedores', stats.sellers.pending);
         setTabCount('denuncias', reports.open);
     }
@@ -416,7 +416,7 @@
     }
 
     function loadTab(tab) {
-        if (tab === 'publicaciones' && !state.posts.loaded) loadPosts();
+        if (tab === 'pedidos' && !state.posts.loaded) loadPosts();
         if (tab === 'vendedores' && !state.sellers.loaded) loadSellers();
         if (tab === 'denuncias' && !state.reports.loaded) loadReports();
         if (tab === 'ia' && !state.inbox.loaded) loadInbox();
@@ -478,7 +478,7 @@
                     ? 'No hay denuncias abiertas'
                     : 'Nada que mostrar aquí',
                 message: state.reports.status === 'open'
-                    ? 'Cuando alguien señale una publicación, aparecerá en esta lista.'
+                    ? 'Cuando alguien señale una pedido, aparecerá en esta lista.'
                     : 'Prueba con otro filtro.',
             });
             return;
@@ -511,11 +511,11 @@
                 ${report.status === 'open' ? `
                 <div class="admin-report-actions">
                     <button class="btn btn-secondary btn-sm" type="button"
-                            data-resolve="${escapeAttr(report.id)}" data-resolution="Revisada, la publicación se mantiene">
+                            data-resolve="${escapeAttr(report.id)}" data-resolution="Revisada, la pedido se mantiene">
                         Se mantiene
                     </button>
                     <button class="btn btn-danger btn-sm" type="button"
-                            data-resolve="${escapeAttr(report.id)}" data-resolution="Revisada, se actuó sobre la publicación">
+                            data-resolve="${escapeAttr(report.id)}" data-resolution="Revisada, se actuó sobre la pedido">
                         Actuamos sobre ella
                     </button>
                 </div>` : `
@@ -560,7 +560,7 @@
     }
 
     /* ======================================================================
-       Cola de publicaciones
+       Cola de pedidos
        ====================================================================== */
 
     function listSkeleton(count) {
@@ -635,7 +635,7 @@
     }
 
     /**
-     * Etiqueta discreta con lo que opinó la IA de una publicación.
+     * Etiqueta discreta con lo que opinó la IA de una pedido.
      *
      * El motivo va en `title` para quien usa ratón y repetido en texto oculto
      * para quien no lo tiene: un `title` no lo anuncia ningún lector de
@@ -726,7 +726,7 @@
         const node = $('#admin-posts-status');
 
         node.textContent = total
-            ? `${format.number(total)} ${format.plural(total, 'publicación', 'publicaciones')} `
+            ? `${format.number(total)} ${format.plural(total, 'pedido', 'pedidos')} `
               + `${format.plural(total, words[0], words[1])}`
             : '';
     }
@@ -756,7 +756,7 @@
 
     /**
      * Lleva al estado local el resultado de una moderación.
-     * @returns {boolean} true si la publicación sigue encajando en el filtro.
+     * @returns {boolean} true si la pedido sigue encajando en el filtro.
      */
     function applyPostUpdate(id, post) {
         const index = state.posts.items.findIndex((item) => item.id === id);
@@ -801,16 +801,16 @@
         if (!post) return;
 
         openReasonDialog({
-            title: 'Rechazar publicación',
+            title: 'Rechazar pedido',
             subject: post.title,
             note: 'Quien publicó recibirá este motivo tal cual. Sé claro y respetuoso.',
-            confirmLabel: 'Rechazar publicación',
+            confirmLabel: 'Rechazar pedido',
             submit: async (reason) => {
                 const data = await api.rejectRequest(id, reason);
                 const row = findRow(id);
                 const stays = applyPostUpdate(id, data.request);
 
-                toast.warning(`«${data.request.title}» fue rechazada. Se avisó a quien la publicó.`);
+                toast.warning(`«${data.request.title}» fue rechazado. Se avisó a quien la publicó.`);
 
                 if (!stays) await fadeOut(row);
                 renderPosts();
@@ -862,9 +862,9 @@
         }
 
         openReasonDialog({
-            title: `Rechazar ${format.number(ids.length)} ${format.plural(ids.length, 'publicación', 'publicaciones')}`,
+            title: `Rechazar ${format.number(ids.length)} ${format.plural(ids.length, 'pedido', 'pedidos')}`,
             subject: `Se aplicará el mismo motivo a ${format.number(ids.length)} `
-                + `${format.plural(ids.length, 'publicación', 'publicaciones')}.`,
+                + `${format.plural(ids.length, 'pedido', 'pedidos')}.`,
             note: 'Cada autor recibirá este texto. Asegúrate de que encaja con todas.',
             confirmLabel: 'Rechazar todas',
             submit: async (reason) => {
@@ -925,7 +925,7 @@
 
     function reportBulk(action, done, failed, skipped) {
         if (done) {
-            const word = format.plural(done, 'publicación', 'publicaciones');
+            const word = format.plural(done, 'pedido', 'pedidos');
             const verb = action === 'approve'
                 ? format.plural(done, 'aprobada', 'aprobadas')
                 : format.plural(done, 'rechazada', 'rechazadas');
@@ -934,12 +934,12 @@
 
         if (skipped) {
             toast.info(`${format.number(skipped)} ${format.plural(skipped,
-                'publicación ya estaba aprobada', 'publicaciones ya estaban aprobadas')}.`);
+                'pedido ya estaba aprobada', 'pedidos ya estaban aprobadas')}.`);
         }
 
         if (failed) {
             toast.error(`${format.number(failed)} ${format.plural(failed,
-                'publicación no se pudo procesar', 'publicaciones no se pudieron procesar')}.`);
+                'pedido no se pudo procesar', 'pedidos no se pudieron procesar')}.`);
         }
 
         if (!done && !failed && !skipped) toast.info('No había nada que procesar.');
@@ -1014,7 +1014,7 @@
                 ${fact('Distrito', seller.district || 'Sin distrito')}
                 ${fact('Teléfono', seller.phone || 'No indicado')}
                 ${fact('Solicitud', format.relative(applied))}
-                ${fact('Publicaciones', `${format.number(posts)} ${format.plural(posts, 'publicación', 'publicaciones')}`)}
+                ${fact('Pedidos', `${format.number(posts)} ${format.plural(posts, 'pedido', 'pedidos')}`)}
             </dl>
 
             ${seller.seller_motivation ? `
@@ -1029,7 +1029,7 @@
 
             <footer class="admin-seller-actions">
                 <a class="btn btn-ghost btn-sm" href="index.html?author_id=${id}"
-                   target="_blank" rel="noopener">Ver sus publicaciones</a>
+                   target="_blank" rel="noopener">Ver sus pedidos</a>
                 ${status !== 'approved' ? `
                 <button class="btn btn-success btn-sm" type="button"
                         data-approve-seller="${id}">Aprobar vendedor</button>` : ''}
@@ -1061,7 +1061,7 @@
         const stays = state.sellers.status === 'all' || user.seller_status === state.sellers.status;
 
         if (index !== -1) {
-            // El servidor no devuelve el recuento de publicaciones: lo conservamos.
+            // El servidor no devuelve el recuento de pedidos: lo conservamos.
             const merged = { ...state.sellers.items[index], ...user };
             if (stays) state.sellers.items[index] = merged;
             else state.sellers.items.splice(index, 1);
@@ -1170,7 +1170,7 @@
                     <time datetime="${escapeAttr(entry.created_at)}">${escapeHtml(format.relative(entry.created_at))}</time>
                     ${isPost && entry.target_id ? `
                     <a class="admin-timeline-link" href="publicacion.html?id=${escapeAttr(entry.target_id)}"
-                       target="_blank" rel="noopener">Ver publicación</a>` : ''}
+                       target="_blank" rel="noopener">Ver pedido</a>` : ''}
                 </p>
             </div>
         </li>`;
@@ -1374,7 +1374,7 @@
 
         const message = fresh.length === 1
             ? `La IA revisó «${newest.post_title}».`
-            : `La IA revisó ${format.number(fresh.length)} publicaciones mientras no estabas`
+            : `La IA revisó ${format.number(fresh.length)} pedidos mientras no estabas`
               + `${doubts ? `, ${format.number(doubts)} de ellas en duda` : ''}.`;
 
         toast.info(message, { title: 'Aviso de la IA', duration: 9000 });
@@ -1441,7 +1441,7 @@
                         <span>Enviar a mi WhatsApp</span>
                     </button>
                     <a class="btn btn-ghost btn-sm" href="publicacion.html?id=${escapeAttr(item.post_id)}"
-                       target="_blank" rel="noopener">Ver publicación</a>
+                       target="_blank" rel="noopener">Ver pedido</a>
                     ${unresolved ? `
                     <button class="btn btn-success btn-sm" type="button" data-inbox-approve="${id}">
                         Aprobar
@@ -1624,13 +1624,13 @@
         if (!item) return;
 
         openReasonDialog({
-            title: 'Rechazar publicación',
+            title: 'Rechazar pedido',
             subject: item.post_title,
             note: 'Quien publicó recibirá este motivo tal cual. Sé claro y respetuoso.',
-            confirmLabel: 'Rechazar publicación',
+            confirmLabel: 'Rechazar pedido',
             submit: async (reason) => {
                 const data = await api.rejectRequest(item.post_id, reason);
-                toast.warning(`«${data.request.title}» fue rechazada. Se avisó a quien la publicó.`);
+                toast.warning(`«${data.request.title}» fue rechazado. Se avisó a quien la publicó.`);
                 await afterInboxDecision();
             },
         });
@@ -1653,8 +1653,8 @@
 
         const confirmed = await modal.confirm({
             title: '¿Vaciar la bandeja?',
-            message: 'Se borrarán todos los avisos de la IA. Las publicaciones en duda '
-                + 'seguirán en la cola de Publicaciones, esperando tu decisión.',
+            message: 'Se borrarán todos los avisos de la IA. Las pedidos en duda '
+                + 'seguirán en la cola de Pedidos, esperando tu decisión.',
             confirmLabel: 'Vaciar bandeja',
             danger: true,
         });
@@ -1984,7 +1984,7 @@
 
     function bindShortcuts() {
         document.addEventListener('keydown', (event) => {
-            if (state.tab !== 'publicaciones' || state.bulkRunning) return;
+            if (state.tab !== 'pedidos' || state.bulkRunning) return;
             if (event.ctrlKey || event.metaKey || event.altKey) return;
             if (isTyping(event.target)) return;
             // Con un modal abierto los atajos estorbarían.
