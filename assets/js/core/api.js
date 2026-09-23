@@ -355,88 +355,136 @@
          *   min_price, max_price, sort, page, per_page, author_id.
          *   sort: recent | price_asc | price_desc | popular | interest | commented
          */
-        getPosts(filters = {}) {
-            return this.request(`/api/posts${this.toQuery(filters)}`);
+        getRequests(filters = {}) {
+            return this.request(`/api/requests${this.toQuery(filters)}`);
         }
 
-        getPost(id) {
-            return this.request(`/api/posts/${id}`);
+        getRequest(id) {
+            return this.request(`/api/requests/${id}`);
         }
 
         getCategories() {
-            return this.request('/api/posts/categories');
+            return this.request('/api/requests/categories');
         }
 
-        getMyPosts() {
-            return this.request('/api/posts/mine');
+        getMyRequests() {
+            return this.request('/api/requests/mine');
         }
 
-        getSavedPosts() {
-            return this.request('/api/posts/saved');
+        getSavedRequests() {
+            return this.request('/api/requests/saved');
         }
 
-        createPost(data) {
-            return this.request('/api/posts', { method: 'POST', body: data });
+        createRequest(data) {
+            return this.request('/api/requests', { method: 'POST', body: data });
         }
 
-        updatePost(id, data) {
-            return this.request(`/api/posts/${id}`, { method: 'PUT', body: data });
+        updateRequest(id, data) {
+            return this.request(`/api/requests/${id}`, { method: 'PUT', body: data });
         }
 
-        deletePost(id) {
-            return this.request(`/api/posts/${id}`, { method: 'DELETE' });
+        deleteRequest(id) {
+            return this.request(`/api/requests/${id}`, { method: 'DELETE' });
         }
 
-        /**
-         * Estado de venta del artículo, aparte de la moderación.
-         * @param {'available'|'reserved'|'sold'} availability
-         */
-        setAvailability(id, availability) {
-            return this.request(`/api/posts/${id}/availability`, {
-                method: 'PUT',
-                body: { availability },
-            });
+        /** Quien pidió algo puede retirarlo mientras nadie haya cerrado trato. */
+        cancelRequest(id) {
+            return this.request(`/api/requests/${id}/cancel`, { method: 'POST' });
         }
 
-        /** Otras publicaciones del mismo vendedor o de la misma categoría. */
-        getRelatedPosts(id) {
-            return this.request(`/api/posts/${id}/related`);
+        /** Otros pedidos parecidos, del mismo comprador o de la misma categoría. */
+        getRelatedRequests(id) {
+            return this.request(`/api/requests/${id}/related`);
         }
 
         /* ------------------------------------------------------------------
-           Interacciones del foro
+           Ofertas — lo que un vendedor responde a un pedido
            ------------------------------------------------------------------ */
 
-        toggleLike(postId) {
-            return this.request(`/api/posts/${postId}/like`, { method: 'POST' });
+        /** Las ofertas de un pedido. Solo su dueño las ve todas. */
+        getOffers(requestId) {
+            return this.request(`/api/requests/${requestId}/offers`);
         }
 
-        toggleInterest(postId) {
-            return this.request(`/api/posts/${postId}/interest`, { method: 'POST' });
+        /**
+         * Responder a un pedido.
+         * @param {{message: string, price: number, photos?: string[],
+         *          shop_address_hint?: string}} offer
+         */
+        createOffer(requestId, offer) {
+            return this.request(`/api/requests/${requestId}/offers`, {
+                method: 'POST',
+                body: offer,
+            });
         }
 
-        toggleSave(postId) {
-            return this.request(`/api/posts/${postId}/save`, { method: 'POST' });
+        /** @param {'all'|'pending'|'accepted'|'declined'} [status] */
+        getMyOffers(status = 'all') {
+            return this.request(`/api/offers/mine${this.toQuery({ status })}`);
         }
 
-        getComments(postId) {
-            return this.request(`/api/posts/${postId}/comments`);
+        /** Aceptar abre la conversación privada y crea el trato. */
+        acceptOffer(offerId) {
+            return this.request(`/api/offers/${offerId}/accept`, { method: 'POST' });
         }
 
-        createComment(postId, text) {
-            return this.request(`/api/posts/${postId}/comments`, {
+        declineOffer(offerId) {
+            return this.request(`/api/offers/${offerId}/decline`, { method: 'POST' });
+        }
+
+        /* ------------------------------------------------------------------
+           Tratos: la compra y su calificación
+           ------------------------------------------------------------------ */
+
+        /** @param {'all'|'buyer'|'seller'} [role] */
+        getDeals(role = 'all') {
+            return this.request(`/api/deals${this.toQuery({ role })}`);
+        }
+
+        /** «Compra realizada»: lo confirma quien compró, que es quien lo sabe. */
+        confirmDeal(dealId) {
+            return this.request(`/api/deals/${dealId}/confirm`, { method: 'POST' });
+        }
+
+        /** @param {number} stars - De 1 a 5. */
+        rateDeal(dealId, stars, comment = '') {
+            return this.request(`/api/deals/${dealId}/rate`, {
+                method: 'POST',
+                body: { stars, comment },
+            });
+        }
+
+        /* ------------------------------------------------------------------
+           Interacciones sobre un pedido
+           ------------------------------------------------------------------ */
+
+        /** «También lo busco»: demanda acumulada, no un aplauso. */
+        toggleMeToo(requestId) {
+            return this.request(`/api/requests/${requestId}/me-too`, { method: 'POST' });
+        }
+
+        toggleSave(requestId) {
+            return this.request(`/api/requests/${requestId}/save`, { method: 'POST' });
+        }
+
+        getComments(requestId) {
+            return this.request(`/api/requests/${requestId}/comments`);
+        }
+
+        createComment(requestId, text) {
+            return this.request(`/api/requests/${requestId}/comments`, {
                 method: 'POST',
                 body: { text },
             });
         }
 
-        deleteComment(postId, commentId) {
-            return this.request(`/api/posts/${postId}/comments/${commentId}`, { method: 'DELETE' });
+        deleteComment(requestId, commentId) {
+            return this.request(`/api/requests/${requestId}/comments/${commentId}`, { method: 'DELETE' });
         }
 
         /** Denunciar una publicación que ya está visible en el foro. */
-        reportPost(postId, { category = 'otro', reason = '' } = {}) {
-            return this.request(`/api/posts/${postId}/report`, {
+        reportRequest(requestId, { category = 'otro', reason = '' } = {}) {
+            return this.request(`/api/requests/${requestId}/report`, {
                 method: 'POST',
                 body: { category, reason },
             });
@@ -478,16 +526,16 @@
             return this.request('/api/admin/stats');
         }
 
-        getAdminPosts(status = 'pending', q = '') {
-            return this.request(`/api/admin/posts${this.toQuery({ status, q })}`);
+        getAdminRequests(status = 'pending', q = '') {
+            return this.request(`/api/admin/requests${this.toQuery({ status, q })}`);
         }
 
-        approvePost(id) {
-            return this.request(`/api/admin/posts/${id}/approve`, { method: 'POST' });
+        approveRequest(id) {
+            return this.request(`/api/admin/requests/${id}/approve`, { method: 'POST' });
         }
 
-        rejectPost(id, reason) {
-            return this.request(`/api/admin/posts/${id}/reject`, {
+        rejectRequest(id, reason) {
+            return this.request(`/api/admin/requests/${id}/reject`, {
                 method: 'POST',
                 body: { reason },
             });
@@ -644,10 +692,10 @@
 
         getConversations() { return this.request('/api/chat/conversations'); }
 
-        openConversation(postId) {
+        openConversation(requestId) {
             return this.request('/api/chat/conversations', {
                 method: 'POST',
-                body: { post_id: postId },
+                body: { request_id: requestId },
             });
         }
 

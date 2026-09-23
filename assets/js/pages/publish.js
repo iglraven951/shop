@@ -834,7 +834,7 @@
         button.disabled = true;
 
         try {
-            const result = await api.createPost({
+            const result = await api.createRequest({
                 title: values.title,
                 description: values.description,
                 price: Number(values.price),

@@ -43,14 +43,17 @@
     function normalizePost(post) {
         return {
             ...post,
-            author: post.author || { id: null, username: 'Usuario', district: 'Arequipa', verified: false },
+            buyer: post.buyer || { id: null, username: 'Usuario', district: 'Arequipa', verified: false },
             category: post.category || { id: null, name: 'Sin categoría', icon: '📦' },
             location: post.location || { district: 'Arequipa', city: 'Arequipa', country: 'Perú' },
             district: post.district || (post.location && post.location.district) || 'Arequipa',
             image_url: post.image_url || (post.images && post.images[0] && post.images[0].url) || '',
             fallback_url: post.fallback_url || '',
-            likes_count: Number(post.likes_count) || 0,
-            interested_count: Number(post.interested_count) || 0,
+            me_too_count: Number(post.me_too_count) || 0,
+            offers_count: Number(post.offers_count) || 0,
+            budget_min: Number(post.budget_min) || 0,
+            budget_max: Number(post.budget_max) || 0,
+            state: post.state || 'open',
             comment_count: Number(post.comment_count) || 0,
             saves_count: Number(post.saves_count) || 0,
             views: Number(post.views) || 0,
@@ -75,8 +78,8 @@
        ---------------------------------------------------------------------- */
 
     /** Insignia de verificación del vendedor. */
-    function verifiedBadge(author) {
-        if (!author.verified) return '';
+    function verifiedBadge(person) {
+        if (!person.verified) return '';
         return `<span class="verified-badge" title="Vendedor verificado por el equipo"
                       aria-label="Vendedor verificado">${I.check}</span>`;
     }
@@ -101,14 +104,35 @@
      * que sí importa.
      */
     function availabilityBadge(post) {
-        switch (post.availability) {
-            case 'reserved':
-                return '<span class="badge badge-warning">🔖 Reservado</span>';
-            case 'sold':
-                return '<span class="badge badge-danger">🤝 Vendido</span>';
+        switch (post.state) {
+            case 'matched':
+                return '<span class="badge badge-warning">🤝 Con oferta aceptada</span>';
+            case 'fulfilled':
+                return '<span class="badge badge-success">✅ Resuelto</span>';
+            case 'cancelled':
+                return '<span class="badge badge-danger">✕ Cancelado</span>';
             default:
                 return '';
         }
+    }
+
+    /**
+     * El presupuesto de quien pide, no el precio de quien vende.
+     *
+     * Puede no haberlo: hay cosas que uno busca sin saber todavía lo que
+     * cuestan, y obligar a poner una cifra solo produciría cifras inventadas.
+     */
+    function budgetTag(post) {
+        if (!post.budget_min && !post.budget_max) {
+            return '<span class="badge">Presupuesto abierto</span>';
+        }
+
+        if (post.budget_min && post.budget_max && post.budget_min !== post.budget_max) {
+            return `<span class="post-price-tag">${escapeHtml(format.money(post.budget_min))} – ${escapeHtml(format.money(post.budget_max))}</span>`;
+        }
+
+        const amount = post.budget_max || post.budget_min;
+        return `<span class="post-price-tag">hasta ${escapeHtml(format.money(amount))}</span>`;
     }
 
     /**
@@ -119,11 +143,11 @@
 
         return `
         <header class="post-header">
-            <a class="post-author" href="index.html?author_id=${escapeAttr(post.author.id)}">
-                <span class="avatar">${escapeHtml(format.initials(post.author.username))}</span>
+            <a class="post-author" href="index.html?author_id=${escapeAttr(post.buyer.id)}">
+                <span class="avatar">${escapeHtml(format.initials(post.buyer.username))}</span>
                 <span class="post-author-info">
                     <span class="post-author-name">
-                        ${escapeHtml(post.author.username)}${verifiedBadge(post.author)}
+                        ${escapeHtml(post.buyer.username)}${verifiedBadge(post.buyer)}
                     </span>
                     <span class="post-author-meta">
                         <span class="post-district">${I.pin}${escapeHtml(post.district)}</span>
@@ -150,19 +174,20 @@
     function reactionSummary(post) {
         const parts = [];
 
-        if (post.likes_count > 0) {
+        if (post.me_too_count > 0) {
             parts.push(`
                 <span class="reaction-count">
-                    <span class="reaction-bubble" aria-hidden="true">❤️</span>
-                    ${format.number(post.likes_count)}
+                    <span class="reaction-bubble" aria-hidden="true">🙋</span>
+                    ${format.number(post.me_too_count)}
+                    ${format.plural(post.me_too_count, 'también lo busca', 'también lo buscan')}
                 </span>`);
         }
 
-        if (post.interested_count > 0) {
+        if (post.offers_count > 0) {
             parts.push(`
                 <span class="reaction-count">
-                    ${format.number(post.interested_count)}
-                    ${format.plural(post.interested_count, 'interesado', 'interesados')}
+                    ${format.number(post.offers_count)}
+                    ${format.plural(post.offers_count, 'respuesta', 'respuestas')}
                 </span>`);
         }
 
@@ -183,18 +208,17 @@
     function actionBar(post) {
         return `
         <div class="post-actions" role="group" aria-label="Acciones de la publicación">
-            <button class="post-action${post.liked ? ' is-active is-like' : ''}" type="button"
-                    data-action="like" data-id="${escapeAttr(post.id)}"
-                    aria-pressed="${!!post.liked}">
-                <span class="post-action-icon">${post.liked ? I.heartFill : I.heart}</span>
-                <span class="post-action-label">Me gusta</span>
+            <button class="post-action${post.me_too_by_me ? ' is-active is-like' : ''}" type="button"
+                    data-action="me-too" data-id="${escapeAttr(post.id)}"
+                    aria-pressed="${!!post.me_too_by_me}">
+                <span class="post-action-icon">${post.me_too_by_me ? I.handFill : I.hand}</span>
+                <span class="post-action-label">También lo busco</span>
             </button>
 
-            <button class="post-action${post.interested_by_me ? ' is-active is-interest' : ''}" type="button"
-                    data-action="interest" data-id="${escapeAttr(post.id)}"
-                    aria-pressed="${!!post.interested_by_me}">
-                <span class="post-action-icon">${post.interested_by_me ? I.handFill : I.hand}</span>
-                <span class="post-action-label">Me interesa</span>
+            <button class="post-action${post.my_offer ? ' is-active is-interest' : ''}" type="button"
+                    data-action="offer" data-id="${escapeAttr(post.id)}">
+                <span class="post-action-icon">${post.my_offer ? I.heartFill : I.heart}</span>
+                <span class="post-action-label">${post.my_offer ? 'Ya respondiste' : 'Lo tengo'}</span>
             </button>
 
             <button class="post-action" type="button"
@@ -255,8 +279,7 @@
                 <div class="post-tags">
                     ${availabilityBadge(post)}
                     <span class="badge badge-brand">${escapeHtml(post.category.icon)} ${escapeHtml(post.category.name)}</span>
-                    <span class="badge">${escapeHtml(post.condition)}</span>
-                    <span class="post-price-tag">${escapeHtml(format.money(post.price))}</span>
+                    ${budgetTag(post)}
                 </div>
             </div>
 
@@ -328,7 +351,7 @@
                     ${escapeHtml(post.title)}
                 </a>
                 <p class="post-row-meta">
-                    ${escapeHtml(post.author.username)}
+                    ${escapeHtml(post.buyer.username)}
                     <span aria-hidden="true">·</span>
                     ${escapeHtml(post.district)}
                     <span aria-hidden="true">·</span>
@@ -337,13 +360,12 @@
                 <p class="post-row-tags">
                     ${availabilityBadge(post)}
                     <span class="badge badge-brand">${escapeHtml(post.category.name)}</span>
-                    <span class="badge">${escapeHtml(post.condition)}</span>
                     ${showStatus ? statusBadge(post.status, post.rejection_reason) : ''}
                 </p>
             </div>
 
             <div class="post-row-side">
-                <span class="post-row-price">${escapeHtml(format.money(post.price))}</span>
+                <span class="post-row-price">${budgetTag(post)}</span>
                 ${actions ? `<div class="post-row-actions">${actions}</div>` : ''}
             </div>
         </article>`;
@@ -463,9 +485,21 @@
             if (!button || !container.contains(button)) return;
 
             const { action, id } = button.dataset;
-            if (!['like', 'interest', 'save', 'comment', 'share', 'post-menu'].includes(action)) return;
+            if (!['me-too', 'offer', 'save', 'comment', 'share', 'post-menu'].includes(action)) return;
 
             event.preventDefault();
+
+            /* Responder a un pedido es un formulario, no un botón que alterna:
+               hay que decir precio, qué se tiene y dónde. Se resuelve en la
+               ficha, así que desde el tablón se va allí. */
+            if (action === 'offer') {
+                if (typeof hooks.onOffer === 'function') {
+                    hooks.onOffer(id, button);
+                } else {
+                    global.location.href = `publicacion.html?id=${encodeURIComponent(id)}#responder`;
+                }
+                return;
+            }
 
             if (action === 'share') {
                 // Compartir no es una reacción: no toca la publicación, no
@@ -499,9 +533,9 @@
     }
 
     const MESSAGES = {
-        like: 'Inicia sesión para dejar tu corazón en las publicaciones.',
-        interest: 'Inicia sesión para avisar al vendedor que te interesa su artículo.',
-        save: 'Inicia sesión para guardar publicaciones y revisarlas después.',
+        'me-too': 'Inicia sesión para decir que tú también buscas esto.',
+        offer: 'Inicia sesión con una cuenta de vendedor para responder pedidos.',
+        save: 'Inicia sesión para guardar pedidos y revisarlos después.',
     };
 
     /**
@@ -564,18 +598,13 @@
             let active;
             let icons;
 
-            if (action === 'like') {
-                result = await global.api.toggleLike(id);
-                active = result.liked;
-                icons = [I.heart, I.heartFill];
-                button.classList.toggle('is-like', active);
-            } else if (action === 'interest') {
-                result = await global.api.toggleInterest(id);
-                active = result.interested;
+            if (action === 'me-too') {
+                result = await global.api.toggleMeToo(id);
+                active = result.me_too;
                 icons = [I.hand, I.handFill];
-                button.classList.toggle('is-interest', active);
+                button.classList.toggle('is-like', active);
                 if (active) {
-                    global.toast.success('Avisamos a quien publicó que te interesa');
+                    global.toast.success('Avisamos a quien lo pidió que tú también lo buscas');
                 }
             } else {
                 result = await global.api.toggleSave(id);
@@ -682,6 +711,8 @@
         reactionSummary,
         statusBadge,
         availabilityBadge,
+        budgetTag,
+        budgetTag,
         verifiedBadge,
         normalizePost,
         emptyState,

@@ -303,8 +303,8 @@
      */
     async function refreshDoubtQueue() {
         try {
-            const data = await api.getAdminPosts('pending', '');
-            const items = data.posts || [];
+            const data = await api.getAdminRequests('pending', '');
+            const items = data.requests || [];
 
             state.doubt.ids = new Set(items.map((post) => post.id));
             state.doubt.count = items.filter(
@@ -588,10 +588,10 @@
         list.innerHTML = listSkeleton(4);
 
         try {
-            const data = await api.getAdminPosts(state.posts.status, state.posts.q);
+            const data = await api.getAdminRequests(state.posts.status, state.posts.q);
             if (ticket !== postsTicket) return;
 
-            state.posts.items = data.posts || [];
+            state.posts.items = data.requests || [];
             state.posts.loaded = true;
             renderPosts();
         } catch (error) {
@@ -780,7 +780,7 @@
         setRowBusy(row, true);
 
         try {
-            const { post } = await api.approvePost(id);
+            const { post } = await api.approveRequest(id);
             const stays = applyPostUpdate(id, post);
 
             toast.success(`«${post.title}» fue aprobada y ya es visible en el feed.`);
@@ -806,7 +806,7 @@
             note: 'Quien publicó recibirá este motivo tal cual. Sé claro y respetuoso.',
             confirmLabel: 'Rechazar publicación',
             submit: async (reason) => {
-                const data = await api.rejectPost(id, reason);
+                const data = await api.rejectRequest(id, reason);
                 const row = findRow(id);
                 const stays = applyPostUpdate(id, data.post);
 
@@ -900,8 +900,8 @@
             try {
                 /* eslint-disable no-await-in-loop */
                 const data = action === 'approve'
-                    ? await api.approvePost(id)
-                    : await api.rejectPost(id, reason);
+                    ? await api.approveRequest(id)
+                    : await api.rejectRequest(id, reason);
                 /* eslint-enable no-await-in-loop */
 
                 applyPostUpdate(id, data.post);
@@ -1611,7 +1611,7 @@
         if (!item) return;
 
         try {
-            const { post } = await api.approvePost(item.post_id);
+            const { post } = await api.approveRequest(item.post_id);
             toast.success(`«${post.title}» fue aprobada y ya es visible en el feed.`);
             await afterInboxDecision();
         } catch (error) {
@@ -1629,7 +1629,7 @@
             note: 'Quien publicó recibirá este motivo tal cual. Sé claro y respetuoso.',
             confirmLabel: 'Rechazar publicación',
             submit: async (reason) => {
-                const data = await api.rejectPost(item.post_id, reason);
+                const data = await api.rejectRequest(item.post_id, reason);
                 toast.warning(`«${data.post.title}» fue rechazada. Se avisó a quien la publicó.`);
                 await afterInboxDecision();
             },

@@ -60,8 +60,8 @@
             await global.api.ready();
 
             // Las más recientes: el muro debe reflejar lo que hay ahora
-            const data = await global.api.getPosts({ per_page: COUNT, sort: 'recent' });
-            const posts = (data.posts || []).filter((p) => p.image_url);
+            const data = await global.api.getRequests({ per_page: COUNT, sort: 'recent' });
+            const posts = (data.requests || []).filter((p) => p.image_url);
 
             if (posts.length < MINIMUM) {
                 if (wall) wall.hidden = true;

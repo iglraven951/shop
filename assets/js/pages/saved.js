@@ -242,8 +242,8 @@
         dom.feed.innerHTML = UI.postSkeleton(SKELETON_COUNT);
 
         try {
-            const data = await api.getSavedPosts();
-            state.posts = (data.posts || []).slice();
+            const data = await api.getSavedRequests();
+            state.posts = (data.requests || []).slice();
 
             // La lista recién traída es la verdad: sincroniza la insignia de la cabecera.
             store.set({ saved: data.ids || state.posts.map((post) => post.id) });

@@ -1,14 +1,22 @@
 /**
  * DiscoveryShop · Backend simulado
  *
- * Implementa en el navegador el contrato completo del foro de artículos de
- * segunda mano, con persistencia en localStorage. Gracias a esto el sitio
- * funciona al 100 % en GitHub Pages sin ejecutar `py app.py`.
+ * Implementa en el navegador el contrato completo del comercio inverso, con
+ * persistencia en localStorage. Gracias a esto el sitio funciona al 100 % en
+ * GitHub Pages sin ningún servidor detrás.
+ *
+ * **Comercio inverso**: aquí no hay un catálogo de lo que alguien vende. Hay
+ * una lista de lo que la gente necesita. El comprador publica un **pedido**,
+ * los vendedores responden con **ofertas**, el comprador acepta una, hablan por
+ * privado, confirma la compra y califica al vendedor. De ahí sale la
+ * reputación de cada local: de compras reales, no de un número puesto a mano.
+ *
+ *   pedido → ofertas → aceptada → conversación → compra → calificación
  *
  * Modelo de permisos:
- *   · comprador  — navega, comenta, reacciona y guarda.
- *   · vendedor   — además publica, pero solo si el administrador lo aprobó.
- *   · admin      — revisa publicaciones y solicitudes de vendedor.
+ *   · comprador  — publica pedidos, acepta ofertas, confirma y califica.
+ *   · vendedor   — responde pedidos con ofertas, si el administrador lo aprobó.
+ *   · admin      — revisa pedidos, solicitudes de vendedor y denuncias.
  *
  * Toda respuesta sigue la forma { success, data } o lanza un Error con .status.
  */
@@ -20,8 +28,8 @@
    las fotos reales del catálogo, la bandeja de la IA y los ajustes; la v4 trae
    el estado de venta, la fecha de guardado, las denuncias y los avisos que ya
    se escribían pero que nadie llegaba a ver. */
-    const STORAGE_KEY = 'discoveryshop:db:v4';
-    const SCHEMA_VERSION = 4;
+    const STORAGE_KEY = 'discoveryshop:db:v5';
+    const SCHEMA_VERSION = 5;
 
     /* ----------------------------------------------------------------------
        Utilidades
@@ -127,8 +135,11 @@
                 location: { lat: -16.3989, lng: -71.5350, district: 'Cercado', city: 'Arequipa', country: 'Perú' },
                 phone: '',
                 bio: 'Equipo de moderación de DiscoveryShop.',
+                shop_name: null,
                 rating: 0,
-                total_posts: 0,
+                rating_count: 0,
+                total_requests: 0,
+                total_offers: 0,
                 total_sales: 0,
                 verified: true,
                 created_at: nowIso(),
@@ -137,7 +148,10 @@
             const state = {
                 version: SCHEMA_VERSION,
                 users: [admin, ...seed.users],
-                posts: seed.posts,
+                requests: seed.requests,
+                // Lo que los vendedores responden, y los tratos que se cerraron
+                offers: seed.offers,
+                deals: seed.deals,
                 categories: seed.categories,
                 districts: seed.districts,
                 sessions: {},
@@ -169,17 +183,17 @@
          * verdad, y la publicación existe.
          */
         seedNotifications(state) {
-            const visible = state.posts.filter((p) => p.status === 'approved');
+            const visible = state.requests.filter((p) => p.status === 'approved');
             const hour = 3600 * 1000;
             let age = 0;
 
-            const push = (post, type, text) => {
+            const push = (request, type, text) => {
                 age += 1;
                 state.notifications.push({
                     id: `ntf-seed-${state.notifications.length}`,
-                    user_id: post.author.id,
+                    user_id: request.buyer.id,
                     type,
-                    post_id: post.id,
+                    request_id: request.id,
                     text,
                     // Los tres más recientes llegan sin leer: es lo que hace
                     // que la campana tenga algo que contar al entrar.
@@ -189,19 +203,23 @@
             };
 
             visible
-                .filter((post) => post.comments.length)
+                .filter((request) => request.comments.length)
                 .slice(0, 5)
-                .forEach((post) => {
-                    const last = post.comments[post.comments.length - 1];
-                    push(post, 'comment', `${last.author.username} comentó en «${post.title}»`);
+                .forEach((request) => {
+                    const last = request.comments[request.comments.length - 1];
+                    push(request, 'comment', `${last.author.username} comentó en «${request.title}»`);
                 });
 
-            visible
-                .filter((post) => post.interested_count > 0)
+            /* Lo que de verdad espera quien publicó: que alguien responda.
+               Se deriva de las ofertas que el propio catálogo ya trae. */
+            (state.offers || [])
+                .filter((offer) => offer.status === 'pending')
                 .slice(0, 6)
-                .forEach((post) => {
-                    push(post, 'interest',
-                        `${post.interested_count} ${post.interested_count === 1 ? 'persona quiere' : 'personas quieren'} «${post.title}»`);
+                .forEach((offer) => {
+                    const request = visible.find((r) => r.id === offer.request_id);
+                    if (!request) return;
+                    push(request, 'offer_received',
+                        `${offer.shop_name} respondió a tu pedido «${request.title}»`);
                 });
 
             // El más reciente arriba, como los lee la interfaz
@@ -262,7 +280,7 @@
                 const reason = {
                     pending: 'Tu solicitud de vendedor está en revisión. Te avisaremos cuando la aprobemos.',
                     rejected: 'Tu solicitud de vendedor fue rechazada. Puedes volver a enviarla desde tu perfil.',
-                }[user.seller_status] || 'Necesitas una cuenta de vendedor aprobada para publicar artículos.';
+                }[user.seller_status] || 'Necesitas una cuenta de vendedor aprobada para responder pedidos.';
 
                 fail(reason, 403);
             }
@@ -299,26 +317,37 @@
             const table = [
                 ['GET', /^\/api\/health$/, this.health],
 
-                // Publicaciones
-                ['GET', /^\/api\/posts$/, this.listPosts],
-                ['POST', /^\/api\/posts$/, this.createPost],
-                ['GET', /^\/api\/posts\/categories$/, this.listCategories],
-                ['GET', /^\/api\/posts\/saved$/, this.listSaved],
-                ['GET', /^\/api\/posts\/mine$/, this.listMine],
-                ['GET', /^\/api\/posts\/([\w-]+)\/related$/, this.relatedPosts],
-                ['GET', /^\/api\/posts\/([\w-]+)$/, this.getPost],
-                ['PUT', /^\/api\/posts\/([\w-]+)\/availability$/, this.setAvailability],
-                ['PUT', /^\/api\/posts\/([\w-]+)$/, this.updatePost],
-                ['DELETE', /^\/api\/posts\/([\w-]+)$/, this.deletePost],
+                // Pedidos: lo que un comprador busca
+                ['GET', /^\/api\/requests$/, this.listRequests],
+                ['POST', /^\/api\/requests$/, this.createRequest],
+                ['GET', /^\/api\/requests\/categories$/, this.listCategories],
+                ['GET', /^\/api\/requests\/saved$/, this.listSaved],
+                ['GET', /^\/api\/requests\/mine$/, this.listMyRequests],
+                ['GET', /^\/api\/requests\/([\w-]+)\/related$/, this.relatedRequests],
+                ['GET', /^\/api\/requests\/([\w-]+)$/, this.getRequest],
+                ['PUT', /^\/api\/requests\/([\w-]+)$/, this.updateRequest],
+                ['DELETE', /^\/api\/requests\/([\w-]+)$/, this.deleteRequest],
+                ['POST', /^\/api\/requests\/([\w-]+)\/cancel$/, this.cancelRequest],
 
-                // Interacciones del foro
-                ['POST', /^\/api\/posts\/([\w-]+)\/like$/, this.toggleLike],
-                ['POST', /^\/api\/posts\/([\w-]+)\/interest$/, this.toggleInterest],
-                ['POST', /^\/api\/posts\/([\w-]+)\/save$/, this.toggleSave],
-                ['GET', /^\/api\/posts\/([\w-]+)\/comments$/, this.listComments],
-                ['POST', /^\/api\/posts\/([\w-]+)\/comments$/, this.createComment],
-                ['DELETE', /^\/api\/posts\/([\w-]+)\/comments\/([\w-]+)$/, this.deleteComment],
-                ['POST', /^\/api\/posts\/([\w-]+)\/report$/, this.reportPost],
+                // Ofertas: lo que un vendedor responde
+                ['GET', /^\/api\/offers\/mine$/, this.listMyOffers],
+                ['GET', /^\/api\/requests\/([\w-]+)\/offers$/, this.listOffers],
+                ['POST', /^\/api\/requests\/([\w-]+)\/offers$/, this.createOffer],
+                ['POST', /^\/api\/offers\/([\w-]+)\/accept$/, this.acceptOffer],
+                ['POST', /^\/api\/offers\/([\w-]+)\/decline$/, this.declineOffer],
+
+                // Tratos cerrados y su calificación
+                ['GET', /^\/api\/deals$/, this.listDeals],
+                ['POST', /^\/api\/deals\/([\w-]+)\/confirm$/, this.confirmDeal],
+                ['POST', /^\/api\/deals\/([\w-]+)\/rate$/, this.rateDeal],
+
+                // Interacciones sobre un pedido
+                ['POST', /^\/api\/requests\/([\w-]+)\/me-too$/, this.toggleMeToo],
+                ['POST', /^\/api\/requests\/([\w-]+)\/save$/, this.toggleSave],
+                ['GET', /^\/api\/requests\/([\w-]+)\/comments$/, this.listComments],
+                ['POST', /^\/api\/requests\/([\w-]+)\/comments$/, this.createComment],
+                ['DELETE', /^\/api\/requests\/([\w-]+)\/comments\/([\w-]+)$/, this.deleteComment],
+                ['POST', /^\/api\/requests\/([\w-]+)\/report$/, this.reportRequest],
 
                 // Avisos dirigidos a quien ha iniciado sesión
                 ['GET', /^\/api\/notifications$/, this.listNotifications],
@@ -339,9 +368,9 @@
 
                 // Administración
                 ['GET', /^\/api\/admin\/stats$/, this.adminStats],
-                ['GET', /^\/api\/admin\/posts$/, this.adminPosts],
-                ['POST', /^\/api\/admin\/posts\/([\w-]+)\/approve$/, this.approvePost],
-                ['POST', /^\/api\/admin\/posts\/([\w-]+)\/reject$/, this.rejectPost],
+                ['GET', /^\/api\/admin\/requests$/, this.adminRequests],
+                ['POST', /^\/api\/admin\/requests\/([\w-]+)\/approve$/, this.approveRequest],
+                ['POST', /^\/api\/admin\/requests\/([\w-]+)\/reject$/, this.rejectRequest],
                 ['GET', /^\/api\/admin\/sellers$/, this.adminSellers],
                 ['POST', /^\/api\/admin\/sellers\/([\w-]+)\/approve$/, this.approveSeller],
                 ['POST', /^\/api\/admin\/sellers\/([\w-]+)\/reject$/, this.rejectSeller],
@@ -377,23 +406,34 @@
             return ok({
                 status: 'ok',
                 mode: 'demo',
-                posts: this.state.posts.filter((p) => p.status === 'approved').length,
+                requests: this.state.requests.filter((p) => p.status === 'approved').length,
             });
         }
 
-        /** Añade al objeto los datos que dependen de quién mira. */
-        decorate(post, user) {
+        /** Añade al pedido los datos que dependen de quién lo mira. */
+        decorate(request, user) {
             const id = user ? user.id : null;
+            const offers = (this.state.offers || []).filter((o) => o.request_id === request.id);
+
             return {
-                ...post,
-                liked: id ? post.likes.includes(id) : false,
-                interested_by_me: id ? post.interested.includes(id) : false,
-                saved: id ? post.saves.includes(id) : false,
-                is_mine: id ? post.author.id === id : false,
+                ...request,
+                me_too_by_me: id ? request.me_too.includes(id) : false,
+                saved: id ? request.saves.includes(id) : false,
+                is_mine: id ? request.buyer.id === id : false,
+                offers_count: offers.length,
+                // Si quien mira es vendedor, si ya respondió y con qué
+                my_offer: id ? (offers.find((o) => o.seller.id === id) || null) : null,
             };
         }
 
-        listPosts({ query, token }) {
+        /** El pedido, o un 404 que no distingue entre «no existe» y «no es tuyo». */
+        findRequest(id) {
+            const request = this.state.requests.find((r) => r.id === id);
+            if (!request) fail('Pedido no encontrado', 404);
+            return request;
+        }
+
+        listRequests({ query, token }) {
             const user = this.userFromToken(token);
 
             const page = Math.max(1, parseInt(query.get('page') || '1', 10));
@@ -401,20 +441,19 @@
             const search = normalize(query.get('q') || '');
             const categories = (query.get('category') || '').split(',').filter(Boolean);
             const districts = (query.get('district') || '').split(',').filter(Boolean);
-            const conditions = (query.get('condition') || '').split(',').filter(Boolean);
-            const availability = (query.get('availability') || '').split(',').filter(Boolean);
+            const states = (query.get('state') || '').split(',').filter(Boolean);
             const minPrice = parseFloat(query.get('min_price') || '');
             const maxPrice = parseFloat(query.get('max_price') || '');
-            const authorId = query.get('author_id');
+            const buyerId = query.get('buyer_id');
             const sort = query.get('sort') || 'recent';
 
-            // El feed público solo muestra publicaciones aprobadas.
-            let items = this.state.posts.filter((p) => p.status === 'approved');
+            // El tablón público solo muestra pedidos aprobados.
+            let items = this.state.requests.filter((p) => p.status === 'approved');
 
             if (search) {
                 items = items.filter((p) => {
                     const haystack = normalize(
-                        `${p.title} ${p.description} ${p.category.name} ${p.author.username} ${p.district}`
+                        `${p.title} ${p.description} ${p.category.name} ${p.buyer.username} ${p.district}`
                     );
                     return search.split(/\s+/).every((word) => haystack.includes(word));
                 });
@@ -422,15 +461,16 @@
 
             if (categories.length) items = items.filter((p) => categories.includes(p.category.id));
             if (districts.length) items = items.filter((p) => districts.includes(p.district));
-            if (conditions.length) items = items.filter((p) => conditions.includes(p.condition));
-            if (availability.length) {
-                items = items.filter((p) => availability.includes(p.availability || 'available'));
-            }
-            if (!Number.isNaN(minPrice)) items = items.filter((p) => p.price >= minPrice);
-            if (!Number.isNaN(maxPrice)) items = items.filter((p) => p.price <= maxPrice);
-            if (authorId) items = items.filter((p) => p.author.id === authorId);
+            if (states.length) items = items.filter((p) => states.includes(p.state || 'open'));
 
-            items = this.sortPosts(items, sort);
+            /* El presupuesto es un rango, no un precio, así que el filtro
+               busca solapamiento: «hasta 500» tiene que encontrar a quien
+               ofrece pagar entre 400 y 600, porque ahí hay trato posible. */
+            if (!Number.isNaN(minPrice)) items = items.filter((p) => p.budget_max >= minPrice);
+            if (!Number.isNaN(maxPrice)) items = items.filter((p) => p.budget_min <= maxPrice);
+            if (buyerId) items = items.filter((p) => p.buyer.id === buyerId);
+
+            items = this.sortRequests(items, sort);
 
             const total = items.length;
             const totalPages = Math.max(1, Math.ceil(total / perPage));
@@ -438,7 +478,7 @@
             const start = (safePage - 1) * perPage;
 
             return ok({
-                posts: items.slice(start, start + perPage).map((p) => this.decorate(p, user)),
+                requests: items.slice(start, start + perPage).map((p) => this.decorate(p, user)),
                 pagination: {
                     page: safePage,
                     per_page: perPage,
@@ -450,14 +490,21 @@
             });
         }
 
-        sortPosts(items, sort) {
+        sortRequests(items, sort) {
             const sorted = [...items];
 
+            const offersOf = (request) =>
+                (this.state.offers || []).filter((o) => o.request_id === request.id).length;
+
             switch (sort) {
-                case 'price_asc': return sorted.sort((a, b) => a.price - b.price);
-                case 'price_desc': return sorted.sort((a, b) => b.price - a.price);
-                case 'popular': return sorted.sort((a, b) => b.likes_count - a.likes_count);
-                case 'interest': return sorted.sort((a, b) => b.interested_count - a.interested_count);
+                // Por presupuesto: para un vendedor, saber cuánto está dispuesto
+                // a pagar quien pide es la primera criba.
+                case 'price_asc': return sorted.sort((a, b) => a.budget_max - b.budget_max);
+                case 'price_desc': return sorted.sort((a, b) => b.budget_max - a.budget_max);
+                // Lo que más gente busca
+                case 'popular': return sorted.sort((a, b) => b.me_too_count - a.me_too_count);
+                // Lo que nadie ha respondido todavía: la mejor oportunidad
+                case 'interest': return sorted.sort((a, b) => offersOf(a) - offersOf(b));
                 case 'commented': return sorted.sort((a, b) => b.comment_count - a.comment_count);
                 case 'recent':
                 default: return sorted.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -467,7 +514,7 @@
         listCategories() {
             const categories = this.state.categories.map((cat) => ({
                 ...cat,
-                count: this.state.posts.filter(
+                count: this.state.requests.filter(
                     (p) => p.category.id === cat.id && p.status === 'approved'
                 ).length,
             }));
@@ -477,65 +524,86 @@
         listDistricts() {
             const districts = this.state.districts.map((d) => ({
                 ...d,
-                count: this.state.posts.filter((p) => p.district === d.name && p.status === 'approved').length,
+                count: this.state.requests.filter((p) => p.district === d.name && p.status === 'approved').length,
             }));
             return ok({ districts, center: global.DiscoverySeed.AREQUIPA_CENTER });
         }
 
-        getPost({ params, token }) {
+        getRequest({ params, token }) {
             const user = this.userFromToken(token);
-            const post = this.state.posts.find((p) => p.id === params.id);
+            const request = this.state.requests.find((p) => p.id === params.id);
 
-            if (!post) fail('Publicación no encontrada', 404);
+            if (!request) fail('Pedido no encontrado', 404);
 
             // Una publicación no aprobada solo la ve su autor o el administrador.
-            const isOwner = user && post.author.id === user.id;
+            const isOwner = user && request.buyer.id === user.id;
             const isAdmin = user && user.role === 'admin';
-            if (post.status !== 'approved' && !isOwner && !isAdmin) {
-                fail('Esta publicación no está disponible', 404);
+            if (request.status !== 'approved' && !isOwner && !isAdmin) {
+                fail('Este pedido no está disponible', 404);
             }
 
-            post.views += 1;
+            request.views += 1;
             this.save();
 
-            return ok({ post: this.decorate(post, user) });
+            return ok({ request: this.decorate(request, user) });
         }
 
-        createPost({ body, token }) {
-            const user = this.requireApprovedSeller(token);
+        /**
+         * Publicar un pedido: «Cuéntanos qué buscas».
+         *
+         * Aquí está la inversión. Antes esto exigía ser vendedor aprobado
+         * porque se publicaba mercancía; ahora lo usa cualquiera con una
+         * cuenta, porque lo que se publica es una necesidad. Pedir no
+         * requiere permiso — vender sí.
+         */
+        createRequest({ body, token }) {
+            const user = this.requireUser(token);
 
             const title = String(body.title || '').trim();
             const description = String(body.description || '').trim();
-            const price = Number(body.price);
 
-            if (title.length < 4) fail('El título debe tener al menos 4 caracteres');
+            if (title.length < 4) fail('Dile en pocas palabras qué buscas (mínimo 4 caracteres)');
             if (title.length > 90) fail('El título no puede superar los 90 caracteres');
-            if (description.length < 20) fail('Describe el artículo con al menos 20 caracteres');
-            if (!Number.isFinite(price) || price <= 0) fail('El precio debe ser mayor que cero');
+            if (description.length < 20) {
+                fail('Describe lo que buscas con al menos 20 caracteres: cuanto más claro, mejores respuestas');
+            }
 
             const category = this.state.categories.find((c) => c.id === body.category_id);
-            if (!category) fail('Elige una categoría para tu publicación');
+            if (!category) fail('Elige una categoría para tu pedido');
+
+            // El presupuesto es opcional, pero si se da tiene que tener sentido
+            const hasBudget = body.budget_min !== undefined && body.budget_min !== ''
+                || body.budget_max !== undefined && body.budget_max !== '';
+
+            const budgetMin = Number(body.budget_min || 0);
+            const budgetMax = Number(body.budget_max || 0);
+
+            if (hasBudget) {
+                if (!Number.isFinite(budgetMin) || !Number.isFinite(budgetMax)) {
+                    fail('El presupuesto debe ser un número');
+                }
+                if (budgetMin < 0 || budgetMax < 0) fail('El presupuesto no puede ser negativo');
+                if (budgetMax && budgetMin > budgetMax) {
+                    fail('El presupuesto mínimo no puede ser mayor que el máximo');
+                }
+            }
 
             const districtName = body.district || user.district;
             const district = global.DiscoverySeed.districtByName(districtName);
             const emoji = body.emoji || category.icon;
 
-            const post = {
-                id: uid('post'),
+            const request = {
+                id: uid('req'),
                 title,
                 description,
-                price,
-                condition: body.condition || 'Buen estado',
                 emoji,
+                /* Una ilustración generada, no una foto: el objeto todavía no
+                   existe. Las fotos reales llegan en la oferta del vendedor. */
                 image_url: global.DiscoverySeed.createImage(title, emoji),
-                images: [{
-                    id: uid('img'),
-                    url: global.DiscoverySeed.createImage(title, emoji),
-                    order: 0,
-                    is_primary: true,
-                }],
+                budget_min: hasBudget ? budgetMin : 0,
+                budget_max: hasBudget ? (budgetMax || budgetMin) : 0,
                 category: { id: category.id, name: category.name, icon: category.icon },
-                author: {
+                buyer: {
                     id: user.id,
                     username: user.username,
                     avatar_url: user.avatar_url,
@@ -551,14 +619,14 @@
                     city: 'Arequipa',
                     country: 'Perú',
                 },
-                // Toda publicación nueva pasa por revisión antes de salir al feed.
+                // Todo pedido pasa por revisión antes de que lo vean los vendedores.
                 status: 'pending',
                 rejection_reason: null,
-                // Estado de venta, independiente de la moderación
-                availability: 'available',
-                availability_at: null,
-                likes: [], likes_count: 0,
-                interested: [], interested_count: 0,
+                // Ciclo de vida, aparte de la moderación
+                state: 'open',
+                accepted_offer_id: null,
+                offers_count: 0,
+                me_too: [], me_too_count: 0,
                 saves: [], saves_count: 0, saved_at: {},
                 comments: [], comment_count: 0,
                 views: 0,
@@ -569,23 +637,23 @@
             // La IA de la plataforma revisa la publicación en el acto. Puede
             // aprobarla, rechazarla o dejarla en duda para que la vea una
             // persona; lo que decide queda registrado con su motivo.
-            const verdict = this.autoReview(post);
+            const verdict = this.autoReview(request);
 
-            this.state.posts.unshift(post);
-            this.refreshAuthorCounters(user.id);
+            this.state.requests.unshift(request);
+            this.refreshBuyerCounters(user.id);
             this.save();
 
-            return ok({ post: this.decorate(post, user), review: verdict });
+            return ok({ request: this.decorate(request, user), review: verdict });
         }
 
         /**
          * Aplica el veredicto del revisor automático a una publicación recién
          * creada y deja constancia para el administrador.
          *
-         * @param {object} post - Se modifica en el sitio.
+         * @param {object} request - Se modifica en el sitio.
          * @returns {{decision: string, reason: string, confidence: number}}
          */
-        autoReview(post) {
+        autoReview(request) {
             const moderator = global.DiscoveryModerator;
 
             // Sin el revisor cargado, la publicación espera revisión humana:
@@ -594,11 +662,11 @@
                 return { decision: 'pending', reason: 'Revisión automática no disponible.', confidence: 0 };
             }
 
-            const verdict = moderator.review(post);
+            const verdict = moderator.review(request);
 
-            post.status = verdict.decision;
-            post.rejection_reason = verdict.decision === 'rejected' ? verdict.reason : null;
-            post.review = {
+            request.status = verdict.decision;
+            request.rejection_reason = verdict.decision === 'rejected' ? verdict.reason : null;
+            request.review = {
                 by: 'ia',
                 decision: verdict.decision,
                 reason: verdict.reason,
@@ -612,38 +680,38 @@
                 id: uid('log'),
                 admin_id: 'ia',
                 admin_name: 'IA de DiscoveryShop',
-                action: verdict.decision === 'approved' ? 'approve_post'
-                    : verdict.decision === 'rejected' ? 'reject_post' : 'flag_post',
-                target_id: post.id,
+                action: verdict.decision === 'approved' ? 'approve_request'
+                    : verdict.decision === 'rejected' ? 'reject_request' : 'flag_request',
+                target_id: request.id,
                 description: verdict.decision === 'approved'
-                    ? `Aprobó «${post.title}»: ${verdict.reason}`
+                    ? `Aprobó «${request.title}»: ${verdict.reason}`
                     : verdict.decision === 'rejected'
-                        ? `Rechazó «${post.title}»: ${verdict.reason}`
-                        : `Dejó en revisión «${post.title}»: ${verdict.reason}`,
+                        ? `Rechazó «${request.title}»: ${verdict.reason}`
+                        : `Dejó en revisión «${request.title}»: ${verdict.reason}`,
                 confidence: verdict.confidence,
                 created_at: nowIso(),
             });
 
             // Aviso a quien publicó
             const toAuthor = {
-                approved: `Tu publicación «${post.title}» fue aprobada y ya es visible en el foro.`,
-                rejected: `Tu publicación «${post.title}» fue rechazada: ${verdict.reason}`,
-                pending: `Tu publicación «${post.title}» quedó en revisión. Te avisaremos en cuanto se resuelva.`,
+                approved: `Tu publicación «${request.title}» fue aprobada y ya es visible en el foro.`,
+                rejected: `Tu publicación «${request.title}» fue rechazada: ${verdict.reason}`,
+                pending: `Tu publicación «${request.title}» quedó en revisión. Te avisaremos en cuanto se resuelva.`,
             }[verdict.decision];
 
-            this.notify(post.author.id, `post_${verdict.decision}`, post.id, toAuthor);
+            this.notify(request.buyer.id, `request_${verdict.decision}`, request.id, toAuthor);
 
             // Aviso para el administrador, en su bandeja de la plataforma
             this.state.admin_inbox = this.state.admin_inbox || [];
             this.state.admin_inbox.unshift({
                 id: uid('ai'),
-                post_id: post.id,
-                post_title: post.title,
-                author: post.author.username,
+                request_id: request.id,
+                request_title: request.title,
+                author: request.buyer.username,
                 decision: verdict.decision,
                 reason: verdict.reason,
                 confidence: verdict.confidence,
-                message: moderator.notificationText(post, verdict),
+                message: moderator.notificationText(request, verdict),
                 read: false,
                 sent_whatsapp: false,
                 created_at: nowIso(),
@@ -652,136 +720,471 @@
             return verdict;
         }
 
-        updatePost({ params, body, token }) {
+        updateRequest({ params, body, token }) {
             const user = this.requireUser(token);
-            const post = this.state.posts.find((p) => p.id === params.id);
+            const request = this.state.requests.find((p) => p.id === params.id);
 
-            if (!post) fail('Publicación no encontrada', 404);
-            if (post.author.id !== user.id && user.role !== 'admin') {
-                fail('Solo puedes editar tus propias publicaciones', 403);
+            if (!request) fail('Pedido no encontrado', 404);
+            if (request.buyer.id !== user.id && user.role !== 'admin') {
+                fail('Solo puedes editar tus propios pedidos', 403);
             }
 
-            ['title', 'description', 'condition', 'district'].forEach((key) => {
-                if (body[key]) post[key] = body[key];
+            // Un pedido ya aceptado no se edita: cambiaría el trato por debajo
+            // de quien ya respondió a lo que decía antes.
+            if (request.state === 'matched' || request.state === 'fulfilled') {
+                fail('Este pedido ya tiene una oferta aceptada y no se puede editar');
+            }
+
+            ['title', 'description', 'district'].forEach((key) => {
+                if (body[key]) request[key] = body[key];
             });
 
-            if (body.price !== undefined && body.price !== '') {
-                const price = Number(body.price);
-                if (!Number.isFinite(price) || price <= 0) fail('El precio debe ser mayor que cero');
-                post.price = price;
+            if (body.budget_min !== undefined && body.budget_min !== '') {
+                const min = Number(body.budget_min);
+                if (!Number.isFinite(min) || min < 0) fail('El presupuesto no puede ser negativo');
+                request.budget_min = min;
+            }
+
+            if (body.budget_max !== undefined && body.budget_max !== '') {
+                const max = Number(body.budget_max);
+                if (!Number.isFinite(max) || max < 0) fail('El presupuesto no puede ser negativo');
+                request.budget_max = max;
+            }
+
+            if (request.budget_max && request.budget_min > request.budget_max) {
+                fail('El presupuesto mínimo no puede ser mayor que el máximo');
             }
 
             if (body.district) {
                 const district = global.DiscoverySeed.districtByName(body.district);
-                post.location = {
+                request.location = {
                     lat: district.lat,
                     lng: district.lng,
                     district: body.district,
                     city: 'Arequipa',
                     country: 'Perú',
                 };
-                post.author.district = body.district;
+                request.buyer.district = body.district;
             }
 
             // Editar una publicación ya aprobada la devuelve a revisión.
-            if (post.status === 'approved' && user.role !== 'admin') {
-                post.status = 'pending';
-                post.rejection_reason = null;
+            if (request.status === 'approved' && user.role !== 'admin') {
+                request.status = 'pending';
+                request.rejection_reason = null;
             }
 
-            post.updated_at = nowIso();
+            request.updated_at = nowIso();
             this.save();
 
-            return ok({ post: this.decorate(post, user) });
+            return ok({ request: this.decorate(request, user) });
         }
 
-        deletePost({ params, token }) {
+        deleteRequest({ params, token }) {
             const user = this.requireUser(token);
-            const index = this.state.posts.findIndex((p) => p.id === params.id);
+            const index = this.state.requests.findIndex((p) => p.id === params.id);
 
-            if (index === -1) fail('Publicación no encontrada', 404);
-            if (this.state.posts[index].author.id !== user.id && user.role !== 'admin') {
-                fail('Solo puedes eliminar tus propias publicaciones', 403);
+            if (index === -1) fail('Pedido no encontrado', 404);
+            if (this.state.requests[index].buyer.id !== user.id && user.role !== 'admin') {
+                fail('Solo puedes eliminar tus propios pedidos', 403);
             }
 
-            this.state.posts.splice(index, 1);
+            this.state.requests.splice(index, 1);
             this.save();
 
             return ok({ deleted: params.id });
         }
 
-        /* ---------------------- Estado de venta ---------------------- */
+        /* ====================================================================
+           Ofertas — lo que un vendedor responde a un pedido
 
-        /** Los tres estados posibles y cómo se cuentan a quien mira. */
-        static get AVAILABILITY() {
+           Aquí vive el recorrido del storyboard: el vendedor responde, el
+           comprador recibe el aviso, acepta, se abre la conversación, confirma
+           la compra y califica. Cada paso deja rastro para el siguiente.
+           ==================================================================== */
+
+        /** Estados por los que pasa una oferta. */
+        static get OFFER_STATUS() {
             return {
-                available: 'Disponible',
-                reserved: 'Reservado',
-                sold: 'Vendido',
+                pending: 'Esperando respuesta',
+                accepted: 'Aceptada',
+                declined: 'Descartada',
+                withdrawn: 'Retirada',
             };
         }
 
-        /**
-         * Marca una publicación como disponible, reservada o vendida.
-         *
-         * Es lo que distingue un tablón vivo de una lista de fantasmas: sin
-         * esto nada se puede dar por cerrado y la gente escribe por cosas que
-         * ya no están. No toca `status`, que es la moderación.
-         */
-        setAvailability({ params, body, token }) {
-            const user = this.requireUser(token);
-            const post = this.state.posts.find((p) => p.id === params.id);
-
-            if (!post) fail('Publicación no encontrada', 404);
-            if (post.author.id !== user.id && user.role !== 'admin') {
-                fail('Solo quien publica puede cambiar el estado del artículo', 403);
-            }
-
-            const value = String(body.availability || '');
-            if (!Object.prototype.hasOwnProperty.call(MockAPI.AVAILABILITY, value)) {
-                fail('Estado no válido. Usa disponible, reservado o vendido.');
-            }
-
-            if (post.availability === value) {
-                fail(`La publicación ya está marcada como «${MockAPI.AVAILABILITY[value].toLowerCase()}»`);
-            }
-
-            post.availability = value;
-            post.availability_at = value === 'available' ? null : nowIso();
-            post.updated_at = nowIso();
-
-            // Avisar a quien había mostrado interés: es su señal de que la
-            // cosa se movió, y evita que sigan esperando respuesta.
-            if (value !== 'available') {
-                post.interested.forEach((id) => {
-                    if (id === user.id) return;
-                    this.notify(id, `post_${value}`, post.id,
-                        `«${post.title}» se marcó como ${MockAPI.AVAILABILITY[value].toLowerCase()}`);
-                });
-            }
-
-            this.save();
-            return ok({ post: this.decorate(post, user) });
+        offersFor(requestId) {
+            return (this.state.offers || []).filter((o) => o.request_id === requestId);
         }
 
+        findOffer(id) {
+            const offer = (this.state.offers || []).find((o) => o.id === id);
+            if (!offer) fail('Oferta no encontrada', 404);
+            return offer;
+        }
+
+        /** Las ofertas de un pedido. Solo su dueño y el admin las ven todas. */
+        listOffers({ params, token }) {
+            const user = this.userFromToken(token);
+            const request = this.findRequest(params.id);
+
+            const isOwner = user && request.buyer.id === user.id;
+            const isAdmin = user && user.role === 'admin';
+
+            let offers = this.offersFor(request.id);
+
+            /* Quien no es el comprador solo ve la suya. Las ofertas de los
+               demás son su estrategia comercial, no un escaparate público:
+               enseñarlas convertiría esto en una subasta a la baja. */
+            if (!isOwner && !isAdmin) {
+                offers = user ? offers.filter((o) => o.seller.id === user.id) : [];
+            }
+
+            offers = [...offers].sort((a, b) => {
+                if (a.status === 'accepted') return -1;
+                if (b.status === 'accepted') return 1;
+                return new Date(b.created_at) - new Date(a.created_at);
+            });
+
+            return ok({
+                offers,
+                total: this.offersFor(request.id).length,
+                can_see_all: Boolean(isOwner || isAdmin),
+            });
+        }
+
+        /**
+         * Un vendedor responde a un pedido: «esto que buscas, lo tengo».
+         *
+         * Es la mitad que faltaba del comercio inverso. Pedir no requiere
+         * permiso; ofrecer sí, porque quien ofrece es quien cobra.
+         */
+        createOffer({ params, body, token }) {
+            const user = this.requireApprovedSeller(token);
+            const request = this.answerableRequest(params.id);
+
+            if (request.buyer.id === user.id) fail('No puedes responder a tu propio pedido');
+            if (request.state === 'fulfilled') fail('Este pedido ya se cerró con otra oferta');
+            if (request.state === 'cancelled') fail('Quien lo pidió canceló este pedido');
+
+            if (this.offersFor(request.id).some((o) => o.seller.id === user.id && o.status !== 'withdrawn')) {
+                fail('Ya respondiste a este pedido. Puedes escribirle por la conversación.');
+            }
+
+            const message = String(body.message || '').trim();
+            const price = Number(body.price);
+
+            if (message.length < 15) {
+                fail('Cuéntale qué tienes y dónde estás, con al menos 15 caracteres');
+            }
+            if (message.length > 700) fail('El mensaje no puede superar los 700 caracteres');
+            if (!Number.isFinite(price) || price <= 0) fail('Indica un precio mayor que cero');
+
+            const photos = Array.isArray(body.photos) ? body.photos.slice(0, 4) : [];
+
+            const offer = {
+                id: uid('off'),
+                request_id: request.id,
+                request_title: request.title,
+                seller: {
+                    id: user.id,
+                    username: user.username,
+                    avatar_url: user.avatar_url,
+                    shop_name: user.shop_name || user.username,
+                    district: user.district,
+                    rating: user.rating,
+                    rating_count: user.rating_count || 0,
+                    verified: user.verified,
+                },
+                message,
+                price,
+                photos: photos.map((url, i) => ({ id: uid('ph'), url: String(url) })),
+                shop_name: user.shop_name || user.username,
+                shop_address_hint: String(body.shop_address_hint || '').trim() || null,
+                district: user.district,
+                location: { ...user.location },
+                status: 'pending',
+                created_at: nowIso(),
+            };
+
+            this.state.offers = this.state.offers || [];
+            this.state.offers.unshift(offer);
+
+            request.offers_count = this.offersFor(request.id).length;
+            request.updated_at = nowIso();
+
+            /* El aviso del panel 6: «¡Alguien aceptó tu pedido!». Es la razón
+               por la que quien publica puede cerrar la app y olvidarse. */
+            this.notify(request.buyer.id, 'offer_received', request.id,
+                `${offer.shop_name} respondió a tu pedido «${request.title}»`);
+
+            this.refreshUserCounters(user.id);
+            this.save();
+
+            return ok({ offer, offers_count: request.offers_count });
+        }
+
+        /** Las ofertas que ha enviado quien ha iniciado sesión, como vendedor. */
+        listMyOffers({ query, token }) {
+            const user = this.requireUser(token);
+            const status = query.get('status') || 'all';
+
+            let offers = (this.state.offers || []).filter((o) => o.seller.id === user.id);
+            if (status !== 'all') offers = offers.filter((o) => o.status === status);
+
+            offers = [...offers]
+                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                .map((offer) => {
+                    const request = this.state.requests.find((r) => r.id === offer.request_id);
+                    return { ...offer, request: request ? this.decorate(request, user) : null };
+                });
+
+            const mine = (this.state.offers || []).filter((o) => o.seller.id === user.id);
+
+            return ok({
+                offers,
+                summary: {
+                    total: mine.length,
+                    pending: mine.filter((o) => o.status === 'pending').length,
+                    accepted: mine.filter((o) => o.status === 'accepted').length,
+                    declined: mine.filter((o) => o.status === 'declined').length,
+                },
+            });
+        }
+
+        /**
+         * El comprador acepta una oferta (paneles 6 y 7).
+         *
+         * Aceptar hace tres cosas de golpe: descarta las demás ofertas, abre la
+         * conversación privada con ese vendedor y crea el trato que después se
+         * confirmará y se calificará.
+         */
+        acceptOffer({ params, token }) {
+            const user = this.requireUser(token);
+            const offer = this.findOffer(params.id);
+            const request = this.findRequest(offer.request_id);
+
+            if (request.buyer.id !== user.id) fail('Solo quien hizo el pedido puede aceptar una oferta', 403);
+            if (offer.status === 'accepted') fail('Ya aceptaste esta oferta');
+            if (offer.status !== 'pending') fail('Esta oferta ya no está disponible');
+            if (request.state === 'fulfilled') fail('Este pedido ya se cerró');
+
+            offer.status = 'accepted';
+            request.state = 'matched';
+            request.accepted_offer_id = offer.id;
+            request.updated_at = nowIso();
+
+            // El resto de vendedores deja de esperar una respuesta que no llegará
+            this.offersFor(request.id).forEach((other) => {
+                if (other.id === offer.id || other.status !== 'pending') return;
+                other.status = 'declined';
+                this.notify(other.seller.id, 'offer_declined', request.id,
+                    `«${request.title}» se cerró con otra oferta. Gracias por responder.`);
+            });
+
+            const conversation = this.conversationForOffer(request, offer, user);
+
+            const deal = {
+                id: uid('deal'),
+                request_id: request.id,
+                request_title: request.title,
+                offer_id: offer.id,
+                buyer_id: request.buyer.id,
+                buyer_name: request.buyer.username,
+                seller_id: offer.seller.id,
+                seller_name: offer.seller.username,
+                shop_name: offer.shop_name,
+                price: offer.price,
+                status: 'agreed',
+                confirmed_at: null,
+                rating: null,
+                created_at: nowIso(),
+            };
+
+            this.state.deals = this.state.deals || [];
+            this.state.deals.unshift(deal);
+
+            this.notify(offer.seller.id, 'offer_accepted', request.id,
+                `${user.username} aceptó tu oferta por «${request.title}». Ya pueden coordinar.`);
+
+            this.save();
+
+            return ok({ offer, request: this.decorate(request, user), conversation, deal });
+        }
+
+        declineOffer({ params, token }) {
+            const user = this.requireUser(token);
+            const offer = this.findOffer(params.id);
+            const request = this.findRequest(offer.request_id);
+
+            if (request.buyer.id !== user.id) fail('Solo quien hizo el pedido puede descartar una oferta', 403);
+            if (offer.status !== 'pending') fail('Esta oferta ya no está pendiente');
+
+            offer.status = 'declined';
+            this.notify(offer.seller.id, 'offer_declined', request.id,
+                `Tu oferta por «${request.title}» fue descartada.`);
+
+            this.save();
+            return ok({ offer });
+        }
+
+        /**
+         * Abre —o recupera— la conversación de un pedido con su vendedor.
+         * El primer mensaje es el de la oferta: lo que el vendedor ya escribió
+         * no se le hace repetir.
+         */
+        conversationForOffer(request, offer, user) {
+            let conversation = this.state.conversations.find((c) => c.offer_id === offer.id);
+            if (conversation) return conversation;
+
+            conversation = {
+                id: uid('conv'),
+                request_id: request.id,
+                request_title: request.title,
+                request_image: request.image_url,
+                offer_id: offer.id,
+                price: offer.price,
+                participants: [request.buyer.id, offer.seller.id],
+                seller: offer.seller,
+                buyer: request.buyer,
+                messages: [{
+                    id: uid('msg'),
+                    sender_id: offer.seller.id,
+                    sender_name: offer.shop_name || offer.seller.username,
+                    text: offer.message,
+                    photos: offer.photos || [],
+                    read: false,
+                    created_at: offer.created_at,
+                }],
+                created_at: nowIso(),
+                updated_at: nowIso(),
+            };
+
+            this.state.conversations.push(conversation);
+            return conversation;
+        }
+
+        /* ====================================================================
+           Tratos: la compra y su calificación
+           ==================================================================== */
+
+        findDeal(id) {
+            const deal = (this.state.deals || []).find((d) => d.id === id);
+            if (!deal) fail('Trato no encontrado', 404);
+            return deal;
+        }
+
+        listDeals({ query, token }) {
+            const user = this.requireUser(token);
+            const role = query.get('role') || 'all';
+
+            let deals = (this.state.deals || []).filter((d) =>
+                d.buyer_id === user.id || d.seller_id === user.id);
+
+            if (role === 'buyer') deals = deals.filter((d) => d.buyer_id === user.id);
+            if (role === 'seller') deals = deals.filter((d) => d.seller_id === user.id);
+
+            deals = [...deals].sort((a, b) =>
+                new Date(b.confirmed_at || b.created_at) - new Date(a.confirmed_at || a.created_at));
+
+            return ok({
+                deals,
+                summary: {
+                    total: deals.length,
+                    // Confirmadas pero todavía sin calificar: es lo que el
+                    // comprador tiene pendiente de hacer.
+                    to_rate: deals.filter((d) =>
+                        d.buyer_id === user.id && d.confirmed_at && !d.rating).length,
+                },
+            });
+        }
+
+        /**
+         * «Compra realizada» (panel 9).
+         *
+         * Lo confirma el comprador, no el vendedor: es quien sabe si recibió
+         * lo que pidió. Aquí no se mueve dinero — esto registra que el trato
+         * se cerró, que es lo único que la plataforma puede saber de verdad.
+         */
+        confirmDeal({ params, token }) {
+            const user = this.requireUser(token);
+            const deal = this.findDeal(params.id);
+
+            if (deal.buyer_id !== user.id) fail('Solo quien hizo el pedido puede confirmar la compra', 403);
+            if (deal.confirmed_at) fail('Esta compra ya estaba confirmada');
+
+            deal.status = 'confirmed';
+            deal.confirmed_at = nowIso();
+
+            const request = this.state.requests.find((r) => r.id === deal.request_id);
+            if (request) {
+                request.state = 'fulfilled';
+                request.updated_at = nowIso();
+            }
+
+            this.notify(deal.seller_id, 'deal_confirmed', deal.request_id,
+                `${user.username} confirmó la compra de «${deal.request_title}».`);
+
+            this.save();
+            return ok({ deal, request: request ? this.decorate(request, user) : null });
+        }
+
+        /**
+         * «Califica tu experiencia» (panel 10).
+         *
+         * De aquí sale la reputación de cada local. Es la única fuente: sin
+         * compras calificadas, un vendedor no tiene estrellas — y eso se dice,
+         * en vez de inventarle un número.
+         */
+        rateDeal({ params, body, token }) {
+            const user = this.requireUser(token);
+            const deal = this.findDeal(params.id);
+
+            if (deal.buyer_id !== user.id) fail('Solo quien compró puede calificar', 403);
+            if (!deal.confirmed_at) fail('Confirma primero que recibiste el producto');
+            if (deal.rating) fail('Ya calificaste esta compra');
+
+            const stars = Number(body.stars);
+            if (!Number.isInteger(stars) || stars < 1 || stars > 5) {
+                fail('La calificación va de 1 a 5 estrellas');
+            }
+
+            const comment = String(body.comment || '').trim();
+            if (comment.length > 500) fail('El comentario no puede superar los 500 caracteres');
+
+            deal.rating = { stars, comment, created_at: nowIso() };
+
+            this.refreshUserCounters(deal.seller_id);
+
+            this.notify(deal.seller_id, 'deal_rated', deal.request_id,
+                `${user.username} te calificó con ${stars} ${stars === 1 ? 'estrella' : 'estrellas'}.`);
+
+            this.save();
+
+            const seller = this.state.users.find((u) => u.id === deal.seller_id);
+            return ok({
+                deal,
+                seller_rating: seller ? seller.rating : 0,
+                seller_rating_count: seller ? seller.rating_count : 0,
+            });
+        }
         /**
          * Otras publicaciones que le pueden interesar a quien está mirando
          * esta: primero del mismo vendedor, luego de la misma categoría.
          */
-        relatedPosts({ params, token }) {
+        relatedRequests({ params, token }) {
             const user = this.userFromToken(token);
-            const post = this.state.posts.find((p) => p.id === params.id);
+            const request = this.state.requests.find((p) => p.id === params.id);
 
-            if (!post) fail('Publicación no encontrada', 404);
+            if (!request) fail('Pedido no encontrado', 404);
 
-            const candidates = this.state.posts.filter((p) =>
-                p.id !== post.id
+            const candidates = this.state.requests.filter((p) =>
+                p.id !== request.id
                 && p.status === 'approved'
-                && p.availability !== 'sold');
+                && p.state === 'open');
 
-            const sameAuthor = candidates.filter((p) => p.author.id === post.author.id);
+            const sameAuthor = candidates.filter((p) => p.buyer.id === request.buyer.id);
             const sameCategory = candidates.filter((p) =>
-                p.category.id === post.category.id && p.author.id !== post.author.id);
+                p.category.id === request.category.id && p.buyer.id !== request.buyer.id);
 
             const pick = [...sameAuthor.slice(0, 3), ...sameCategory].slice(0, 6);
 
@@ -792,20 +1195,20 @@
             });
         }
 
-        listMine({ token }) {
+        listMyRequests({ token }) {
             const user = this.requireUser(token);
-            const posts = this.state.posts
-                .filter((p) => p.author.id === user.id)
+            const requests = this.state.requests
+                .filter((p) => p.buyer.id === user.id)
                 .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
                 .map((p) => this.decorate(p, user));
 
             return ok({
-                posts,
+                requests,
                 summary: {
-                    total: posts.length,
-                    approved: posts.filter((p) => p.status === 'approved').length,
-                    pending: posts.filter((p) => p.status === 'pending').length,
-                    rejected: posts.filter((p) => p.status === 'rejected').length,
+                    total: requests.length,
+                    approved: requests.filter((p) => p.status === 'approved').length,
+                    pending: requests.filter((p) => p.status === 'pending').length,
+                    rejected: requests.filter((p) => p.status === 'rejected').length,
                 },
             });
         }
@@ -813,7 +1216,7 @@
         listSaved({ token }) {
             const user = this.requireUser(token);
 
-            const posts = this.state.posts
+            const requests = this.state.requests
                 .filter((p) => p.saves.includes(user.id) && p.status === 'approved')
                 // Por cuándo se guardó, no por cuándo se publicó: la pantalla
                 // se titula «guardados recientes» y antes ordenaba por otra
@@ -824,91 +1227,72 @@
                 })
                 .map((p) => ({ ...this.decorate(p, user), saved_at: (p.saved_at || {})[user.id] || null }));
 
-            return ok({ posts, ids: posts.map((p) => p.id) });
+            return ok({ requests, ids: requests.map((p) => p.id) });
         }
 
         /* ------------------------- Interacciones ------------------------- */
 
-        /** Localiza una publicación aprobada sobre la que se puede interactuar. */
-        interactivePost(id) {
-            const post = this.state.posts.find((p) => p.id === id);
-            if (!post) fail('Publicación no encontrada', 404);
-            if (post.status !== 'approved') fail('Esta publicación aún no está publicada', 403);
-            return post;
+        /** Localiza un pedido aprobado sobre el que todavía se puede actuar. */
+        answerableRequest(id) {
+            const request = this.findRequest(id);
+            if (request.status !== 'approved') fail('Este pedido aún no está publicado', 403);
+            return request;
         }
 
-        toggleLike({ params, token }) {
+        /**
+         * «También lo busco».
+         *
+         * En el comercio inverso esto no es un aplauso: es demanda. Varias
+         * personas buscando lo mismo es exactamente la señal que hace que a un
+         * vendedor le merezca la pena responder.
+         */
+        toggleMeToo({ params, token }) {
             const user = this.requireUser(token);
-            const post = this.interactivePost(params.id);
+            const request = this.answerableRequest(params.id);
 
-            const liked = toggleIn(post.likes, user.id);
-            post.likes_count = Math.max(0, post.likes_count + (liked ? 1 : -1));
-            this.save();
+            if (request.buyer.id === user.id) fail('Este pedido ya es tuyo');
 
-            return ok({ liked, likes_count: post.likes_count });
-        }
+            const meToo = toggleIn(request.me_too, user.id);
+            request.me_too_count = Math.max(0, request.me_too_count + (meToo ? 1 : -1));
 
-        toggleInterest({ params, token }) {
-            const user = this.requireUser(token);
-            const post = this.interactivePost(params.id);
-
-            if (post.author.id === user.id) fail('No puedes marcar interés en tu propia publicación');
-
-            // Ya se vendió: dejar marcar interés solo alimentaría una espera
-            // que no va a ninguna parte.
-            if (post.availability === 'sold' && !post.interested.includes(user.id)) {
-                fail('Este artículo ya se vendió');
-            }
-
-            const interested = toggleIn(post.interested, user.id);
-            post.interested_count = Math.max(0, post.interested_count + (interested ? 1 : -1));
-
-            // Avisar al vendedor: es la señal principal del foro.
-            if (interested) {
-                this.state.notifications.push({
-                    id: uid('ntf'),
-                    user_id: post.author.id,
-                    type: 'interest',
-                    post_id: post.id,
-                    text: `${user.username} marcó "Me interesa" en «${post.title}»`,
-                    read: false,
-                    created_at: nowIso(),
-                });
+            if (meToo) {
+                this.notify(request.buyer.id, 'me_too', request.id,
+                    `${user.username} también está buscando «${request.title}»`);
             }
 
             this.save();
-            return ok({ interested, interested_count: post.interested_count });
+            return ok({ me_too: meToo, me_too_count: request.me_too_count });
         }
 
         toggleSave({ params, token }) {
             const user = this.requireUser(token);
-            const post = this.interactivePost(params.id);
+            const request = this.answerableRequest(params.id);
 
-            const saved = toggleIn(post.saves, user.id);
-            post.saves_count = Math.max(0, post.saves_count + (saved ? 1 : -1));
+            const saved = toggleIn(request.saves, user.id);
+            request.saves_count = Math.max(0, request.saves_count + (saved ? 1 : -1));
 
             // Cuándo lo guardó, para poder ordenar «guardados recientes» por
             // lo que su nombre dice y no por la fecha de publicación.
-            post.saved_at = post.saved_at || {};
-            if (saved) post.saved_at[user.id] = nowIso();
-            else delete post.saved_at[user.id];
+            request.saved_at = request.saved_at || {};
+            if (saved) request.saved_at[user.id] = nowIso();
+            else delete request.saved_at[user.id];
 
             this.save();
 
-            return ok({ saved, saves_count: post.saves_count, saved_at: post.saved_at[user.id] || null });
+            return ok({ saved, saves_count: request.saves_count, saved_at: request.saved_at[user.id] || null });
         }
 
         /* --------------------------- Comentarios --------------------------- */
 
         listComments({ params }) {
-            const post = this.state.posts.find((p) => p.id === params.id);
-            if (!post) fail('Publicación no encontrada', 404);
-            return ok({ comments: post.comments, total: post.comments.length });
+            const request = this.state.requests.find((p) => p.id === params.id);
+            if (!request) fail('Pedido no encontrado', 404);
+            return ok({ comments: request.comments, total: request.comments.length });
         }
 
         createComment({ params, body, token }) {
             const user = this.requireUser(token);
-            const post = this.interactivePost(params.id);
+            const request = this.answerableRequest(params.id);
 
             const text = String(body.text || '').trim();
             if (!text) fail('El comentario no puede estar vacío');
@@ -916,7 +1300,7 @@
 
             const comment = {
                 id: uid('cm'),
-                post_id: post.id,
+                request_id: request.id,
                 author: {
                     id: user.id,
                     username: user.username,
@@ -927,46 +1311,46 @@
                 created_at: nowIso(),
             };
 
-            post.comments.push(comment);
-            post.comment_count = post.comments.length;
+            request.comments.push(comment);
+            request.comment_count = request.comments.length;
 
-            if (post.author.id !== user.id) {
+            if (request.buyer.id !== user.id) {
                 this.state.notifications.push({
                     id: uid('ntf'),
-                    user_id: post.author.id,
+                    user_id: request.buyer.id,
                     type: 'comment',
-                    post_id: post.id,
-                    text: `${user.username} comentó en «${post.title}»`,
+                    request_id: request.id,
+                    text: `${user.username} comentó en «${request.title}»`,
                     read: false,
                     created_at: nowIso(),
                 });
             }
 
             this.save();
-            return ok({ comment, comment_count: post.comment_count });
+            return ok({ comment, comment_count: request.comment_count });
         }
 
         deleteComment({ params, token }) {
             const user = this.requireUser(token);
-            const post = this.state.posts.find((p) => p.id === params.id);
+            const request = this.state.requests.find((p) => p.id === params.id);
 
-            if (!post) fail('Publicación no encontrada', 404);
+            if (!request) fail('Pedido no encontrado', 404);
 
-            const index = post.comments.findIndex((c) => c.id === params.sub);
+            const index = request.comments.findIndex((c) => c.id === params.sub);
             if (index === -1) fail('Comentario no encontrado', 404);
 
-            const comment = post.comments[index];
+            const comment = request.comments[index];
             const canDelete = comment.author.id === user.id
-                || post.author.id === user.id
+                || request.buyer.id === user.id
                 || user.role === 'admin';
 
             if (!canDelete) fail('No puedes eliminar este comentario', 403);
 
-            post.comments.splice(index, 1);
-            post.comment_count = post.comments.length;
+            request.comments.splice(index, 1);
+            request.comment_count = request.comments.length;
             this.save();
 
-            return ok({ deleted: params.sub, comment_count: post.comment_count });
+            return ok({ deleted: params.sub, comment_count: request.comment_count });
         }
 
         /* -------------------------- Autenticación -------------------------- */
@@ -1007,7 +1391,7 @@
                 phone: body.phone || '',
                 bio: '',
                 rating: 0,
-                total_posts: 0,
+                total_requests: 0,
                 total_sales: 0,
                 verified: false,
                 created_at: nowIso(),
@@ -1101,7 +1485,13 @@
 
         /* ------------------------------ Mapa ------------------------------ */
 
-        /** Vendedores aprobados con al menos una publicación visible. */
+        /**
+         * Los locales que responden pedidos, situados en el mapa.
+         *
+         * Antes esto mostraba a quien tenía cosas publicadas. Ahora muestra a
+         * quien las consigue: para quien busca algo, saber qué tiendas hay
+         * cerca y qué han resuelto ya vale más que un catálogo.
+         */
         mapSellers({ query }) {
             const districtFilter = query.get('district');
             const categoryFilter = query.get('category');
@@ -1109,32 +1499,39 @@
             const sellers = this.state.users
                 .filter((u) => u.seller_status === 'approved')
                 .map((user) => {
-                    let posts = this.state.posts.filter(
-                        (p) => p.author.id === user.id && p.status === 'approved'
-                    );
+                    let supplied = (this.state.deals || []).filter((d) => d.seller_id === user.id);
 
                     if (categoryFilter) {
-                        posts = posts.filter((p) => p.category.id === categoryFilter);
+                        supplied = supplied.filter((deal) => {
+                            const request = this.state.requests.find((r) => r.id === deal.request_id);
+                            return request && request.category.id === categoryFilter;
+                        });
                     }
+
+                    const offers = (this.state.offers || []).filter((o) => o.seller.id === user.id);
 
                     return {
                         id: user.id,
                         username: user.username,
+                        shop_name: user.shop_name || user.username,
                         district: user.district,
                         location: user.location,
                         rating: user.rating,
+                        rating_count: user.rating_count || 0,
                         verified: user.verified,
-                        post_count: posts.length,
-                        // Muestra breve para el globo del mapa
-                        preview: posts.slice(0, 3).map((p) => ({
-                            id: p.id,
-                            title: p.title,
-                            price: p.price,
-                            image_url: p.image_url,
+                        // Cuántos pedidos ha resuelto: es su carta de presentación
+                        deal_count: supplied.length,
+                        offer_count: offers.length,
+                        // Muestra breve para el globo del mapa: lo último que consiguió
+                        preview: supplied.slice(0, 3).map((deal) => ({
+                            id: deal.request_id,
+                            title: deal.request_title,
+                            price: deal.price,
+                            image_url: (this.state.requests.find((r) => r.id === deal.request_id) || {}).image_url,
                         })),
                     };
                 })
-                .filter((s) => s.post_count > 0)
+                .filter((s) => s.deal_count > 0 || s.offer_count > 0)
                 .filter((s) => !districtFilter || s.district === districtFilter);
 
             return ok({
@@ -1149,15 +1546,15 @@
         adminStats({ token }) {
             this.requireAdmin(token);
 
-            const posts = this.state.posts;
+            const requests = this.state.requests;
             const users = this.state.users;
 
             return ok({
-                posts: {
-                    total: posts.length,
-                    approved: posts.filter((p) => p.status === 'approved').length,
-                    pending: posts.filter((p) => p.status === 'pending').length,
-                    rejected: posts.filter((p) => p.status === 'rejected').length,
+                requests: {
+                    total: requests.length,
+                    approved: requests.filter((p) => p.status === 'approved').length,
+                    pending: requests.filter((p) => p.status === 'pending').length,
+                    rejected: requests.filter((p) => p.status === 'rejected').length,
                 },
                 sellers: {
                     approved: users.filter((u) => u.seller_status === 'approved').length,
@@ -1169,14 +1566,27 @@
                     buyers: users.filter((u) => u.role === 'buyer' && !u.seller_status).length,
                 },
                 activity: {
-                    comments: posts.reduce((sum, p) => sum + p.comment_count, 0),
-                    interested: posts.reduce((sum, p) => sum + p.interested_count, 0),
-                    views: posts.reduce((sum, p) => sum + p.views, 0),
+                    comments: requests.reduce((sum, p) => sum + p.comment_count, 0),
+                    me_too: requests.reduce((sum, p) => sum + (p.me_too_count || 0), 0),
+                    views: requests.reduce((sum, p) => sum + p.views, 0),
                 },
-                availability: {
-                    available: posts.filter((p) => p.availability === 'available').length,
-                    reserved: posts.filter((p) => p.availability === 'reserved').length,
-                    sold: posts.filter((p) => p.availability === 'sold').length,
+                // Cómo va el ciclo de vida de los pedidos, que es la salud real
+                // de la plataforma: pedir es fácil, lo difícil es que se cumpla.
+                lifecycle: {
+                    open: requests.filter((p) => p.state === 'open').length,
+                    matched: requests.filter((p) => p.state === 'matched').length,
+                    fulfilled: requests.filter((p) => p.state === 'fulfilled').length,
+                    cancelled: requests.filter((p) => p.state === 'cancelled').length,
+                },
+                offers: {
+                    total: (this.state.offers || []).length,
+                    pending: (this.state.offers || []).filter((o) => o.status === 'pending').length,
+                    accepted: (this.state.offers || []).filter((o) => o.status === 'accepted').length,
+                },
+                deals: {
+                    total: (this.state.deals || []).length,
+                    confirmed: (this.state.deals || []).filter((d) => d.confirmed_at).length,
+                    rated: (this.state.deals || []).filter((d) => d.rating).length,
                 },
                 reports: {
                     open: this.openReports().length,
@@ -1185,69 +1595,69 @@
             });
         }
 
-        adminPosts({ query, token }) {
+        adminRequests({ query, token }) {
             this.requireAdmin(token);
 
             const status = query.get('status') || 'pending';
             const search = normalize(query.get('q') || '');
 
-            let posts = status === 'all'
-                ? [...this.state.posts]
-                : this.state.posts.filter((p) => p.status === status);
+            let requests = status === 'all'
+                ? [...this.state.requests]
+                : this.state.requests.filter((p) => p.status === status);
 
             if (search) {
-                posts = posts.filter((p) =>
-                    normalize(`${p.title} ${p.author.username} ${p.district}`).includes(search));
+                requests = requests.filter((p) =>
+                    normalize(`${p.title} ${p.buyer.username} ${p.district}`).includes(search));
             }
 
             // Lo más antiguo primero: se revisa por orden de llegada.
-            posts.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+            requests.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
-            return ok({ posts, total: posts.length });
+            return ok({ requests, total: requests.length });
         }
 
-        approvePost({ params, token }) {
+        approveRequest({ params, token }) {
             const admin = this.requireAdmin(token);
-            const post = this.state.posts.find((p) => p.id === params.id);
+            const request = this.state.requests.find((p) => p.id === params.id);
 
-            if (!post) fail('Publicación no encontrada', 404);
-            if (post.status === 'approved') fail('Esta publicación ya está aprobada');
+            if (!request) fail('Pedido no encontrado', 404);
+            if (request.status === 'approved') fail('Esta publicación ya está aprobada');
 
-            post.status = 'approved';
-            post.rejection_reason = null;
-            post.updated_at = nowIso();
+            request.status = 'approved';
+            request.rejection_reason = null;
+            request.updated_at = nowIso();
 
-            this.logModeration(admin, 'approve_post', post.id, `Aprobó «${post.title}»`);
-            this.notify(post.author.id, 'post_approved', post.id,
-                `Tu publicación «${post.title}» fue aprobada y ya es visible.`);
+            this.logModeration(admin, 'approve_request', request.id, `Aprobó «${request.title}»`);
+            this.notify(request.buyer.id, 'request_approved', request.id,
+                `Tu publicación «${request.title}» fue aprobada y ya es visible.`);
 
-            this.refreshAuthorCounters(post.author.id);
+            this.refreshBuyerCounters(request.buyer.id);
             this.save();
 
-            return ok({ post });
+            return ok({ request });
         }
 
-        rejectPost({ params, body, token }) {
+        rejectRequest({ params, body, token }) {
             const admin = this.requireAdmin(token);
-            const post = this.state.posts.find((p) => p.id === params.id);
+            const request = this.state.requests.find((p) => p.id === params.id);
 
-            if (!post) fail('Publicación no encontrada', 404);
+            if (!request) fail('Pedido no encontrado', 404);
 
             const reason = String(body.reason || '').trim();
             if (reason.length < 8) fail('Indica un motivo de al menos 8 caracteres');
 
-            post.status = 'rejected';
-            post.rejection_reason = reason;
-            post.updated_at = nowIso();
+            request.status = 'rejected';
+            request.rejection_reason = reason;
+            request.updated_at = nowIso();
 
-            this.logModeration(admin, 'reject_post', post.id, `Rechazó «${post.title}»: ${reason}`);
-            this.notify(post.author.id, 'post_rejected', post.id,
-                `Tu publicación «${post.title}» fue rechazada: ${reason}`);
+            this.logModeration(admin, 'reject_request', request.id, `Rechazó «${request.title}»: ${reason}`);
+            this.notify(request.buyer.id, 'request_rejected', request.id,
+                `Tu publicación «${request.title}» fue rechazada: ${reason}`);
 
-            this.refreshAuthorCounters(post.author.id);
+            this.refreshBuyerCounters(request.buyer.id);
             this.save();
 
-            return ok({ post });
+            return ok({ request });
         }
 
         adminSellers({ query, token }) {
@@ -1259,7 +1669,7 @@
                 .filter((u) => (status === 'all' ? !!u.seller_status : u.seller_status === status))
                 .map((u) => ({
                     ...this.publicUser(u),
-                    post_count: this.state.posts.filter((p) => p.author.id === u.id).length,
+                    post_count: this.state.requests.filter((p) => p.buyer.id === u.id).length,
                 }))
                 .sort((a, b) => new Date(a.applied_at || a.created_at) - new Date(b.applied_at || b.created_at));
 
@@ -1414,20 +1824,57 @@
                 id: uid('ntf'),
                 user_id: userId,
                 type,
-                post_id: postId,
+                request_id: postId,
                 text,
                 read: false,
                 created_at: nowIso(),
             });
         }
 
-        /** Mantiene al día el número de publicaciones visibles de un autor. */
-        refreshAuthorCounters(userId) {
+        /**
+         * Recalcula lo que una cuenta tiene acumulado: pedidos publicados,
+         * ofertas enviadas y —lo importante— su reputación.
+         *
+         * Las estrellas salen solo de compras calificadas. Sin ninguna, un
+         * vendedor no tiene nota, y la interfaz lo dice en vez de inventarla.
+         */
+        refreshUserCounters(userId) {
             const user = this.state.users.find((u) => u.id === userId);
             if (!user) return;
-            user.total_posts = this.state.posts.filter(
-                (p) => p.author.id === userId && p.status === 'approved'
+
+            user.total_requests = this.state.requests.filter(
+                (r) => r.buyer.id === userId && r.status === 'approved'
             ).length;
+
+            user.total_offers = (this.state.offers || []).filter(
+                (o) => o.seller.id === userId
+            ).length;
+
+            const rated = (this.state.deals || []).filter(
+                (d) => d.seller_id === userId && d.rating
+            );
+
+            if (rated.length) {
+                const sum = rated.reduce((total, d) => total + d.rating.stars, 0);
+                user.rating = Math.round((sum / rated.length) * 10) / 10;
+                user.rating_count = rated.length;
+                user.total_sales = rated.length;
+            } else {
+                user.rating = 0;
+                user.rating_count = 0;
+            }
+
+            // La reputación que viaja copiada dentro de cada oferta y pedido
+            (this.state.offers || []).forEach((offer) => {
+                if (offer.seller.id !== userId) return;
+                offer.seller.rating = user.rating;
+                offer.seller.rating_count = user.rating_count;
+            });
+        }
+
+        /** Se mantiene el nombre viejo como puente mientras quedan llamadas. */
+        refreshBuyerCounters(userId) {
+            this.refreshUserCounters(userId);
         }
 
         /* ---------------------------- Avisos ---------------------------- */
@@ -1498,12 +1945,12 @@
          * cazaba un administrador que pasara por ahí. Esto pone a la comunidad
          * en el circuito de moderación que ya existe.
          */
-        reportPost({ params, body, token }) {
+        reportRequest({ params, body, token }) {
             const user = this.requireUser(token);
-            const post = this.state.posts.find((p) => p.id === params.id);
+            const request = this.state.requests.find((p) => p.id === params.id);
 
-            if (!post) fail('Publicación no encontrada', 404);
-            if (post.author.id === user.id) fail('No puedes denunciar tu propia publicación');
+            if (!request) fail('Pedido no encontrado', 404);
+            if (request.buyer.id === user.id) fail('No puedes denunciar tu propia publicación');
 
             const reason = String(body.reason || '').trim();
             if (reason.length < 10) fail('Cuéntanos el motivo con al menos 10 caracteres');
@@ -1512,15 +1959,15 @@
             this.state.reports = this.state.reports || [];
 
             const already = this.state.reports.find(
-                (r) => r.post_id === post.id && r.reporter_id === user.id && r.status === 'open'
+                (r) => r.request_id === request.id && r.reporter_id === user.id && r.status === 'open'
             );
             if (already) fail('Ya denunciaste esta publicación; la estamos revisando');
 
             const report = {
                 id: uid('rep'),
-                post_id: post.id,
-                post_title: post.title,
-                author: post.author.username,
+                request_id: request.id,
+                request_title: request.title,
+                author: request.buyer.username,
                 reporter_id: user.id,
                 reporter: user.username,
                 category: String(body.category || 'otro'),
@@ -1572,11 +2019,11 @@
             report.resolution = resolution;
             report.resolved_at = nowIso();
 
-            this.logModeration(admin, 'resolve_report', report.post_id,
-                `Resolvió la denuncia sobre «${report.post_title}»: ${resolution}`);
+            this.logModeration(admin, 'resolve_report', report.request_id,
+                `Resolvió la denuncia sobre «${report.request_title}»: ${resolution}`);
 
-            this.notify(report.reporter_id, 'report_resolved', report.post_id,
-                `Revisamos tu denuncia sobre «${report.post_title}». ${resolution}`);
+            this.notify(report.reporter_id, 'report_resolved', report.request_id,
+                `Revisamos tu denuncia sobre «${report.request_title}». ${resolution}`);
 
             this.save();
             return ok({ report, open: this.openReports().length });
@@ -1599,39 +2046,27 @@
             return ok({ conversations });
         }
 
+        /**
+         * Recupera la conversación de un pedido.
+         *
+         * En el comercio inverso una conversación no se abre por las buenas:
+         * nace cuando el comprador acepta una oferta, y solo entonces. Antes de
+         * eso no hay nada que coordinar, y dejar escribir a cualquier vendedor
+         * convertiría la bandeja del comprador en un buzón de publicidad.
+         */
         openConversation({ body, token }) {
             const user = this.requireUser(token);
-            const post = this.interactivePost(body.post_id);
+            const request = this.answerableRequest(body.request_id);
 
-            if (post.author.id === user.id) fail('No puedes escribirte a ti mismo');
-
-            let conversation = this.state.conversations.find(
-                (c) => c.post_id === post.id && c.participants.includes(user.id)
+            const conversation = this.state.conversations.find(
+                (c) => c.request_id === request.id && c.participants.includes(user.id)
             );
 
             if (!conversation) {
-                conversation = {
-                    id: uid('conv'),
-                    post_id: post.id,
-                    post_title: post.title,
-                    post_image: post.image_url,
-                    post_price: post.price,
-                    participants: [user.id, post.author.id],
-                    seller: post.author,
-                    messages: [{
-                        id: uid('msg'),
-                        sender_id: post.author.id,
-                        sender_name: post.author.username,
-                        text: `¡Hola! Soy ${post.author.username}. Gracias por tu interés en «${post.title}». ¿En qué te puedo ayudar?`,
-                        read: false,
-                        created_at: nowIso(),
-                    }],
-                    created_at: nowIso(),
-                    updated_at: nowIso(),
-                };
-
-                this.state.conversations.push(conversation);
-                this.save();
+                if (request.buyer.id === user.id) {
+                    fail('Acepta una de las ofertas para empezar a coordinar', 409);
+                }
+                fail('Responde al pedido con una oferta; si la aceptan, se abre la conversación', 409);
             }
 
             return ok({ conversation });
@@ -1695,7 +2130,7 @@
             let reply;
 
             if (/precio|cuesta|descuento|rebaja|oferta|barato|ultimo/.test(text)) {
-                reply = `Lo tengo en S/ ${conversation.post_price.toFixed(2)}. Si lo recoges esta semana podemos conversar el precio.`;
+                reply = `Lo tengo en S/ ${Number(conversation.price || 0).toFixed(2)}. Si lo recoges esta semana podemos conversar el precio.`;
             } else if (/donde|zona|distrito|direccion|ver|recoger|entrega/.test(text)) {
                 reply = `Estoy en ${conversation.seller.district}. Podemos quedar en un punto céntrico del distrito cuando te acomode.`;
             } else if (/estado|condicion|usado|funciona|falla|detalle/.test(text)) {

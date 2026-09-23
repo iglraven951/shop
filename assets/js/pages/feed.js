@@ -175,7 +175,7 @@
         dom.feed.innerHTML = UI.postSkeleton(SKELETON_COUNT);
 
         try {
-            const data = await api.getPosts({
+            const data = await api.getRequests({
                 ...serializeFilters(false),
                 page: state.page,
                 per_page: PER_PAGE,
@@ -183,7 +183,7 @@
 
             if (id !== requestId) return;
 
-            state.posts = data.posts || [];
+            state.posts = data.requests || [];
             state.pagination = data.pagination || null;
 
             // La API puede corregir la página cuando pedimos una que ya no existe.
@@ -238,8 +238,8 @@
      */
     async function loadStats() {
         try {
-            const data = await api.getPosts({ page: 1, per_page: STATS_SAMPLE });
-            const sample = data.posts || [];
+            const data = await api.getRequests({ page: 1, per_page: STATS_SAMPLE });
+            const sample = data.requests || [];
             const total = data.pagination ? data.pagination.total : sample.length;
 
             const sellers = new Set(

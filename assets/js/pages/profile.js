@@ -533,9 +533,9 @@
         if (state.postsLoaded) return Promise.resolve();
 
         if (!postsRequest) {
-            postsRequest = api.getMyPosts()
+            postsRequest = api.getMyRequests()
                 .then((data) => {
-                    state.posts = data.posts || [];
+                    state.posts = data.requests || [];
                     state.postsLoaded = true;
                 })
                 .finally(() => { postsRequest = null; });
@@ -825,7 +825,7 @@
                         if (!values) return false;   // `false` cancela el cierre
 
                         try {
-                            const data = await api.updatePost(post.id, values);
+                            const data = await api.updateRequest(post.id, values);
                             const updated = data.post || data;
                             const index = state.posts.findIndex((item) => item.id === post.id);
                             if (index !== -1) state.posts[index] = updated;
@@ -863,7 +863,7 @@
         if (!confirmed) return;
 
         try {
-            await api.deletePost(id);
+            await api.deleteRequest(id);
 
             // Animación de salida antes de repintar: el cambio se entiende mejor.
             const block = $(`.profile-post[data-id="${id}"]`);
@@ -896,7 +896,7 @@
         setTimeout(() => {
             if (Array.isArray(store.get('saved'))) return;
 
-            api.getSavedPosts()
+            api.getSavedRequests()
                 .then((data) => store.set({ saved: data.ids || [] }))
                 .catch(() => { /* la métrica se queda en «—» */ });
         }, 1200);

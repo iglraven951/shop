@@ -170,8 +170,8 @@ async function run() {
         check('sin apiBaseUrl arranca en modo demo', api.mode === 'demo', api.mode);
         check('ready() confirma demo', (await api.ready()) === 'demo');
 
-        const feed = await api.getPosts({ per_page: 3 });
-        check('la demo responde el feed', feed.posts.length === 3, `obtuve ${feed.posts.length}`);
+        const feed = await api.getRequests({ per_page: 3 });
+        check('la demo responde el feed', feed.requests.length === 3, `obtuve ${feed.requests.length}`);
         check('no se hizo ninguna petición de red', touched.length === 0, `${touched.length} llamadas`);
         check('sin servidor no se avisa de nada', sandbox.toastLog.length === 0);
     }
@@ -180,7 +180,7 @@ async function run() {
     {
         const fetchImpl = recordingFetch((url) => {
             if (url.endsWith('/api/health')) return jsonResponse(200, { data: { status: 'ok' } });
-            return jsonResponse(200, { data: { posts: [{ id: 'p-1' }], pagination: { total: 1 } } });
+            return jsonResponse(200, { data: { requests: [{ id: 'p-1' }], pagination: { total: 1 } } });
         });
 
         const sandbox = createClient({ config: REMOTE, fetch: fetchImpl });
@@ -190,10 +190,10 @@ async function run() {
         check('ready() detecta el servidor', (await api.ready()) === 'remote', api.mode);
         check('el sondeo va a /api/health', fetchImpl.calls[0].url === `${BASE}/api/health`, fetchImpl.calls[0].url);
 
-        const data = await api.getPosts({ page: 2, per_page: 5 });
-        check('devuelve el contenido de data', data.posts[0].id === 'p-1');
+        const data = await api.getRequests({ page: 2, per_page: 5 });
+        check('devuelve el contenido de data', data.requests[0].id === 'p-1');
         check('la URL conserva la query',
-            fetchImpl.calls[1].url === `${BASE}/api/posts?page=2&per_page=5`,
+            fetchImpl.calls[1].url === `${BASE}/api/requests?page=2&per_page=5`,
             fetchImpl.calls[1].url);
 
         const headers = fetchImpl.calls[1].init.headers;
@@ -229,8 +229,8 @@ async function run() {
             /este dispositivo/.test(sandbox.toastLog[0].message));
 
         const before = fetchImpl.calls.length;
-        const feed = await api.getPosts({ per_page: 2 });
-        check('tras caer, la demo responde', feed.posts.length === 2);
+        const feed = await api.getRequests({ per_page: 2 });
+        check('tras caer, la demo responde', feed.requests.length === 2);
         check('ya no se insiste contra el servidor', fetchImpl.calls.length === before,
             `${fetchImpl.calls.length - before} llamadas de más`);
         check('no se repite el aviso', sandbox.toastLog.length === 1);
@@ -247,7 +247,7 @@ async function run() {
         const api = sandbox.api;
         await api.ready();
 
-        const error = await failure(() => api.createPost({ title: 'ab' }));
+        const error = await failure(() => api.createRequest({ title: 'ab' }));
         check('el 400 llega como error', !!error);
         check('conserva el mensaje del servidor',
             error && error.message === 'El título debe tener al menos 4 caracteres', error && error.message);
@@ -263,7 +263,7 @@ async function run() {
                 : jsonResponse(401, {}))),
         });
         await bare.api.ready();
-        const authError = await failure(() => bare.api.getMyPosts());
+        const authError = await failure(() => bare.api.getMyRequests());
         check('un 401 sin cuerpo trae mensaje en español',
             authError && authError.message === 'Necesitas iniciar sesión para continuar',
             authError && authError.message);
@@ -280,8 +280,8 @@ async function run() {
         const api = sandbox.api;
         await api.ready();
 
-        const feed = await api.getPosts({ per_page: 4 });
-        check('un 5xx se resuelve contra la demo', feed.posts.length === 4, `obtuve ${feed && feed.posts.length}`);
+        const feed = await api.getRequests({ per_page: 4 });
+        check('un 5xx se resuelve contra la demo', feed.requests.length === 4, `obtuve ${feed && feed.requests.length}`);
         check('y deja el sitio en modo demo', api.mode === 'demo', api.mode);
         check('avisando una vez', sandbox.toastLog.length === 1);
 
@@ -293,7 +293,7 @@ async function run() {
                 : textResponse(502, '<html>Bad Gateway</html>'))),
         });
         await proxy.api.ready();
-        const proxyError = await failure(() => proxy.api.getPosts());
+        const proxyError = await failure(() => proxy.api.getRequests());
         check('un cuerpo no-JSON conserva su texto como mensaje',
             proxyError && /Bad Gateway/.test(proxyError.message), proxyError && proxyError.message);
         check('y su código', proxyError && proxyError.status === 502);
@@ -312,7 +312,7 @@ async function run() {
         await api.ready();
 
         const started = Date.now();
-        const error = await failure(() => api.getPosts());
+        const error = await failure(() => api.getRequests());
         const elapsed = Date.now() - started;
 
         check('la petición colgada se corta', !!error);
@@ -332,7 +332,7 @@ async function run() {
         check('sin respaldo, el sondeo fallido no baja a demo', (await api.ready()) === 'remote', api.mode);
         check('sin respaldo no se avisa de modo demostración', sandbox.toastLog.length === 0);
 
-        const error = await failure(() => api.getPosts());
+        const error = await failure(() => api.getRequests());
         check('sin respaldo, el error de red se propaga', !!error);
         check('con status 0', error && error.status === 0, error && String(error.status));
         check('y mensaje en español',
@@ -364,8 +364,8 @@ async function run() {
             sandbox.storage.getItem('discoveryshop:token:mode') === 'remote');
 
         // La siguiente llamada ya lleva el JWT
-        await api.getSavedPosts().catch(() => {});
-        const withToken = fetchImpl.calls.find((c) => c.url.endsWith('/api/posts/saved'));
+        await api.getSavedRequests().catch(() => {});
+        const withToken = fetchImpl.calls.find((c) => c.url.endsWith('/api/requests/saved'));
         check('el JWT viaja en Authorization',
             withToken && withToken.init.headers.Authorization === `Bearer ${jwt}`,
             withToken && withToken.init.headers.Authorization);
@@ -375,7 +375,7 @@ async function run() {
         check('tras caer, no hay sesión local', user === null);
         check('pero el token no se borra', sandbox.storage.getItem('discoveryshop:token') === jwt);
 
-        const denied = await failure(() => api.getMyPosts());
+        const denied = await failure(() => api.getMyRequests());
         check('la demo trata la sesión remota como invitado',
             denied && denied.status === 401, denied && String(denied.status));
 
@@ -431,9 +431,14 @@ async function run() {
         await demo.api.ready();
         await demo.api.login('patricia@discoveryshop.pe', 'demo1234');
 
-        const feed = await demo.api.getPosts({ per_page: 1 });
-        const conversation = await demo.api.openConversation(feed.posts[0].id);
-        const reply = demo.api.simulateReply(conversation.conversation.id, 'hola');
+        /* La conversación no se abre por las buenas: nace al aceptar una
+           oferta. El pedido de la lámpara ya trae una esperando. */
+        const mine = await demo.api.getMyRequests();
+        const withOffer = mine.requests.find((r) => r.offers_count > 0 && r.state === 'open');
+        const offers = await demo.api.getOffers(withOffer.id);
+        const accepted = await demo.api.acceptOffer(offers.offers[0].id);
+
+        const reply = demo.api.simulateReply(accepted.conversation.id, 'hola');
         check('en demo el vendedor responde solo', reply && typeof reply.text === 'string');
 
         const remote = createClient({

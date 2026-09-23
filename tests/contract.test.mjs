@@ -233,15 +233,27 @@ pageScripts.forEach((file) => {
    ---------------------------------------------------------------------- */
 
 const apiSource = read('assets/js/core/api.js');
-const routes = [...apiSource.matchAll(/this\.request\(\s*[`'"]([^`'"$]*)/g)]
+
+/* Se captura la plantilla entera, no el trozo hasta el primer `${`: si no,
+   `/api/offers/${id}/accept` se quedaba en `/api/offers/`, que no es ninguna
+   ruta real y fallaba por un motivo que no era el que importa. Cada hueco se
+   sustituye por un identificador de ejemplo. */
+const routes = [...apiSource.matchAll(/this\.request\(\s*[`'"]([^`'"]*)[`'"]/g)]
     .map((m) => m[1])
+    /* Un hueco detrás de una barra es un identificador dentro de la ruta y se
+       sustituye por uno de ejemplo. Uno pegado al segmento anterior es la
+       query (`/api/requests${this.toQuery(…)}`), que el enrutador no mira: se
+       corta ahí. */
+    .map((r) => r.replace(/\/\$\{[^${}]*\}/g, '/ejemplo-1'))
+    .map((r) => r.split('${')[0].replace(/\/$/, ''))
     .filter((r) => r.startsWith('/api/'));
 
 const mock = new sandbox.MockAPI();
 
 routes.forEach((route) => {
-    // Las rutas con interpolación se prueban con un identificador de ejemplo.
-    const probe = route.replace(/\/$/, '') || '/api';
+    // La query no forma parte de la ruta que resuelve el enrutador
+    const probe = route.split('?')[0].replace(/\/$/, '') || '/api';
+
     const resolved = mock.resolve('GET', probe)
         || mock.resolve('POST', probe)
         || mock.resolve('PUT', probe)

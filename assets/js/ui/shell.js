@@ -330,8 +330,8 @@
             }
 
             try {
-                const data = await api.getPosts({ q: term, per_page: 6 });
-                results = data.posts || [];
+                const data = await api.getRequests({ q: term, per_page: 6 });
+                results = data.requests || [];
                 highlighted = -1;
                 render();
             } catch (error) {
@@ -686,7 +686,7 @@
 
         // Cada contador falla de forma independiente: uno caído no tumba al resto.
         const [saved, conversations, adminStats] = await Promise.all([
-            api.getSavedPosts().catch(() => null),
+            api.getSavedRequests().catch(() => null),
             api.getConversations().catch(() => null),
             user.role === 'admin' ? api.getAdminStats().catch(() => null) : Promise.resolve(null),
         ]);

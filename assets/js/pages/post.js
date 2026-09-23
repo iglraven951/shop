@@ -179,31 +179,28 @@
     }
 
     /**
-     * Control de estado para quien publicó.
+     * Estado del pedido, para quien lo publicó.
      *
-     * Sin esto una publicación no se puede dar por cerrada nunca: el artículo
-     * se va, el anuncio se queda, y la gente sigue escribiendo por algo que ya
-     * no existe. Es lo que separa un tablón vivo de un cementerio de anuncios.
+     * No es un control: el ciclo de vida lo mueven las ofertas, no un botón.
+     * Lo que hace falta aquí es decir en qué punto está, porque de eso depende
+     * si quien mira debe esperar, elegir o dar por cerrado.
      */
     function availabilityControlMarkup(post) {
         if (!canManage(post)) return '';
 
-        const current = post.availability || 'available';
-        const options = [
-            ['available', 'Disponible'],
-            ['reserved', 'Reservado'],
-            ['sold', 'Vendido'],
-        ];
+        const label = {
+            open: post.offers_count
+                ? `${post.offers_count} ${post.offers_count === 1 ? 'vendedor ha respondido' : 'vendedores han respondido'}. Elige una oferta abajo.`
+                : 'Todavía nadie ha respondido. Te avisaremos en cuanto alguien lo haga.',
+            matched: 'Aceptaste una oferta. Coordina los detalles por la conversación.',
+            fulfilled: 'Este pedido ya se resolvió.',
+            cancelled: 'Cancelaste este pedido.',
+        }[post.state || 'open'];
 
         return `
-        <div class="availability-control" role="group" aria-label="Disponibilidad del artículo">
-            <span class="availability-label">Disponibilidad</span>
-            <div class="availability-options">
-                ${options.map(([value, label]) => `
-                <button class="availability-option${value === current ? ' is-active' : ''}"
-                        type="button" data-availability="${value}"
-                        aria-pressed="${value === current}">${escapeHtml(label)}</button>`).join('')}
-            </div>
+        <div class="availability-control" role="status">
+            <span class="availability-label">Tu pedido</span>
+            <span class="request-state-text">${escapeHtml(label)}</span>
         </div>`;
     }
 
@@ -281,40 +278,11 @@
         </article>`;
     }
 
-    /* Lo que se le dice a quien acaba de cambiar el estado. */
-    const AVAILABILITY_DONE = {
-        available: 'El artículo vuelve a estar disponible',
-        reserved: 'Marcado como reservado. Avisamos a quien mostró interés.',
-        sold: 'Marcado como vendido. Avisamos a quien mostró interés.',
-    };
-
-    function bindAvailability(container, post) {
-        const control = container.querySelector('.availability-control');
-        if (!control) return;
-
-        control.addEventListener('click', async (event) => {
-            const button = event.target.closest('[data-availability]');
-            if (!button || button.classList.contains('is-active')) return;
-
-            const value = button.dataset.availability;
-            const buttons = control.querySelectorAll('[data-availability]');
-
-            buttons.forEach((b) => { b.disabled = true; });
-
-            try {
-                const result = await api.setAvailability(post.id, value);
-
-                // La ficha se vuelve a pintar entera: la insignia, el atenuado
-                // de la foto y el propio control cuelgan del mismo estado.
-                Object.assign(state.post, result.post);
-                renderArticle(state.post);
-                toast.success(AVAILABILITY_DONE[value] || 'Estado actualizado');
-            } catch (error) {
-                buttons.forEach((b) => { b.disabled = false; });
-                toast.error(error.message || 'No se pudo cambiar el estado');
-            }
-        });
-    }
+    /**
+     * El estado del pedido ya no se cambia a mano: lo mueven las ofertas.
+     * Se deja el enganche vacío para no dispersar el punto de montaje.
+     */
+    function bindAvailability() {}
 
     /**
      * Denuncia. Pide el motivo en un diálogo porque un botón que denuncia al
@@ -360,7 +328,7 @@
                             if (!reason) return false;
 
                             try {
-                                await api.reportPost(post.id, {
+                                await api.reportRequest(post.id, {
                                     category: category ? category.value : 'otro',
                                     reason: reason.value,
                                 });
@@ -831,8 +799,8 @@
             || (post.is_mine && state.user ? state.user.created_at : null);
 
         try {
-            const result = await api.getPosts({ author_id: post.author.id, per_page: 48 });
-            const total = result.pagination ? result.pagination.total : result.posts.length;
+            const result = await api.getRequests({ author_id: post.author.id, per_page: 48 });
+            const total = result.pagination ? result.pagination.total : result.requests.length;
 
             if (postsCell) {
                 postsCell.textContent = `${format.number(total)} ${format.plural(total, 'artículo', 'artículos')}`;
@@ -843,7 +811,7 @@
                 return;
             }
 
-            const oldest = result.posts.reduce((earliest, item) => {
+            const oldest = result.requests.reduce((earliest, item) => {
                 const time = new Date(item.created_at).getTime();
                 return !earliest || time < earliest ? time : earliest;
             }, 0);
@@ -873,7 +841,7 @@
             // Primero lo del mismo vendedor y luego lo de la misma categoría,
             // saltándose lo vendido: quien mira una cosa suele querer ver qué
             // más tiene esa persona antes que otra igual de otro cualquiera.
-            const result = await api.getRelatedPosts(post.id);
+            const result = await api.getRelatedRequests(post.id);
             const related = (result.related || []).slice(0, 4);
 
             if (!related.length) return;
@@ -1113,7 +1081,7 @@
 
         let post;
         try {
-            const data = await api.getPost(id);
+            const data = await api.getRequest(id);
             post = UI.normalizePost(data.post);
         } catch (error) {
             const missing = error.status === 404;

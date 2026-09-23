@@ -129,74 +129,101 @@
        seller_status: null | 'pending' | 'approved' | 'rejected'
        ---------------------------------------------------------------------- */
 
+    /* Vendedores aprobados: son quienes RESPONDEN a los pedidos. Cada uno
+       tiene un local con nombre, porque en el chat lo primero que dice es
+       quién es y dónde está («Hola, soy del local Vintage AQP»). */
     const USERS = [
-        ['Juan Pérez', 'juan@discoveryshop.pe', 'seller', 'approved', 'Cayma', 4.8, 142],
-        ['María García', 'maria@discoveryshop.pe', 'seller', 'approved', 'Yanahuara', 4.9, 286],
-        ['Carlos Quispe', 'carlos@discoveryshop.pe', 'seller', 'approved', 'Cerro Colorado', 4.6, 74],
-        ['Ana Martínez', 'ana@discoveryshop.pe', 'seller', 'approved', 'Paucarpata', 4.7, 198],
-        ['Roberto Sánchez', 'roberto@discoveryshop.pe', 'seller', 'approved', 'Socabaya', 5.0, 63],
-        ['Elena Gómez', 'elena@discoveryshop.pe', 'seller', 'approved', 'José Luis Bustamante y Rivero', 4.9, 231],
-        ['Diego Torres', 'diego@discoveryshop.pe', 'seller', 'approved', 'Miraflores', 4.5, 47],
-        ['Lucía Fernández', 'lucia@discoveryshop.pe', 'seller', 'approved', 'Alto Selva Alegre', 4.8, 155],
-        ['Fernando Ruiz', 'fernando@discoveryshop.pe', 'seller', 'approved', 'Sachaca', 4.7, 89],
-        ['Sofía Mendoza', 'sofia@discoveryshop.pe', 'seller', 'approved', 'Cercado', 4.9, 312],
-        ['Pedro Ramírez', 'pedro@discoveryshop.pe', 'seller', 'approved', 'Mariano Melgar', 4.4, 31],
-        ['Claudia Vargas', 'claudia@discoveryshop.pe', 'seller', 'approved', 'Characato', 4.6, 58],
+        ['Juan Pérez', 'juan@discoveryshop.pe', 'seller', 'approved', 'Cayma', 4.8, 142, 'Tecno Cayma'],
+        ['María García', 'maria@discoveryshop.pe', 'seller', 'approved', 'Yanahuara', 4.9, 286, 'Tienda Vintage AQP'],
+        ['Carlos Quispe', 'carlos@discoveryshop.pe', 'seller', 'approved', 'Cerro Colorado', 4.6, 74, 'Importaciones Quispe'],
+        ['Ana Martínez', 'ana@discoveryshop.pe', 'seller', 'approved', 'Paucarpata', 4.7, 198, 'Bazar Martínez'],
+        ['Roberto Sánchez', 'roberto@discoveryshop.pe', 'seller', 'approved', 'Socabaya', 5.0, 63, 'El Rincón de Roberto'],
+        ['Elena Gómez', 'elena@discoveryshop.pe', 'seller', 'approved', 'José Luis Bustamante y Rivero', 4.9, 231, 'Casa Gómez'],
+        ['Diego Torres', 'diego@discoveryshop.pe', 'seller', 'approved', 'Miraflores', 4.5, 47, 'Torres Store'],
+        ['Lucía Fernández', 'lucia@discoveryshop.pe', 'seller', 'approved', 'Alto Selva Alegre', 4.8, 155, 'Segunda Vida AQP'],
+        ['Fernando Ruiz', 'fernando@discoveryshop.pe', 'seller', 'approved', 'Sachaca', 4.7, 89, 'Ruiz Electrónica'],
+        ['Sofía Mendoza', 'sofia@discoveryshop.pe', 'seller', 'approved', 'Cercado', 4.9, 312, 'Mendoza & Co.'],
+        ['Pedro Ramírez', 'pedro@discoveryshop.pe', 'seller', 'approved', 'Mariano Melgar', 4.4, 31, 'Todo Usado Melgar'],
+        ['Claudia Vargas', 'claudia@discoveryshop.pe', 'seller', 'approved', 'Characato', 4.6, 58, 'Vargas Hogar'],
         // Solicitudes de vendedor a la espera de revisión del administrador
-        ['Miguel Castro', 'miguel@discoveryshop.pe', 'buyer', 'pending', 'Tiabaya', 0, 0],
-        ['Rosa Núñez', 'rosa@discoveryshop.pe', 'buyer', 'pending', 'Sabandía', 0, 0],
-        ['Andrés Chávez', 'andres@discoveryshop.pe', 'buyer', 'pending', 'Jacobo Hunter', 0, 0],
-        // Compradores sin intención de vender
-        ['Patricia Ríos', 'patricia@discoveryshop.pe', 'buyer', null, 'Yura', 0, 0],
-        ['Javier Paredes', 'javier@discoveryshop.pe', 'buyer', null, 'Uchumayo', 0, 0],
+        ['Miguel Castro', 'miguel@discoveryshop.pe', 'buyer', 'pending', 'Tiabaya', 0, 0, 'Castro Repuestos'],
+        ['Rosa Núñez', 'rosa@discoveryshop.pe', 'buyer', 'pending', 'Sabandía', 0, 0, 'Deco Rosa'],
+        ['Andrés Chávez', 'andres@discoveryshop.pe', 'buyer', 'pending', 'Jacobo Hunter', 0, 0, 'Chávez Import'],
+        /* Compradores: en el comercio inverso son la parte activa — son ellos
+           quienes publican lo que buscan, así que hacen falta varios para que
+           el tablón de pedidos se vea vivo. */
+        ['Patricia Ríos', 'patricia@discoveryshop.pe', 'buyer', null, 'Yura', 0, 0, null],
+        ['Javier Paredes', 'javier@discoveryshop.pe', 'buyer', null, 'Uchumayo', 0, 0, null],
+        ['Gabriela Flores', 'gabriela@discoveryshop.pe', 'buyer', null, 'Cayma', 0, 0, null],
+        ['Martín Salazar', 'martin@discoveryshop.pe', 'buyer', null, 'Cercado', 0, 0, null],
+        ['Valeria Huamán', 'valeria@discoveryshop.pe', 'buyer', null, 'Yanahuara', 0, 0, null],
+        ['Óscar Benavides', 'oscar@discoveryshop.pe', 'buyer', null, 'Paucarpata', 0, 0, null],
+        ['Daniela Cáceres', 'daniela@discoveryshop.pe', 'buyer', null, 'Miraflores', 0, 0, null],
+        ['Renzo Aguilar', 'renzo@discoveryshop.pe', 'buyer', null, 'Cerro Colorado', 0, 0, null],
+        ['Camila Ortiz', 'camila@discoveryshop.pe', 'buyer', null, 'Socabaya', 0, 0, null],
+        ['Bruno Delgado', 'bruno@discoveryshop.pe', 'buyer', null, 'Alto Selva Alegre', 0, 0, null],
     ];
 
     /* ----------------------------------------------------------------------
-       Publicaciones
-       [título, categoría, precio, condición, emoji, índiceAutor, descripción]
+       Pedidos — lo que la gente BUSCA
+
+       Esto es el comercio inverso: aquí no hay un catálogo de lo que alguien
+       vende, sino la lista de lo que alguien necesita. Los vendedores leen
+       esto y responden con lo que tienen.
+
+       [título, categoría, presupuestoMín, presupuestoMáx, emoji, índiceComprador, descripción]
        ---------------------------------------------------------------------- */
 
-    const RAW_POSTS = [
-        ['iPhone 13 Pro 128 GB', 'cat-celulares', 2350, 'Como nuevo', '📱', 0, 'Lo uso desde hace año y medio y está impecable, batería al 89 %. Incluyo caja, cable y una funda de regalo. Se puede revisar sin compromiso en Cayma.'],
-        ['Samsung Galaxy A54', 'cat-celulares', 980, 'Buen estado', '📱', 1, 'Funciona perfecto, solo tiene un micro rayón en la esquina que no se nota con funda. Liberado para cualquier operador. Acepto que lo pruebes antes.'],
-        ['Xiaomi Redmi Note 12', 'cat-celulares', 620, 'Como nuevo', '📱', 2, 'Me lo regalaron y ya tenía uno, así que prácticamente no lo usé. Caja sellada con todos sus accesorios originales.'],
-        ['MacBook Air M1 2020', 'cat-computo', 3200, 'Buen estado', '💻', 1, 'Lo usé para la universidad, 210 ciclos de carga. Anda rapidísimo, la pantalla sin un solo pixel muerto. Incluye cargador original.'],
-        ['PC de escritorio i5 + GTX 1660', 'cat-computo', 2800, 'Buen estado', '🖥️', 3, 'Armada hace dos años, 16 GB de RAM y SSD de 500 GB. Mueve todo en alto sin problemas. La vendo porque me mudo y no me la llevo.'],
-        ['Monitor LG 24" 75 Hz', 'cat-computo', 380, 'Como nuevo', '🖥️', 4, 'Comprado en enero, con garantía todavía vigente. Base regulable, entrada HDMI y DisplayPort. Sin marcas de uso.'],
-        ['Teclado mecánico Redragon', 'cat-computo', 145, 'Buen estado', '⌨️', 5, 'Switches azules, retroiluminación RGB. Un par de teclas tienen el brillo algo gastado, nada más. Muy cómodo para escribir.'],
-        ['iPad 9.ª generación 64 GB', 'cat-computo', 1150, 'Como nuevo', '📲', 6, 'Lo compré para dibujar y al final no le di uso. Incluye funda con soporte. Sin rayones, pantalla como recién salida de caja.'],
-        ['Audífonos Sony WH-CH720N', 'cat-audio', 420, 'Como nuevo', '🎧', 7, 'Cancelación de ruido muy decente, batería dura todo el día. Los uso poco porque prefiero los in-ear. Con estuche y cable.'],
-        ['Parlante JBL Flip 5', 'cat-audio', 290, 'Buen estado', '🔊', 8, 'Suena fuerte y resiste el agua. Lo llevé a la playa un par de veces, por eso tiene un poco de arena en la rejilla, pero funciona perfecto.'],
-        ['AirPods 2.ª generación', 'cat-audio', 260, 'Buen estado', '🎧', 9, 'Originales, con su estuche de carga. La batería aguanta unas 3 horas por carga. Incluyo almohadillas nuevas.'],
-        ['Interfaz de audio Behringer UM2', 'cat-audio', 180, 'Buen estado', '🎚️', 10, 'Ideal para empezar a grabar en casa. La usé para podcast durante un año. Funciona sin fallas, incluye cable USB.'],
-        ['PlayStation 4 Slim 1 TB', 'cat-gaming', 980, 'Buen estado', '🎮', 3, 'Con dos mandos (uno original y uno genérico) y cuatro juegos físicos. Nunca abierta ni reparada. Se entrega en persona en Paucarpata.'],
-        ['Nintendo Switch Lite', 'cat-gaming', 820, 'Como nuevo', '🕹️', 5, 'Color turquesa, con mica de vidrio puesta desde el día uno. Incluye funda rígida y una microSD de 128 GB con juegos.'],
-        ['Xbox Series S', 'cat-gaming', 1320, 'Como nuevo', '🎮', 11, 'Comprada hace ocho meses, la uso muy poco. Con su mando, cable HDMI y caja original. Todavía tiene garantía.'],
-        ['Silla gamer con soporte lumbar', 'cat-gaming', 450, 'Buen estado', '🪑', 0, 'Cómoda para jornadas largas. Tiene una marca de uso en el apoyabrazos izquierdo, el resto está entero. Entrego desarmada.'],
-        ['Canon EOS Rebel T6 + lente 18-55', 'cat-camaras', 1400, 'Buen estado', '📷', 2, 'Mi primera cámara, me sirvió para aprender. Unos 12 mil disparos. Incluye dos baterías, correa y bolso acolchado.'],
-        ['GoPro HERO 9 Black', 'cat-camaras', 890, 'Buen estado', '📹', 6, 'La llevé a un par de viajes, graba en 5K sin problema. Incluye tres soportes, batería extra y carcasa sumergible.'],
-        ['Trípode Manfrotto compacto', 'cat-camaras', 210, 'Como nuevo', '📸', 8, 'Ligero y estable, perfecto para viajar. Lo usé dos veces. Con su bolso de transporte original.'],
-        ['Cafetera espresso Oster', 'cat-hogar', 320, 'Buen estado', '☕', 4, 'Prepara buen café, tiene vaporizador para leche. La descalcifiqué el mes pasado. La vendo porque me regalaron una automática.'],
-        ['Aspiradora robot Xiaomi', 'cat-hogar', 680, 'Como nuevo', '🤖', 9, 'Mapea la casa sola y vuelve a su base. Le puse cepillos nuevos. Incluye base de carga y control remoto.'],
-        ['Air Fryer 5 L', 'cat-hogar', 240, 'Buen estado', '🍳', 7, 'La uso poco desde que cambié de dieta. Funciona perfecto, canastilla antiadherente en buen estado. Con recetario.'],
-        ['Televisor Samsung 43" Full HD', 'cat-hogar', 750, 'Buen estado', '📺', 10, 'Imagen impecable, smart TV con Netflix y YouTube. Tiene el control original. La cambio por una más grande.'],
-        ['Zapatillas Nike Air Force talla 42', 'cat-moda', 190, 'Buen estado', '👟', 11, 'Usadas unas diez veces, les hice limpieza profunda. Sin roturas ni despegues. Vienen con su caja original.'],
-        ['Casaca de cuero talla M', 'cat-moda', 280, 'Como nuevo', '🧥', 1, 'Cuero genuino, color marrón oscuro. Me quedó chica al poco de comprarla. Forro interior intacto.'],
-        ['Reloj Casio G-Shock', 'cat-moda', 240, 'Buen estado', '⌚', 0, 'Resistente a golpes y agua. Correa original con marcas mínimas de uso. Pila cambiada este año.'],
-        ['Mochila Jansport 34 L', 'cat-moda', 95, 'Buen estado', '🎒', 3, 'La usé un semestre en la universidad. Todos los cierres funcionan. Tiene compartimento acolchado para laptop.'],
-        ['Bicicleta montañera aro 29', 'cat-deportes', 850, 'Buen estado', '🚲', 5, 'Grupo Shimano de 21 velocidades, frenos de disco. Le cambié las llantas hace dos meses. Ideal para la ciclovía y trocha.'],
-        ['Set de mancuernas 20 kg', 'cat-deportes', 180, 'Buen estado', '🏋️', 8, 'Barras y discos ajustables. Los usé durante la pandemia y ahora voy al gimnasio. Sin óxido.'],
-        ['Patineta eléctrica', 'cat-deportes', 620, 'Buen estado', '🛹', 2, 'Autonomía de unos 20 km. Batería en buen estado, la cargo una vez por semana. Incluye cargador original.'],
-        ['Guitarra acústica Yamaha F310', 'cat-instrumentos', 480, 'Buen estado', '🎸', 6, 'Muy buen sonido para su precio. Cuerdas nuevas puestas la semana pasada. Incluye funda acolchada y púas.'],
-        ['Teclado Casio CTK-3500', 'cat-instrumentos', 390, 'Como nuevo', '🎹', 9, '61 teclas sensibles al tacto. Mi hija dejó las clases y quedó guardado. Con atril, pedal y adaptador de corriente.'],
-        ['Cajón peruano de cedro', 'cat-instrumentos', 220, 'Buen estado', '🥁', 4, 'Hecho a mano en Lima, sonido grave y cálido. Tiene un pequeño rayón lateral. Ideal para tocar en casa o peñas.'],
-        ['Colección Harry Potter tapa dura', 'cat-libros', 280, 'Como nuevo', '📚', 7, 'Los siete libros, sin subrayados ni hojas dobladas. Los leí una sola vez. Se entregan en una caja.'],
-        ['Libros de ingeniería civil', 'cat-libros', 150, 'Buen estado', '📖', 10, 'Lote de seis títulos de estructuras y concreto armado. Algunos tienen anotaciones a lápiz. Perfectos para estudiantes.'],
-        ['Coche para bebé reclinable', 'cat-bebes', 340, 'Buen estado', '🧸', 11, 'Mi hijo ya creció. Lo lavé completo, las ruedas giran suaves. Se pliega fácil para el maletero.'],
-        ['Corral de juegos plegable', 'cat-bebes', 180, 'Como nuevo', '🧸', 1, 'Usado apenas tres meses. Malla lateral sin roturas, colchoneta incluida. Se guarda en su bolso original.'],
-        ['Casco para moto talla L', 'cat-vehiculos', 160, 'Buen estado', '🪖', 0, 'Certificado DOT, visor sin rayones profundos. Lo usé un año. Interior lavable y en buen estado.'],
-        ['Llantas aro 15 (juego de 4)', 'cat-vehiculos', 520, 'Buen estado', '🚗', 3, 'Les queda alrededor del 60 % de vida útil. Sin parches ni deformaciones. Las cambié por unas de mayor medida.'],
-        ['Scooter 125 cc modelo 2021', 'cat-vehiculos', 4200, 'Buen estado', '🛵', 5, 'Con 11 mil kilómetros, mantenimientos al día en taller autorizado. Papeles en regla y SOAT vigente hasta diciembre.'],
+    const RAW_REQUESTS = [
+        ['Lámpara vintage de mesa', 'cat-hogar', 80, 150, '💡', 3, 'Busco una lámpara vintage de mesa, color dorado, estilo antiguo. La quiero para el escritorio del estudio. He recorrido tiendas del centro y online, pero todo lo que encuentro es muy moderno o no se parece a lo que tengo en mente.'],
+        ['iPhone 13 Pro 128 GB', 'cat-celulares', 2000, 2500, '📱', 4, 'Busco un iPhone 13 Pro de 128 GB en buen estado, con batería por encima del 85 %. Prefiero que tenga caja y que se pueda revisar antes de cerrar el trato.'],
+        ['Samsung Galaxy A54', 'cat-celulares', 800, 1000, '📱', 5, 'Necesito un Galaxy A54 liberado para cualquier operador. No me molesta que tenga marcas de uso mientras la pantalla esté sin rayones y funcione todo.'],
+        ['Celular básico para mi mamá', 'cat-celulares', 200, 400, '📱', 6, 'Busco un celular sencillo, con letras grandes y batería que aguante el día. Es para mi mamá, que no usa nada más que llamadas y WhatsApp.'],
+        ['MacBook Air M1', 'cat-computo', 2800, 3400, '💻', 7, 'Busco una MacBook Air M1 para diseño. Me interesa saber los ciclos de carga y ver el estado de la pantalla. Puedo recoger en cualquier distrito del centro.'],
+        ['PC de escritorio para juegos', 'cat-computo', 2200, 3000, '🖥️', 8, 'Armo mi primer setup y busco una PC que mueva juegos en alto. Mínimo 16 GB de RAM y SSD. Si tiene monitor incluido, mejor.'],
+        ['Monitor de 24 pulgadas', 'cat-computo', 300, 450, '🖥️', 9, 'Busco un monitor de 24" que tenga al menos 75 Hz y entrada HDMI. Lo necesito para trabajar desde casa, así que la base regulable sería ideal.'],
+        ['Teclado mecánico', 'cat-computo', 100, 200, '⌨️', 10, 'Busco un teclado mecánico, de preferencia con switches azules. Escribo muchas horas al día y el de membrana ya me cansó.'],
+        ['iPad para dibujar', 'cat-computo', 900, 1300, '📲', 11, 'Busco un iPad que sirva para ilustración digital. No necesito el último modelo, pero sí que soporte lápiz. Si viene con funda, perfecto.'],
+        ['Audífonos con cancelación de ruido', 'cat-audio', 300, 500, '🎧', 12, 'Busco audífonos de diadema con cancelación de ruido, para estudiar en casa con tranquilidad. Que la batería dure al menos ocho horas.'],
+        ['Parlante bluetooth resistente al agua', 'cat-audio', 200, 350, '🔊', 0, 'Busco un parlante portátil que suene fuerte y aguante el agua, para llevarlo de viaje. No importa que tenga marcas de uso.'],
+        ['AirPods originales', 'cat-audio', 200, 300, '🎧', 1, 'Busco AirPods originales, con su estuche de carga. Que la batería aguante al menos dos horas por carga. Quiero poder probarlos antes.'],
+        ['Interfaz de audio para grabar', 'cat-audio', 150, 250, '🎚️', 2, 'Estoy empezando a grabar podcast en casa y busco una interfaz de audio sencilla, de dos canales. Con su cable USB.'],
+        ['PlayStation 4 con juegos', 'cat-gaming', 800, 1100, '🎮', 3, 'Busco una PS4 con al menos dos mandos y algunos juegos físicos. Que no haya sido abierta ni reparada. Puedo ir a verla donde me digan.'],
+        ['Nintendo Switch', 'cat-gaming', 700, 950, '🕹️', 4, 'Busco una Nintendo Switch, me da igual el modelo, para jugar en viajes. Si tiene mica de vidrio y funda, mucho mejor.'],
+        ['Xbox Series S', 'cat-gaming', 1100, 1500, '🎮', 5, 'Busco una Xbox Series S en buen estado, con su mando y cable HDMI. Si todavía tiene garantía sería lo ideal.'],
+        ['Silla para escritorio cómoda', 'cat-gaming', 350, 550, '🪑', 6, 'Paso muchas horas sentado y la espalda ya me está pasando factura. Busco una silla con soporte lumbar, no me importa que tenga marcas de uso.'],
+        ['Cámara réflex para aprender', 'cat-camaras', 1200, 1600, '📷', 7, 'Quiero aprender fotografía y busco una réflex de entrada con su lente 18-55. Me interesa saber cuántos disparos tiene.'],
+        ['GoPro o cámara de acción', 'cat-camaras', 700, 1000, '📹', 8, 'Busco una cámara de acción para grabar en bicicleta. Que grabe al menos en 4K y que venga con algún soporte.'],
+        ['Trípode ligero para viajar', 'cat-camaras', 150, 250, '📸', 9, 'Busco un trípode compacto y estable, de los que caben en una mochila. Con su bolso de transporte si es posible.'],
+        ['Cafetera espresso', 'cat-hogar', 250, 400, '☕', 10, 'Busco una cafetera espresso con vaporizador para leche. No necesito que sea automática, pero sí que esté bien cuidada.'],
+        ['Aspiradora robot', 'cat-hogar', 500, 750, '🤖', 11, 'Busco una aspiradora robot que mapee y vuelva sola a su base. Tengo dos gatos, así que necesito que aguante pelo.'],
+        ['Air Fryer grande', 'cat-hogar', 180, 300, '🍳', 12, 'Busco una freidora de aire de al menos 5 litros, somos cuatro en casa. Que la canastilla esté en buen estado.'],
+        ['Televisor de 43 pulgadas', 'cat-hogar', 600, 850, '📺', 0, 'Busco un smart TV de 43" que tenga Netflix y YouTube. Que venga con su control original y sin pixeles muertos.'],
+        ['Zapatillas talla 42', 'cat-moda', 150, 250, '👟', 1, 'Busco zapatillas talla 42, de preferencia blancas y sin roturas. Las quiero para el día a día, no para deporte.'],
+        ['Casaca de cuero talla M', 'cat-moda', 220, 350, '🧥', 2, 'Busco una casaca de cuero genuino talla M, color oscuro. Que el forro interior esté entero.'],
+        ['Reloj resistente para trabajo de campo', 'cat-moda', 180, 300, '⌚', 3, 'Trabajo en obra y necesito un reloj que aguante golpes y agua. No busco marca en particular, sí que sea resistente de verdad.'],
+        ['Mochila para laptop', 'cat-moda', 70, 130, '🎒', 4, 'Busco una mochila con compartimento acolchado para laptop de 15". Que los cierres funcionen bien, es para uso diario.'],
+        ['Bicicleta montañera aro 29', 'cat-deportes', 700, 950, '🚲', 5, 'Busco una montañera aro 29 con frenos de disco. La quiero para la ciclovía y salidas de fin de semana. Prefiero que las llantas estén bien.'],
+        ['Mancuernas o pesas para casa', 'cat-deportes', 120, 250, '🏋️', 6, 'Busco un set de mancuernas ajustables, unos 20 kg en total. Que no tengan óxido. Puedo recogerlas yo.'],
+        ['Patineta eléctrica', 'cat-deportes', 500, 750, '🛹', 7, 'Busco una patineta eléctrica con al menos 15 km de autonomía, para moverme al trabajo. Que la batería esté sana.'],
+        ['Guitarra acústica para principiante', 'cat-instrumentos', 350, 550, '🎸', 8, 'Empiezo clases el próximo mes y busco una guitarra acústica de estudio. Con funda si se puede. Prefiero que tenga cuerdas nuevas.'],
+        ['Teclado o piano digital', 'cat-instrumentos', 300, 500, '🎹', 9, 'Busco un teclado de 61 teclas para que mi hija empiece a aprender. Con atril y adaptador de corriente.'],
+        ['Cajón peruano', 'cat-instrumentos', 180, 280, '🥁', 10, 'Busco un cajón de cedro con buen sonido grave. Es para tocar en casa y en reuniones, no necesito que esté impecable.'],
+        ['Colección Harry Potter', 'cat-libros', 220, 320, '📚', 11, 'Busco la colección completa de Harry Potter, de preferencia tapa dura y sin subrayados. Es un regalo.'],
+        ['Libros de ingeniería civil', 'cat-libros', 100, 200, '📖', 12, 'Busco libros de estructuras y concreto armado para la universidad. No me molesta que tengan anotaciones a lápiz.'],
+        ['Coche para bebé', 'cat-bebes', 250, 400, '🧸', 0, 'Busco un coche reclinable que se pliegue fácil para el maletero. Que las ruedas estén en buen estado.'],
+        ['Corral de juegos', 'cat-bebes', 130, 220, '🧸', 1, 'Busco un corral plegable con malla sin roturas. Lo necesito solo por unos meses, así que no busco nada de estreno.'],
+        ['Casco para moto talla L', 'cat-vehiculos', 120, 200, '🪖', 2, 'Busco un casco talla L certificado, con el visor sin rayones profundos. El interior tiene que estar limpio.'],
+        ['Llantas aro 15', 'cat-vehiculos', 400, 600, '🚗', 3, 'Busco un juego de cuatro llantas aro 15 con al menos la mitad de vida útil. Sin parches ni deformaciones.'],
+    ];
+
+    /* Cómo responde un vendedor al abrir la conversación. El primer mensaje
+       dice quién es, dónde está y cuánto cuesta — igual que en el storyboard. */
+    const OFFER_TEMPLATES = [
+        'Hola, soy de {tienda}. Lo que buscas está disponible. Estamos en {distrito} y el precio es de S/ {precio}. Te adjunto fotos.',
+        'Buenas, te escribo de {tienda}. Tengo justo lo que pides, en {distrito}. Lo dejo en S/ {precio} y puedes venir a verlo cuando quieras.',
+        'Hola, en {tienda} tenemos uno en buen estado. Precio S/ {precio}. Estamos en {distrito}, puedes pasar a revisarlo sin compromiso.',
+        'Qué tal, soy de {tienda}. Me llegó tu pedido y sí lo tengo. S/ {precio}, y si lo recoges esta semana lo conversamos.',
     ];
 
     /** Comentarios verosímiles para poblar las conversaciones del foro. */
@@ -208,19 +235,22 @@
         'available', 'sold', 'available', 'available', 'reserved', 'available',
     ];
 
+    /* Comentarios públicos sobre un pedido. No negocian precio: eso va por
+       privado con quien ya ofreció. Aquí se afina qué es exactamente lo que
+       hace falta, que es lo que permite ofrecer algo que sirva. */
     const COMMENT_TEMPLATES = [
-        '¿Sigue disponible? Me interesa mucho.',
-        '¿Aceptas una oferta un poco más baja?',
-        '¿En qué zona exacta se puede ver?',
-        'Te escribí por mensaje, quedo atento.',
-        '¿Tiene boleta o algún comprobante?',
-        '¿Podrías subir más fotos del estado real?',
-        'Justo andaba buscando uno así.',
-        '¿Haces envío a otro distrito?',
-        'Muy buen precio por lo que ofreces.',
-        '¿Se puede pagar en partes?',
-        'Lo vi en persona, el vendedor es muy amable.',
-        '¿Cuánto tiempo lo has usado?',
+        '¿Te sirve de otro color o tiene que ser ese?',
+        'Yo vi uno parecido en el centro la semana pasada.',
+        '¿Lo necesitas con garantía o te da igual de segunda mano?',
+        '¿Hasta cuánto podrías estirar el presupuesto?',
+        'Justo ando buscando lo mismo, aviso si encuentro.',
+        '¿Para cuándo lo necesitas?',
+        '¿Aceptarías uno con detalles estéticos si funciona bien?',
+        '¿Puedes recogerlo tú o necesitas que te lo lleven?',
+        '¿Alguna marca en concreto o cualquiera vale?',
+        'Ojo que ese modelo ya no se consigue nuevo.',
+        '¿Te interesa que te avise si aparece uno usado?',
+        '¿En qué distrito te queda cómodo recogerlo?',
     ];
 
     /**
@@ -278,7 +308,7 @@
         const now = Date.now();
         const hour = 3600000;
 
-        const users = USERS.map(([username, email, role, sellerStatus, district, rating, sales], index) => {
+        const users = USERS.map(([username, email, role, sellerStatus, district, rating, sales, shopName], index) => {
             const d = districtByName(district);
             // Dispersión determinista dentro del distrito: evita que todos los
             // marcadores del mismo distrito caigan exactamente en el mismo punto.
@@ -293,14 +323,20 @@
                 avatar_url: null,
                 role,
                 seller_status: sellerStatus,
+                // El nombre del local: es lo primero que dice un vendedor al
+                // responder un pedido, y lo que el comprador ve en el chat.
+                shop_name: shopName || null,
                 district,
                 location: { lat: d.lat + jitter, lng: d.lng - jitter2, district, city: 'Arequipa', country: 'Perú' },
                 phone: `+51 9${String(10000000 + (hashString(email) % 89999999)).slice(0, 8)}`,
-                bio: role === 'seller'
-                    ? 'Vendo artículos de segunda mano en buen estado. Respondo rápido.'
+                bio: sellerStatus === 'approved'
+                    ? `Atendemos pedidos desde ${shopName}. Respondemos el mismo día.`
                     : '',
                 rating,
-                total_posts: 0,
+                rating_count: 0,
+                // Pedidos publicados como comprador y ofertas enviadas como vendedor
+                total_requests: 0,
+                total_offers: 0,
                 total_sales: sales,
                 verified: sellerStatus === 'approved',
                 created_at: new Date(now - (index * 9 + 40) * 24 * hour).toISOString(),
@@ -308,102 +344,349 @@
         });
 
         const approvedSellers = users.filter((u) => u.seller_status === 'approved');
+        // Cualquiera que no sea vendedor aprobado publica pedidos: los tres con
+        // solicitud en revisión siguen siendo compradores mientras tanto.
+        const buyers = users.filter((u) => u.role === 'buyer');
 
-        const posts = RAW_POSTS.map((raw, index) => {
-            const [title, categoryId, price, condition, emoji, authorIndex, description] = raw;
-            const author = approvedSellers[authorIndex % approvedSellers.length];
-            const category = CATEGORIES.find((c) => c.id === categoryId);
-            const seed = hashString(title);
+        /* ------------------------------------------------------------------
+           Pedidos
+           ------------------------------------------------------------------ */
 
-            // La mayoría del catálogo está aprobado; unas pocas quedan pendientes
-            // para que el panel de administración tenga trabajo desde el inicio.
-            let status = 'approved';
-            if (index % 13 === 7) status = 'pending';
-            if (index % 19 === 11) status = 'rejected';
+        /**
+         * Comentarios públicos de un pedido. Aquí no se negocia el precio —
+         * eso va por privado con quien ya hizo una oferta. Aquí se pregunta
+         * lo que falta por saber para poder ofrecer algo que sirva.
+         */
+        function buildComments(requestId, seed, everyone) {
+            const howMany = seed % 4;
 
-            const commentCount = seed % 5;
-            const comments = Array.from({ length: commentCount }, (_, i) => {
-                const commenter = users[(seed + i * 7) % users.length];
+            return Array.from({ length: howMany }, (_, i) => {
+                const person = everyone[(seed + i * 7) % everyone.length];
                 return {
-                    id: `cm-${index}-${i}`,
-                    post_id: `post-${String(index + 1).padStart(3, '0')}`,
+                    id: `cm-${requestId}-${i}`,
+                    request_id: requestId,
                     author: {
-                        id: commenter.id,
-                        username: commenter.username,
+                        id: person.id,
+                        username: person.username,
                         avatar_url: null,
-                        role: commenter.role,
+                        role: person.role,
                     },
                     text: COMMENT_TEMPLATES[(seed + i * 5) % COMMENT_TEMPLATES.length],
                     created_at: new Date(now - (i * 5 + 1) * hour).toISOString(),
                 };
             });
+        }
+
+        const requests = RAW_REQUESTS.map((raw, index) => {
+            const [title, categoryId, budgetMin, budgetMax, emoji, buyerIndex, description] = raw;
+            const buyer = buyers[buyerIndex % buyers.length];
+            const category = CATEGORIES.find((c) => c.id === categoryId) || CATEGORIES[0];
+            const seed = hashString(title);
+
+            // Casi todos aprobados; unos pocos en revisión y alguno rechazado,
+            // para que el panel de administración tenga trabajo desde el inicio.
+            let status = 'approved';
+            if (index % 13 === 5) status = 'pending';
+            else if (index % 19 === 7) status = 'rejected';
 
             return {
-                id: `post-${String(index + 1).padStart(3, '0')}`,
+                id: `req-${String(index + 1).padStart(3, '0')}`,
                 title,
                 description,
-                price,
-                condition,
                 emoji,
-                image_url: photoUrl(index, 640),
-                // Respaldo sin red: la interfaz cambia a esto si la foto falla
-                fallback_url: createImage(title, emoji),
-                images: [
-                    { id: `img-${index}`, url: photoUrl(index, 1200), order: 0, is_primary: true },
-                ],
+                /* Una ilustración, no una foto: el objeto todavía no existe —
+                   es lo que alguien busca. Las fotos reales las trae la oferta
+                   del vendedor, que sí tiene el artículo delante. */
+                image_url: createImage(title, emoji),
+                budget_min: budgetMin,
+                budget_max: budgetMax,
                 category: { id: category.id, name: category.name, icon: category.icon },
-                author: {
-                    id: author.id,
-                    username: author.username,
+                buyer: {
+                    id: buyer.id,
+                    username: buyer.username,
                     avatar_url: null,
-                    district: author.district,
-                    rating: author.rating,
-                    verified: author.verified,
+                    district: buyer.district,
+                    rating: buyer.rating,
+                    verified: buyer.verified,
                 },
-                district: author.district,
-                location: { ...author.location },
+                district: buyer.district,
+                location: { ...buyer.location },
+                // Moderación, igual que antes
                 status,
                 rejection_reason: status === 'rejected'
-                    ? 'Las fotos no muestran el estado real del artículo.'
+                    ? 'El pedido no describe con claridad qué se está buscando.'
                     : null,
-                /* Estado de venta, distinto de `status`: aquello es moderación
-                   y esto es si el artículo sigue disponible. Una publicación
-                   aprobada puede estar reservada, y una reservada puede volver
-                   a estar libre si el trato se cae. Unas pocas del catálogo
-                   nacen reservadas o vendidas para que el foro se vea vivo. */
-                availability: AVAILABILITY[seed % 11] || 'available',
-                availability_at: null,
-                // Interacciones sociales del foro
-                likes: [],
-                likes_count: seed % 37,
-                interested: [],
-                interested_count: seed % 11,
+                /* Ciclo de vida del pedido, independiente de la moderación:
+                   abierto → emparejado (hay una oferta aceptada) → cumplido. */
+                state: 'open',
+                accepted_offer_id: null,
+                offers_count: 0,
+                /* «También lo busco»: en el comercio inverso esto no es un
+                   aplauso, es demanda acumulada — y es lo que hace que a un
+                   vendedor le merezca la pena contestar. */
+                me_too: [],
+                me_too_count: seed % 7,
                 saves: [],
-                saves_count: seed % 8,
-                // Cuándo guardó cada persona esta publicación, por su id
+                saves_count: seed % 5,
                 saved_at: {},
-                comments,
-                comment_count: comments.length,
-                views: 20 + (seed % 400),
-                // Antigüedad escalonada para que el orden «reciente» tenga sentido
-                created_at: new Date(now - (index * 7 + (seed % 5)) * hour).toISOString(),
+                comments: buildComments(`req-${String(index + 1).padStart(3, '0')}`, seed, users),
+                comment_count: 0,
+                views: 12 + (seed % 260),
+                created_at: new Date(now - (index * 6 + (seed % 5)) * hour).toISOString(),
                 updated_at: new Date(now - index * hour).toISOString(),
             };
         });
 
-        // Recuento real de publicaciones aprobadas por autor
+        requests.forEach((request) => { request.comment_count = request.comments.length; });
+
+        /* ------------------------------------------------------------------
+           Ofertas de los vendedores
+           ------------------------------------------------------------------ */
+
+        const offers = [];
+
+        /** Precio verosímil dentro del presupuesto que pidió el comprador. */
+        function priceFor(request, salt) {
+            const span = Math.max(0, request.budget_max - request.budget_min);
+            const offset = span ? (hashString(request.id + salt) % (span + 1)) : 0;
+            return request.budget_min + offset;
+        }
+
+        function makeOffer(request, seller, index, ageHours) {
+            const price = priceFor(request, seller.id);
+            const template = OFFER_TEMPLATES[hashString(seller.id + request.id) % OFFER_TEMPLATES.length];
+
+            return {
+                id: `off-${String(offers.length + 1).padStart(3, '0')}`,
+                request_id: request.id,
+                request_title: request.title,
+                seller: {
+                    id: seller.id,
+                    username: seller.username,
+                    avatar_url: null,
+                    shop_name: seller.shop_name,
+                    district: seller.district,
+                    rating: seller.rating,
+                    verified: seller.verified,
+                },
+                message: template
+                    .replace('{tienda}', seller.shop_name)
+                    .replace('{distrito}', seller.district)
+                    .replace('{precio}', price.toFixed(2)),
+                price,
+                // Las fotos sí son reales: el vendedor tiene el artículo delante
+                photos: [
+                    { id: `ph-${index}-0`, url: photoUrl(index, 900) },
+                    { id: `ph-${index}-1`, url: photoUrl(index + 7, 900) },
+                ],
+                shop_name: seller.shop_name,
+                district: seller.district,
+                location: { ...seller.location },
+                status: 'pending',
+                created_at: new Date(now - ageHours * hour).toISOString(),
+            };
+        }
+
+        requests
+            .filter((request) => request.status === 'approved')
+            .forEach((request, i) => {
+                // Cuántos vendedores contestan: la mayoría de pedidos recibe una
+                // o dos respuestas, algunos ninguna y unos pocos varias.
+                const howMany = [1, 2, 0, 1, 3, 1, 0, 2][i % 8];
+
+                for (let k = 0; k < howMany; k += 1) {
+                    const seller = approvedSellers[
+                        (hashString(request.id) + k * 5) % approvedSellers.length
+                    ];
+                    if (offers.some((o) => o.request_id === request.id && o.seller.id === seller.id)) continue;
+
+                    offers.push(makeOffer(request, seller, i + k, (i % 20) + k + 1));
+                }
+            });
+
+        /* El pedido del storyboard: la lámpara de Patricia, con la oferta de la
+           Tienda Vintage AQP a S/ 120 esperando respuesta. Así, al entrar con su
+           cuenta, el recorrido completo — aviso, aceptar, chat, compra,
+           calificación — se puede caminar de principio a fin. */
+        const lamp = requests[0];
+        const vintage = users.find((u) => u.shop_name === 'Tienda Vintage AQP');
+
+        if (lamp && vintage && lamp.status === 'approved') {
+            const existing = offers.findIndex((o) => o.request_id === lamp.id);
+            const storyOffer = {
+                ...makeOffer(lamp, vintage, 0, 2),
+                id: 'off-story',
+                price: 120,
+                message: 'Hola, soy del local Vintage AQP. Tu lámpara está disponible. '
+                    + 'Estamos en el centro de Arequipa, por la calle San Francisco 123. '
+                    + 'El precio es de S/ 120.00. Te adjunto fotos.',
+                shop_address_hint: 'Calle San Francisco 123, Cercado',
+            };
+
+            if (existing === -1) offers.unshift(storyOffer);
+            else offers.splice(existing, 1, storyOffer);
+        }
+
+        /* ------------------------------------------------------------------
+           Tratos ya cerrados, con su calificación
+
+           Sin esto la reputación de los vendedores sería otra vez un número
+           inventado. Con esto las estrellas del perfil salen de compras reales.
+           ------------------------------------------------------------------ */
+
+        const deals = [];
+        const RATING_COMMENTS = [
+            '¡Todo excelente! El vendedor fue muy amable y el producto es tal como lo esperaba.',
+            'Muy buena atención, respondió rápido y el artículo estaba en perfecto estado.',
+            'Cumplió con lo acordado y nos encontramos sin problema. Lo recomiendo.',
+            'El producto llegó tal cual las fotos. Trato rápido y honesto.',
+            'Buena experiencia, aunque tardó un poco en contestar el primer mensaje.',
+            'Me avisó apenas lo tuvo listo y coincidimos en el centro. Impecable.',
+        ];
+
+        /** Cierra un pedido con una oferta y deja la compra calificada. */
+        function closeDeal(request, offer, stars, ageDays) {
+            offer.status = 'accepted';
+            request.state = 'fulfilled';
+            request.accepted_offer_id = offer.id;
+            request.updated_at = new Date(now - ageDays * 24 * hour).toISOString();
+
+            deals.push({
+                id: `deal-${String(deals.length + 1).padStart(3, '0')}`,
+                request_id: request.id,
+                request_title: request.title,
+                offer_id: offer.id,
+                buyer_id: request.buyer.id,
+                buyer_name: request.buyer.username,
+                seller_id: offer.seller.id,
+                seller_name: offer.seller.username,
+                shop_name: offer.seller.shop_name,
+                price: offer.price,
+                confirmed_at: new Date(now - ageDays * 24 * hour).toISOString(),
+                rating: {
+                    stars,
+                    comment: RATING_COMMENTS[(stars + ageDays) % RATING_COMMENTS.length],
+                    created_at: new Date(now - (ageDays - 1) * 24 * hour).toISOString(),
+                },
+            });
+        }
+
+        /* Historial de cada local: pedidos antiguos ya cerrados.
+           No son relleno. Son las compras de las que sale la reputación, y sin
+           ellas las estrellas del perfil volverían a ser un número inventado
+           — que es justamente lo que este modelo vino a arreglar. */
+        const HISTORY_PER_SELLER = 3;
+        const HISTORY_STARS = [5, 5, 4, 5, 4, 5, 5, 3, 5, 4, 5, 5];
+
+        approvedSellers.forEach((seller, sIndex) => {
+            for (let k = 0; k < HISTORY_PER_SELLER; k += 1) {
+                const raw = RAW_REQUESTS[(sIndex * 5 + k * 7) % RAW_REQUESTS.length];
+                const [title, categoryId, budgetMin, budgetMax, emoji, , description] = raw;
+                const category = CATEGORIES.find((c) => c.id === categoryId) || CATEGORIES[0];
+                const buyer = buyers[(sIndex * 3 + k) % buyers.length];
+                const ageDays = 8 + sIndex * 2 + k * 5;
+
+                const request = {
+                    id: `req-h${String(sIndex + 1).padStart(2, '0')}${k}`,
+                    title,
+                    description,
+                    emoji,
+                    image_url: createImage(title, emoji),
+                    budget_min: budgetMin,
+                    budget_max: budgetMax,
+                    category: { id: category.id, name: category.name, icon: category.icon },
+                    buyer: {
+                        id: buyer.id,
+                        username: buyer.username,
+                        avatar_url: null,
+                        district: buyer.district,
+                        rating: buyer.rating,
+                        verified: buyer.verified,
+                    },
+                    district: buyer.district,
+                    location: { ...buyer.location },
+                    status: 'approved',
+                    rejection_reason: null,
+                    state: 'open',
+                    accepted_offer_id: null,
+                    offers_count: 0,
+                    me_too: [],
+                    me_too_count: (sIndex + k) % 5,
+                    saves: [],
+                    saves_count: (sIndex + k) % 3,
+                    saved_at: {},
+                    comments: [],
+                    comment_count: 0,
+                    views: 30 + ((sIndex * 7 + k) % 200),
+                    created_at: new Date(now - (ageDays + 3) * 24 * hour).toISOString(),
+                    updated_at: new Date(now - ageDays * 24 * hour).toISOString(),
+                };
+
+                requests.push(request);
+
+                const offer = makeOffer(request, seller, sIndex * 3 + k, (ageDays + 1) * 24);
+                offers.push(offer);
+
+                closeDeal(request, offer, HISTORY_STARS[(sIndex + k) % HISTORY_STARS.length], ageDays);
+            }
+        });
+
+        /* Y unos pocos de los pedidos recientes que también acabaron en compra,
+           para que el tablón no parezca que solo se cerraban cosas hace un mes. */
+        offers.slice(4, 24).forEach((offer, i) => {
+            if (i % 5 !== 0) return;
+
+            const request = requests.find((r) => r.id === offer.request_id);
+            if (!request || request.state !== 'open') return;
+
+            closeDeal(request, offer, [5, 4, 5, 5][i % 4], (i % 6) + 2);
+        });
+
+        /* ------------------------------------------------------------------
+           Recuentos derivados
+           ------------------------------------------------------------------ */
+
+        requests.forEach((request) => {
+            request.offers_count = offers.filter((o) => o.request_id === request.id).length;
+        });
+
         users.forEach((user) => {
-            user.total_posts = posts.filter(
-                (p) => p.author.id === user.id && p.status === 'approved'
+            user.total_requests = requests.filter(
+                (r) => r.buyer.id === user.id && r.status === 'approved'
             ).length;
+
+            user.total_offers = offers.filter((o) => o.seller.id === user.id).length;
+
+            // La reputación sale de las compras calificadas, no de un número puesto a mano
+            const mine = deals.filter((d) => d.seller_id === user.id && d.rating);
+            if (mine.length) {
+                const sum = mine.reduce((total, d) => total + d.rating.stars, 0);
+                user.rating = Math.round((sum / mine.length) * 10) / 10;
+                user.rating_count = mine.length;
+                user.total_sales = mine.length;
+            } else if (user.seller_status === 'approved') {
+                // Todavía sin calificaciones: se dice, en vez de inventar estrellas
+                user.rating = 0;
+                user.rating_count = 0;
+                user.total_sales = 0;
+            }
+        });
+
+        // La reputación que viaja dentro de cada oferta tiene que ser la misma
+        offers.forEach((offer) => {
+            const seller = users.find((u) => u.id === offer.seller.id);
+            if (seller) {
+                offer.seller.rating = seller.rating;
+                offer.seller.rating_count = seller.rating_count;
+            }
         });
 
         const categories = CATEGORIES.map((cat) => ({
             ...cat,
-            count: posts.filter((p) => p.category.id === cat.id && p.status === 'approved').length,
+            count: requests.filter((r) => r.category.id === cat.id && r.status === 'approved').length,
         }));
 
-        return { users, posts, categories, districts: DISTRICTS };
+        return { users, requests, offers, deals, categories, districts: DISTRICTS };
     }
 
     global.DiscoverySeed = {
