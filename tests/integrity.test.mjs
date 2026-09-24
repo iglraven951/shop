@@ -622,7 +622,21 @@ check('existe README.md', exists('README.md'));
 if (exists('.github/workflows/pages.yml')) {
     const yml = read('.github/workflows/pages.yml');
     check('workflow: sin tabuladores', !yml.includes('\t'));
-    check('workflow: despliega en push a main', /branches:\s*\[?\s*["']?main/.test(yml));
+    /* El despliegue tiene que colgar de UNA rama concreta, no de cualquier
+       push: sin esa lista, una rama de pruebas publicaría el sitio.
+
+       No se fija cuál: el proyecto se quedó con una sola rama y cambiar de
+       nombre no debería obligar a tocar esta prueba. Lo que se comprueba es
+       que la lista existe y nombra algo. */
+    const rama = yml.match(/branches:\s*\[?\s*["']?([\w.\-/]+)/);
+    check('workflow: el despliegue cuelga de una rama concreta',
+        Boolean(rama), 'falta `branches:` en el disparador');
+
+    if (rama) {
+        check('workflow: esa rama es la de trabajo',
+            rama[1] === 'comercio-inverso',
+            `despliega desde «${rama[1]}»`);
+    }
     check('workflow: permisos de pages', yml.includes('pages: write'));
     check('workflow: id-token', yml.includes('id-token: write'));
 } else {

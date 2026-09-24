@@ -277,8 +277,9 @@ si no llega a cargarse.
 
 ## Publicación
 
-Cada `push` a la rama `main` publica el sitio automáticamente mediante GitHub
-Actions. El flujo está en [`.github/workflows/pages.yml`](.github/workflows/pages.yml):
+Cada `push` a la rama `comercio-inverso` —la única del repositorio— publica el
+sitio automáticamente mediante GitHub Actions. El flujo está en
+[`.github/workflows/pages.yml`](.github/workflows/pages.yml):
 
 1. Descarga el repositorio.
 2. Comprueba que existan los archivos esenciales (`index.html`,

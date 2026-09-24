@@ -7,7 +7,9 @@ name: Publicar en GitHub Pages
 
 on:
   push:
-    branches: [main]
+    # La rama de trabajo del proyecto, que es también la rama por defecto:
+    # aquí no hay una `main` estable aparte de la que se desarrolla.
+    branches: [comercio-inverso]
   # Permite lanzar el despliegue a mano desde la pestaña Actions.
   workflow_dispatch:
 
