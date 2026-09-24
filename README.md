@@ -53,7 +53,7 @@ restaura el catálogo original y cierra la sesión.
 |---|---|
 | **Visitante** (sin sesión) | Ver el tablón, buscar, filtrar, abrir un pedido y consultar el mapa de vendedores |
 | **Cualquier cuenta** | Todo lo anterior y además **publicar pedidos**, 🙋 «también lo busco», 🔖 guardar, 💬 comentar y 🚩 denunciar |
-| **Tienda aprobada** (`seller_status: 'approved'`) | Todo lo anterior y además **responder pedidos con una oferta** (precio, mensaje y fotos) y conversar con quien la acepte |
+| **Vendedor aprobado** (`seller_status: 'approved'`) | Todo lo anterior y además **responder pedidos con una oferta** (precio, mensaje y fotos) y conversar con quien la acepte |
 | **Administrador** (`role: 'admin'`) | Aprobar o rechazar pedidos y solicitudes de vendedor, y resolver denuncias |
 
 Al registrarse se dice si además se quiere vender. Quien lo hace entra con
@@ -89,8 +89,8 @@ Todas usan la contraseña **`demo1234`**.
 | Correo | Rol | Para probar |
 |---|---|---|
 | `admin@discoveryshop.pe` | Administrador | El panel de moderación: aprobar y rechazar |
-| `juan@discoveryshop.pe` | Tienda aprobada | Responder un pedido con una oferta |
-| `miguel@discoveryshop.pe` | Tienda en revisión | Pide con normalidad; aún no puede responder |
+| `juan@discoveryshop.pe` | Vendedor aprobado | Responder un pedido con una oferta |
+| `miguel@discoveryshop.pe` | Vendedor en revisión | Pide con normalidad; aún no puede responder |
 | `patricia@discoveryshop.pe` | Comprador | Comentar, guardar y escribir a quien publica |
 
 También puedes crear una cuenta nueva desde `registro.html`: en modo
@@ -277,8 +277,8 @@ si no llega a cargarse.
 
 ## Publicación
 
-Cada `push` a la rama `comercio-inverso` —la única del repositorio— publica el
-sitio automáticamente mediante GitHub Actions. El flujo está en
+Cada `push` a la rama `main` —la única del repositorio— publica el sitio
+automáticamente mediante GitHub Actions. El flujo está en
 [`.github/workflows/pages.yml`](.github/workflows/pages.yml):
 
 1. Descarga el repositorio.

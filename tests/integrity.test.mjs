@@ -634,7 +634,7 @@ if (exists('.github/workflows/pages.yml')) {
 
     if (rama) {
         check('workflow: esa rama es la de trabajo',
-            rama[1] === 'comercio-inverso',
+            rama[1] === 'main',
             `despliega desde «${rama[1]}»`);
     }
     check('workflow: permisos de pages', yml.includes('pages: write'));
