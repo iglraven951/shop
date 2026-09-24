@@ -16,6 +16,8 @@
     const api = global.api;
     const store = global.store;
     const UI = global.UI;
+    /* El tono del avatar lo decide el nombre: ver `UI.avatarTone`. */
+    const toneAttr = (name) => ` data-tone="${UI.avatarTone(name)}"`;
     const toast = global.toast;
 
     /** Centro de Arequipa; el backend también lo devuelve, esto es el respaldo. */
@@ -290,7 +292,7 @@
                 type="button"
                 data-seller-id="${escapeAttr(seller.id)}"
                 aria-pressed="${active ? 'true' : 'false'}">
-            <span class="avatar map-seller-avatar" aria-hidden="true">${escapeHtml(format.initials(seller.shop_name || seller.username))}</span>
+            <span class="avatar map-seller-avatar" aria-hidden="true"${toneAttr(seller.shop_name || seller.username)}>${escapeHtml(format.initials(seller.shop_name || seller.username))}</span>
             <span class="map-seller-body">
                 <span class="map-seller-name">
                     <span class="truncate">${escapeHtml(seller.shop_name || seller.username)}</span>
@@ -390,7 +392,7 @@
         return `
         <div class="map-popup">
             <div class="map-popup-head">
-                <span class="avatar avatar-sm" aria-hidden="true">${escapeHtml(format.initials(seller.shop_name || seller.username))}</span>
+                <span class="avatar avatar-sm" aria-hidden="true"${toneAttr(seller.shop_name || seller.username)}>${escapeHtml(format.initials(seller.shop_name || seller.username))}</span>
                 <div class="map-popup-ident">
                     <p class="map-popup-name">
                         <span class="truncate">${escapeHtml(seller.shop_name || seller.username)}</span>
@@ -431,7 +433,7 @@
         return `
         <li class="map-fallback-seller">
             <a class="map-fallback-link" href="${escapeAttr(href)}">
-                <span class="avatar map-seller-avatar" aria-hidden="true">${escapeHtml(format.initials(seller.shop_name || seller.username))}</span>
+                <span class="avatar map-seller-avatar" aria-hidden="true"${toneAttr(seller.shop_name || seller.username)}>${escapeHtml(format.initials(seller.shop_name || seller.username))}</span>
                 <span class="map-seller-body">
                     <span class="map-seller-name">
                         <span class="truncate">${escapeHtml(seller.shop_name || seller.username)}</span>

@@ -1,7 +1,7 @@
 {
-  "name": "DiscoveryShop · Foro de segunda mano en Arequipa",
+  "name": "DiscoveryShop · Comercio inverso en Arequipa",
   "short_name": "DiscoveryShop",
-  "description": "Foro arequipeño para promocionar artículos de segunda mano. Publica, comenta y conecta con vecinos de los 18 distritos. Sin comisiones ni pagos en la plataforma.",
+  "description": "Comercio inverso arequipeño: publica lo que buscas y los vendedores de los 18 distritos te responden con lo que tienen. Sin comisiones ni pagos en la plataforma.",
   "lang": "es",
   "dir": "ltr",
   "start_url": "./index.html",
@@ -33,7 +33,7 @@
   ],
   "shortcuts": [
     {
-      "name": "Publicar artículo",
+      "name": "Publicar pedido",
       "short_name": "Publicar",
       "url": "./publicar.html"
     },

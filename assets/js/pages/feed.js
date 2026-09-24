@@ -214,6 +214,7 @@
             const data = await api.getCategories();
             state.categories = data.categories || [];
             renderCategories();
+            renderHeroCategories();
         } catch (error) {
             // Sin categorías el feed sigue siendo usable: solo se pierde el filtro.
             dom.categoryOptions.setAttribute('aria-busy', 'false');
@@ -247,7 +248,7 @@
             const sample = data.requests || [];
             const total = data.pagination ? data.pagination.total : sample.length;
 
-            /* Las tiendas que responden no salen de los pedidos: quien publica
+            /* Los vendedores que responden no salen de los pedidos: quien publica
                un pedido es el comprador. Salen del mapa, que es justamente la
                lista de locales aprobados con actividad. */
             const map = await api.getMapSellers().catch(() => null);
@@ -366,7 +367,7 @@
             return;
         }
 
-        const name = state.authorName || 'este vendedor';
+        const name = state.authorName || 'esta persona';
 
         dom.authorNotice.innerHTML = `
             <div class="feed-author-note">
@@ -396,6 +397,43 @@
     /* ======================================================================
        Pintado del panel de filtros
        ====================================================================== */
+
+    /**
+     * Las categorías de la portada.
+     *
+     * Son las mismas del panel de filtros, con otra forma: allí son casillas
+     * para afinar una búsqueda; aquí son la puerta de entrada de quien llega
+     * sin saber qué mirar. Pulsar una deja *solo* esa categoría —no acumula—,
+     * porque desde la portada se está eligiendo por dónde empezar, no
+     * refinando.
+     */
+    function renderHeroCategories() {
+        if (!dom.heroCategories) return;
+
+        dom.heroCategories.setAttribute('aria-busy', 'false');
+
+        if (!state.categories.length) {
+            dom.heroCategories.innerHTML = '';
+            return;
+        }
+
+        const selected = state.filters.category;
+
+        dom.heroCategories.innerHTML = state.categories
+            .slice()
+            .sort((a, b) => (b.count || 0) - (a.count || 0))
+            .map((category) => {
+                const active = selected.length === 1 && selected[0] === category.id;
+                return `
+                <button class="hero-category${active ? ' is-active' : ''}" type="button"
+                        data-hero-category="${escapeAttr(category.id)}"
+                        aria-pressed="${active}">
+                    <span class="hero-category-icon" aria-hidden="true">${escapeHtml(category.icon || '🏷️')}</span>
+                    <span class="hero-category-name">${escapeHtml(category.name)}</span>
+                    <span class="hero-category-count">${escapeHtml(format.number(category.count || 0))}</span>
+                </button>`;
+            }).join('');
+    }
 
     function renderCategories() {
         const selected = state.filters.category;
@@ -546,9 +584,15 @@
             chips.push(filterChip('condition', condition, `Estado: ${condition}`));
         });
 
+        /* `STATE_NAMES`, no `AVAILABILITY_NAMES`: aquello era del modelo de
+           venta y no existe en ninguna parte. Leer una variable que no existe
+           sí lanza —a diferencia de una clave ausente—, y el `catch` de la
+           carga lo confundía con una caída del servidor: el tablón entero se
+           reemplazaba por «no pudimos cargar» en cuanto alguien marcaba una
+           casilla de situación. */
         f.situation.forEach((value) => {
             chips.push(filterChip('situation', value,
-                `Disponibilidad: ${AVAILABILITY_NAMES[value] || value}`));
+                `Situación: ${STATE_NAMES[value] || value}`));
         });
 
         if (f.author_id) {
@@ -626,6 +670,12 @@
 
         syncCheckboxes('category', dom.categoryOptions, f.category);
         syncCheckboxes('district', dom.districtOptions, f.district);
+
+        /* La portada es otra vista de los mismos filtros: si cambian por
+           cualquier vía —el panel, la URL, el botón atrás— se repinta. */
+        if (dom.heroSearchInput) dom.heroSearchInput.value = f.q;
+        renderHeroCategories();
+
         updateFilterSummaries();
     }
 
@@ -710,6 +760,49 @@
     }
 
     function bindEvents() {
+        /* --- Buscador de la portada ---
+           Escribe en el mismo filtro que el del panel y baja al tablón: es
+           otra puerta a la misma habitación, no una búsqueda aparte. */
+        /* El texto de ayuda del buscador es largo para lucirse en escritorio y
+           se corta a media palabra en un teléfono. Se acorta por ancho real,
+           no por punto de ruptura, porque lo que decide es cuánto mide la
+           caja. */
+        if (dom.heroSearchInput) {
+            const fitPlaceholder = () => {
+                const narrow = dom.heroSearchInput.clientWidth < 320;
+                dom.heroSearchInput.placeholder = narrow
+                    ? '¿Qué estás buscando?'
+                    : '¿Qué estás buscando? Una lámpara, un iPhone 13…';
+            };
+
+            fitPlaceholder();
+            global.addEventListener('resize', debounce(fitPlaceholder, 200));
+        }
+
+        if (dom.heroSearch) {
+            dom.heroSearch.addEventListener('submit', (event) => {
+                event.preventDefault();
+                state.filters.q = dom.heroSearchInput.value.trim().slice(0, 120);
+                if (dom.search) dom.search.value = state.filters.q;
+                changed({ scroll: true });
+            });
+        }
+
+        if (dom.heroCategories) {
+            dom.heroCategories.addEventListener('click', (event) => {
+                const button = event.target.closest('[data-hero-category]');
+                if (!button) return;
+
+                const id = button.dataset.heroCategory;
+                const only = state.filters.category.length === 1 && state.filters.category[0] === id;
+
+                // Volver a pulsar la categoría activa la quita: es un interruptor
+                state.filters.category = only ? [] : [id];
+                applyFiltersToControls();
+                changed({ scroll: true });
+            });
+        }
+
         const search = debounce((value) => {
             state.filters.q = value.trim().slice(0, 120);
             changed();
@@ -883,6 +976,9 @@
 
     function cacheDom() {
         dom.hero = $('#feed-hero');
+        dom.heroSearch = $('#hero-search');
+        dom.heroSearchInput = $('#hero-search-input');
+        dom.heroCategories = $('#hero-categories');
         dom.section = $('#feed');
         dom.panel = $('#filters-panel');
         dom.search = $('#filter-search');

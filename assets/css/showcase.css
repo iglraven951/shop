@@ -33,6 +33,26 @@
     --showcase-photo: 0.18;
     /* Cuánto tapa el velo que va encima */
     --showcase-veil: 0.7;
+
+    /* Paralaje.
+
+       `--scroll` lo escribe assets/js/ui/depth.js en la portada mientras la
+       página rueda, y de aquí lo hereda el muro. Sube menos que el texto que
+       tiene delante, que es lo que hace que se lea como un fondo y no como
+       parte de la misma lámina. La variable lleva valor por defecto: sin el
+       módulo —o con el movimiento reducido, donde ni arranca— el muro se queda
+       donde estaba, que es exactamente lo que se pide en ese caso. */
+    transform: translate3d(0, calc(var(--scroll, 0) * 34px), 0);
+
+    /* El muro se desvanece contra los bordes de la portada en lugar de
+       cortarse a ras. Un corte recto delata que hay una banda de fotos
+       pegada detrás; el degradado la convierte en atmósfera. Y de paso deja
+       menos foto justo donde van las cifras, así que el contraste que mide
+       tests/contrast.test.mjs solo puede salir mejor que en su modelo. */
+    mask-image: linear-gradient(to bottom,
+        transparent 0%, var(--bg-base) 22%, var(--bg-base) 72%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom,
+        transparent 0%, var(--bg-base) 22%, var(--bg-base) 72%, transparent 100%);
 }
 
 .showcase[hidden] { display: none !important; }

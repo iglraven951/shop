@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cuéntanos qué buscas · DiscoveryShop</title>
-    <meta name="description" content="Pide lo que necesitas y deja que las tiendas de Arequipa te respondan. Describe qué buscas, pon tu presupuesto y elige tu distrito en menos de un minuto.">
+    <meta name="description" content="Pide lo que necesitas y deja que los vendedores de Arequipa te respondan. Describe qué buscas, pon tu presupuesto y elige tu distrito en menos de un minuto.">
     <meta name="theme-color" content="#070c14">
     <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
     <link rel="apple-touch-icon" href="assets/img/logo.png">
     <link rel="manifest" href="site.webmanifest">
+    <link rel="stylesheet" href="assets/css/fonts.css">
     <link rel="stylesheet" href="assets/css/tokens.css">
     <link rel="stylesheet" href="assets/css/base.css">
     <link rel="stylesheet" href="assets/css/components.css">
@@ -69,6 +70,34 @@
                 <!-- Aviso de borrador recuperado (lo rellena publish.js) -->
                 <div id="publish-draft-slot"></div>
 
+                <!-- Las dos reglas del tablón, dichas antes de escribir y no
+                     al chocar con ellas. El cupo lo rellena publish.js con lo
+                     que contesta el servidor; el plazo es fijo. -->
+                <div class="alert alert-info publish-rules" id="publish-rules">
+                    <span class="alert-icon" aria-hidden="true">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor"
+                             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                            <path d="M7 4.2H5.2a1.7 1.7 0 0 0-1.7 1.7v10.4a1.7 1.7 0 0 0 1.7 1.7h9.6a1.7 1.7 0 0 0 1.7-1.7V5.9a1.7 1.7 0 0 0-1.7-1.7H13"/>
+                            <rect x="7" y="2.4" width="6" height="3.4" rx="1.4"/>
+                            <path d="M7 10h6M7 13.4h4"/>
+                        </svg>
+                    </span>
+                    <div class="alert-content">
+                        <p class="alert-title" id="publish-rules-title">Cómo funciona el tablón</p>
+                        <ul class="publish-rule-list alert-body">
+                            <li id="publish-rules-quota">
+                                <strong>Cinco pedidos abiertos a la vez.</strong> Cuando cierras o
+                                eliminas uno, recuperas el sitio para pedir otra cosa.
+                            </li>
+                            <li>
+                                <strong>Quince días hábiles de vida.</strong> Pasado ese plazo el
+                                pedido se retira solo del tablón, para que nadie pierda el tiempo
+                                respondiendo a algo que ya no buscas.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
                 <!-- ---------------- Ayuda de la IA ----------------
                      Lo difícil aquí no es buscar, es explicar qué buscas. Se
                      escribe en una línea y el asistente propone título,
@@ -77,7 +106,13 @@
                      no decide. -->
                 <section class="publish-assist" aria-labelledby="assist-title">
                     <div class="publish-assist-head">
-                        <span class="publish-assist-icon" aria-hidden="true">✨</span>
+                        <span class="publish-assist-icon" aria-hidden="true">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                                <path d="M12 3.2l1.9 4.9 4.9 1.9-4.9 1.9L12 16.8l-1.9-4.9-4.9-1.9 4.9-1.9Z"/>
+                                <path d="M18.5 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8Z"/>
+                            </svg>
+                        </span>
                         <div>
                             <h2 class="publish-assist-title" id="assist-title">Dilo con tus palabras</h2>
                             <p class="publish-assist-hint">
@@ -89,7 +124,7 @@
                     <div class="publish-assist-row">
                         <input class="input" type="text" id="assist-input"
                                placeholder="Busco una lámpara vintage de mesa, dorada, para el escritorio"
-                               maxlength="200" autocomplete="off">
+                               maxlength="90" autocomplete="off">
                         <button class="btn btn-secondary" type="button" id="assist-run">
                             Rellenar
                         </button>
@@ -124,9 +159,13 @@
                                 </label>
                                 <span class="publish-counter" id="publish-title-counter" aria-hidden="true">0 / 90</span>
                             </div>
+                            <!-- `minlength` no valida nada por sí solo: el formulario
+                                 lleva `novalidate` y quien decide es publish.js. Está
+                                 aquí para que `:valid` sea cierto, que es lo que la
+                                 hoja usa para dar por resuelto el campo. -->
                             <input class="input" type="text" id="publish-title" name="title"
                                    placeholder="Lámpara vintage de mesa"
-                                   maxlength="200" autocomplete="off" spellcheck="true"
+                                   minlength="4" maxlength="200" autocomplete="off" spellcheck="true"
                                    aria-describedby="publish-title-hint publish-title-error" required>
                             <p class="field-hint" id="publish-title-hint">Entre 4 y 90 caracteres.</p>
                             <p class="field-error" id="publish-title-error" aria-live="polite"></p>
@@ -143,7 +182,7 @@
                                 <option value="">Elige una categoría</option>
                             </select>
                             <p class="field-hint" id="publish-category-hint">
-                                Determina el icono por defecto y qué tiendas verán tu pedido.
+                                Determina el icono por defecto y qué vendedores verán tu pedido.
                             </p>
                             <p class="field-error" id="publish-category-error" aria-live="polite"></p>
                         </div>
@@ -160,7 +199,13 @@
                                     <input type="radio" name="condition" value="Solo nuevo">
                                     <span class="publish-condition-body">
                                         <span class="publish-condition-name">
-                                            <span aria-hidden="true">✨</span> Solo nuevo
+                                            <span class="publish-condition-icon" aria-hidden="true">
+                                                <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor"
+                                                     stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                                                    <path d="M10 2.4l1.6 4.1 4.1 1.6-4.1 1.6L10 13.8 8.4 9.7 4.3 8.1l4.1-1.6Z"/>
+                                                    <path d="M15.6 13.6l.7 1.7 1.7.7-1.7.7-.7 1.7-.7-1.7-1.7-.7 1.7-.7Z"/>
+                                                </svg>
+                                            </span> Solo nuevo
                                         </span>
                                         <span class="publish-condition-text">
                                             Sin estrenar, con su caja, etiquetas o precinto original.
@@ -172,7 +217,12 @@
                                     <input type="radio" name="condition" value="Como nuevo o mejor">
                                     <span class="publish-condition-body">
                                         <span class="publish-condition-name">
-                                            <span aria-hidden="true">👌</span> Como nuevo o mejor
+                                            <span class="publish-condition-icon" aria-hidden="true">
+                                                <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor"
+                                                     stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                                                    <path d="M10 2.4l2.1 4.3 4.7.7-3.4 3.3.8 4.7L10 13.2l-4.2 2.2.8-4.7L3.2 7.4l4.7-.7Z"/>
+                                                </svg>
+                                            </span> Como nuevo o mejor
                                         </span>
                                         <span class="publish-condition-text">
                                             Usado poco y sin marcas visibles. Aceptas segunda mano cuidada.
@@ -184,7 +234,13 @@
                                     <input type="radio" name="condition" value="Cualquiera que funcione" checked>
                                     <span class="publish-condition-body">
                                         <span class="publish-condition-name">
-                                            <span aria-hidden="true">👍</span> Cualquiera que funcione
+                                            <span class="publish-condition-icon" aria-hidden="true">
+                                                <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor"
+                                                     stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                                                    <circle cx="10" cy="10" r="7.4"/>
+                                                    <path d="m6.6 10.2 2.3 2.3 4.5-4.7"/>
+                                                </svg>
+                                            </span> Cualquiera que funcione
                                         </span>
                                         <span class="publish-condition-text">
                                             Te da igual que tenga señales de uso mientras cumpla su función.
@@ -234,7 +290,7 @@
                                 <span class="publish-counter" id="publish-description-counter" aria-hidden="true">0 / 1000</span>
                             </div>
                             <textarea class="textarea publish-textarea" id="publish-description" name="description"
-                                      rows="7" maxlength="2000" spellcheck="true"
+                                      rows="7" minlength="20" maxlength="1000" spellcheck="true"
                                       placeholder="Busco una bicicleta de montaña rodado 26, para uso diario por Cayma. No me importa que esté usada mientras frene bien y no tenga la horquilla doblada. Si viene con luces, mejor. La necesito para esta quincena."
                                       aria-describedby="publish-description-hint publish-description-error" required></textarea>
                             <p class="field-hint" id="publish-description-hint">Entre 20 y 1000 caracteres.</p>
@@ -242,12 +298,18 @@
                         </div>
 
                         <div class="alert alert-info publish-tips">
-                            <span class="alert-icon" aria-hidden="true">💡</span>
+                            <span class="alert-icon" aria-hidden="true">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor"
+                                     stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                                    <path d="M7.6 14.4a5.4 5.4 0 1 1 4.8 0v1.4a1.2 1.2 0 0 1-1.2 1.2H8.8a1.2 1.2 0 0 1-1.2-1.2Z"/>
+                                    <path d="M8.2 14.4h3.6"/>
+                                </svg>
+                            </span>
                             <div class="alert-content">
                                 <p class="alert-title">Tres cosas que siempre conviene decir</p>
                                 <ul class="publish-tip-list alert-body">
                                     <li>
-                                        <strong>Para qué lo quieres.</strong> Una tienda puede
+                                        <strong>Para qué lo quieres.</strong> Un vendedor puede
                                         ofrecerte algo mejor que lo que pediste si sabe para qué es.
                                     </li>
                                     <li>
@@ -328,7 +390,13 @@
 
                 <!-- ---------------- Aviso de moderación y envío ---------------- -->
                 <div class="alert alert-warning publish-moderation">
-                    <span class="alert-icon" aria-hidden="true">⏳</span>
+                    <span class="alert-icon" aria-hidden="true">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor"
+                             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                            <circle cx="10" cy="10" r="7.4"/>
+                            <path d="M10 5.8V10l2.8 1.8"/>
+                        </svg>
+                    </span>
                     <div class="alert-content">
                         <p class="alert-title">Tu publicación pasa antes por revisión</p>
                         <p class="alert-body">
@@ -341,7 +409,7 @@
                 <div class="publish-actions">
                     <a class="btn btn-ghost" href="index.html" id="publish-cancel">Cancelar</a>
                     <button class="btn btn-primary btn-lg publish-submit" type="submit" id="publish-submit">
-                        Publicar artículo
+                        Publicar mi pedido
                     </button>
                 </div>
 
@@ -350,13 +418,40 @@
             <!-- Vista previa en vivo: la misma tarjeta que se ve en el foro -->
             <aside class="publish-preview-col" aria-labelledby="publish-preview-title">
                 <div class="publish-preview-sticky">
-                    <h2 class="publish-preview-title" id="publish-preview-title">
-                        <span aria-hidden="true">👁️</span> Vista previa
-                    </h2>
-                    <p class="publish-preview-hint">
-                        Así verán tu pedido las tiendas. Se actualiza mientras escribes.
-                    </p>
+                    <div class="publish-preview-head">
+                        <h2 class="publish-preview-title" id="publish-preview-title">
+                            <span class="publish-preview-eye" aria-hidden="true">
+                                <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor"
+                                     stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                                    <path d="M1.8 10S5 4.6 10 4.6 18.2 10 18.2 10 15 15.4 10 15.4 1.8 10 1.8 10Z"/>
+                                    <circle cx="10" cy="10" r="2.6"/>
+                                </svg>
+                            </span>
+                            Vista previa
+                        </h2>
+                        <p class="publish-preview-hint">
+                            Así verán tu pedido los vendedores. Se actualiza mientras escribes.
+                        </p>
+                    </div>
+
                     <div class="publish-preview" id="publish-preview"></div>
+
+                    <!-- El revisor automático, a la vista mientras se escribe.
+                         Enseñar aquí lo que va a objetar es la diferencia entre
+                         corregirlo ahora y enterarse tres horas después de que
+                         el pedido quedó en la cola de revisión. -->
+                    <section class="publish-review" id="publish-review" hidden
+                             aria-labelledby="publish-review-title" aria-live="polite">
+                        <header class="publish-review-head">
+                            <span class="publish-review-badge" id="publish-review-badge"
+                                  aria-hidden="true"></span>
+                            <div class="publish-review-heading">
+                                <h3 class="publish-review-title" id="publish-review-title"></h3>
+                                <p class="publish-review-sub" id="publish-review-sub"></p>
+                            </div>
+                        </header>
+                        <ul class="publish-review-notes" id="publish-review-notes"></ul>
+                    </section>
                 </div>
             </aside>
 
@@ -368,6 +463,7 @@
     <script src="assets/js/core/native.js"></script>
     <script src="assets/js/core/seed.js"></script>
     <script src="assets/js/core/moderator.js"></script>
+    <script src="assets/js/core/seller-bot.js"></script>
     <script src="assets/js/core/mock-api.js"></script>
     <script src="assets/js/core/store.js"></script>
     <script src="assets/js/core/api.js"></script>
@@ -375,6 +471,7 @@
     <script src="assets/js/ui/toast.js"></script>
     <script src="assets/js/ui/modal.js"></script>
     <script src="assets/js/ui/components.js"></script>
+    <script src="assets/js/ui/depth.js"></script>
     <script src="assets/js/ui/shell.js"></script>
     <script src="assets/js/ui/assistant-widget.js"></script>
     <!-- Página -->

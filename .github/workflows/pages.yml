@@ -65,6 +65,9 @@ jobs:
           node tests/responsive.test.mjs
           node tests/contrast.test.mjs
           node tests/ai.test.mjs
+          node tests/chat.test.mjs
+          node tests/tokens.test.mjs
+          node tests/transport.test.mjs
           node tests/android.test.mjs
 
       # Solo se publica lo que el navegador necesita: las pruebas y la memoria

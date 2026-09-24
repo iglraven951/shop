@@ -1,28 +1,43 @@
 /* ==========================================================================
    DiscoveryShop · Acceso y alta con rol
-   Diseño partido: panel de marca a la izquierda, formulario a la derecha.
-   Por debajo de 900 px el panel desaparece y el formulario ocupa el ancho.
+
+   Diseño partido en dos mitades: a la izquierda la marca, que cuenta el
+   modelo —pides y te responden— con una escena en perspectiva; a la derecha
+   el formulario, dentro de una tarjeta elevada. Por debajo de 900 px el
+   panel lateral desaparece y su lugar lo ocupa una portada compacta con el
+   mismo mensaje, porque en un teléfono el formulario a secas no dice de qué
+   va este sitio.
 
    El registro son dos pasos (tipo de cuenta → datos) dentro del mismo
    formulario: aquí viven el indicador de pasos, las tarjetas de rol y la
-   tabla de cuentas de demostración.
+   lista de cuentas de demostración.
+
+   Reglas de la casa que este archivo respeta:
+   · ni un color literal — todo sale de tokens.css o se compone con color-mix
+   · nada más ancho que la pantalla, desde 320 px
+   · quien pidió menos movimiento no ve ninguno (base.css lo apaga, y aquí
+     todo bucle empieza y termina en el mismo fotograma para que apagarlo no
+     deje nada a medio camino)
    ========================================================================== */
 
+/* --------------------------------------------------------------------------
+   Estructura
+   -------------------------------------------------------------------------- */
 .auth-layout {
     display: grid;
-    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
     min-height: calc(100vh - var(--header-height));
 }
 
-/* --------------------------------------------------------------------------
-   Panel de marca
-   -------------------------------------------------------------------------- */
+/* ==========================================================================
+   PANEL DE MARCA
+   ========================================================================== */
 .auth-brand {
     position: relative;
     display: flex;
     align-items: center;
     overflow: hidden;
-    padding: var(--space-16) var(--space-12);
+    padding: clamp(var(--space-10), 6vh, var(--space-16)) var(--space-12);
     background: var(--gradient-brand);
 
     /* Superficies de vidrio del panel.
@@ -35,33 +50,59 @@
     --glass-strong: color-mix(in srgb, var(--on-navy) 17%, transparent);
     --glass-line: color-mix(in srgb, var(--on-navy) 15%, transparent);
     --glass-line-strong: color-mix(in srgb, var(--on-navy) 28%, transparent);
+
+    /* El velo que hace legible el texto blanco sobre el degradado.
+       Se compone con `--brand-950`, el azul más profundo de la escala, que
+       no se redefine por tema: así el panel es el mismo en claro y oscuro,
+       que es justo lo que se quiere de una mitad de marca.
+
+       La proporción no es estética, está medida. El degradado termina en el
+       cian de acento, y blanco sobre ese cian sin velar se queda en 1,9. Con
+       el 62 % de velo la peor esquina sube a 6,4 y el texto tenue
+       (`--on-navy-soft`) a 4,1; el viñeteado de las esquinas lo lleva a 5,8.
+       Bajar de aquí rompe AA en la esquina inferior derecha. */
+    --veil: color-mix(in srgb, var(--brand-950) 62%, transparent);
+    --veil-deep: color-mix(in srgb, var(--brand-950) 46%, transparent);
 }
 
-/* Velo oscuro fijo (no depende del tema): asegura contraste del texto blanco
-   sobre el degradado de marca, que por sí solo es demasiado luminoso. Son los
-   únicos colores literales del archivo; el resto sale de tokens.css.
-   Las dos radiales oscurecen las esquinas opuestas: el degradado plano se
-   percibe como una lámina, y el viñeteado le devuelve profundidad. */
+/* Capa de abajo: la aurora y la retícula.
+   Van DEBAJO del velo a propósito. Encima subirían la luminosidad justo donde
+   se lee el texto, y el margen de contraste que da el velo se perdería. */
 .auth-brand::before {
     content: "";
     position: absolute;
-    inset: 0;
+    inset: -18%;
+    pointer-events: none;
     background:
-        radial-gradient(90% 70% at 8% 0%, rgba(0, 0, 0, 0.34), transparent 64%),
-        radial-gradient(80% 75% at 98% 100%, rgba(0, 0, 0, 0.44), transparent 70%),
-        linear-gradient(152deg, rgba(6, 7, 10, 0.78), rgba(6, 7, 10, 0.46) 46%, rgba(6, 7, 10, 0.84));
+        radial-gradient(38% 42% at 30% 34%, var(--glass-strong), transparent 70%),
+        radial-gradient(44% 40% at 76% 18%, var(--glass-soft), transparent 72%),
+        radial-gradient(52% 48% at 62% 88%, var(--glass-faint), transparent 74%),
+        repeating-linear-gradient(90deg, var(--glass-line-strong) 0 1px, transparent 1px 72px),
+        repeating-linear-gradient(0deg, var(--glass-line-strong) 0 1px, transparent 1px 72px);
+    /* La retícula se desvanece hacia los bordes: a cuadro completo se lee
+       como papel milimetrado, y lo que se busca es un suelo, no una trama. */
+    -webkit-mask-image: radial-gradient(72% 68% at 42% 38%, var(--on-navy) 10%, transparent 78%);
+    mask-image: radial-gradient(72% 68% at 42% 38%, var(--on-navy) 10%, transparent 78%);
+    animation: auth-aurora 32s var(--ease-in-out) infinite;
 }
 
-/* Luz difusa detrás del logo: da el volumen que el velo le quita */
+/* Capa de arriba: el velo y el viñeteado.
+   Las dos radiales oscurecen las esquinas opuestas; el degradado plano se
+   percibe como una lámina, y el viñeteado le devuelve profundidad. */
 .auth-brand::after {
     content: "";
     position: absolute;
-    inset: -25% -20% auto -25%;
-    height: 90%;
-    background:
-        radial-gradient(40% 50% at 36% 40%, var(--glass-strong), transparent 72%),
-        radial-gradient(58% 58% at 74% 18%, var(--glass-faint), transparent 70%);
+    inset: 0;
     pointer-events: none;
+    background:
+        radial-gradient(90% 70% at 6% 0%, var(--veil-deep), transparent 62%),
+        radial-gradient(84% 78% at 98% 100%, var(--veil-deep), transparent 68%),
+        linear-gradient(152deg, var(--veil), var(--veil) 100%);
+}
+
+@keyframes auth-aurora {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    50% { transform: translate3d(-3%, 2.5%, 0) scale(1.09); }
 }
 
 .auth-brand-inner {
@@ -74,11 +115,13 @@
     color: var(--on-navy);
 }
 
+/* ---- Logotipo ---- */
 .auth-brand-logo {
     display: flex;
     align-items: center;
     gap: var(--space-4);
-    margin-bottom: var(--space-10);
+    margin-bottom: var(--space-8);
+    font-family: var(--font-display);
     font-size: var(--text-xl);
     font-weight: 700;
     letter-spacing: var(--tracking-tight);
@@ -117,77 +160,329 @@
 
 .auth-brand .auth-brand-mark .brand-svg { width: 62%; height: 62%; }
 
-.auth-brand-title {
-    /* clamp evita que el titular desborde en pantallas intermedias */
-    font-size: clamp(1.75rem, 2.6vw + 0.6rem, 2.25rem);
-    line-height: var(--leading-tight);
-    letter-spacing: var(--tracking-tight);
+/* ---- Titular ---- */
+
+/* Antetítulo: dice dónde estás antes de decir qué se hace aquí. El punto
+   delante no es adorno, es lo que lo separa del titular sin gastar una línea. */
+.auth-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+    padding: var(--space-1) var(--space-3) var(--space-1) var(--space-2);
+    border-radius: var(--radius-full);
+    background: var(--glass-soft);
+    border: 1px solid var(--glass-line);
+    font-size: var(--text-3xs);
     font-weight: 700;
+    letter-spacing: var(--tracking-widest);
+    text-transform: uppercase;
+    color: var(--on-navy);
+}
+
+.auth-eyebrow::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: var(--radius-full);
+    background: var(--on-navy);
+    box-shadow: 0 0 0 4px var(--glass-soft);
+    animation: auth-blink 3.2s var(--ease-in-out) infinite;
+}
+
+@keyframes auth-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+}
+
+.auth-brand-title {
+    font-family: var(--font-display);
+    font-size: var(--text-section);
+    line-height: var(--leading-display);
+    letter-spacing: var(--tracking-display);
+    font-weight: 750;
     margin-bottom: var(--space-4);
     text-wrap: balance;
 }
 
+/* La parte que carga el sentido va subrayada. Con `text-decoration` y no con
+   un degradado de fondo: el degradado pinta una franja que cubre medio
+   renglón y se lee como un rotulador, y además se parte mal cuando el titular
+   cambia de línea. `--brand-200` es un paso fijo de la escala —no se
+   redefine por tema—, que es lo que pide un fondo que tampoco cambia. */
+.auth-brand-title em {
+    font-style: normal;
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--brand-200) 80%, transparent);
+    text-decoration-thickness: 0.07em;
+    text-underline-offset: 0.14em;
+    text-decoration-skip-ink: none;
+}
+
 .auth-brand-text {
-    max-width: 42ch;
+    max-width: 44ch;
     font-size: var(--text-base);
     line-height: var(--leading-normal);
     color: var(--on-navy-soft);
     margin-bottom: var(--space-8);
 }
 
-/* ---- Puntos de valor ----
-   Filas separadas por una línea en lugar de sueltas: así se leen como una
-   lista de lo que ofrece la cuenta y no como tres bloques independientes. */
-.auth-points {
-    display: flex;
-    flex-direction: column;
+/* --------------------------------------------------------------------------
+   La escena: el modelo contado en una imagen
+
+   Un pedido delante y las ofertas llegándole desde atrás. Es toda la
+   plataforma en un dibujo, y se construye con tres cajas y una perspectiva
+   compartida —`--depth-perspective`, el mismo que usan las tarjetas del
+   tablón—, sin una sola imagen que descargar.
+   -------------------------------------------------------------------------- */
+.auth-scene {
+    position: relative;
+    /* El relleno superior no es decorativo: la primera respuesta flota por
+       encima del borde del pedido y sin él se metía bajo el párrafo. */
+    padding-top: var(--space-4);
     margin-bottom: var(--space-8);
-    border-top: 1px solid var(--glass-line);
+    min-height: 198px;
+    perspective: var(--depth-perspective);
+    perspective-origin: 46% 42%;
 }
 
-.auth-point {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--space-4);
-    min-width: 0;
-    padding-block: var(--space-4);
-    border-bottom: 1px solid var(--glass-line);
+.auth-scene-stage {
+    position: relative;
+    transform-style: preserve-3d;
+    transform: rotateX(9deg) rotateY(-16deg);
 }
 
-.auth-point-icon {
+/* Sombra proyectada de la escena. Es un degradado, no un `filter: blur`:
+   desenfocar una caja de este tamaño cuesta una capa entera en el WebView y
+   el resultado se ve igual. */
+.auth-scene-floor {
+    position: absolute;
+    inset: auto 4% -14% 2%;
+    height: 72px;
+    border-radius: var(--radius-full);
+    background: radial-gradient(56% 100% at 44% 50%, var(--veil-deep), transparent 72%);
+    pointer-events: none;
+}
+
+/* ---- El pedido ---- */
+.auth-scene-ask {
+    position: relative;
     display: grid;
-    place-items: center;
-    flex-shrink: 0;
-    width: 38px;
-    height: 38px;
-    border-radius: var(--radius-md);
-    background: var(--glass-soft);
-    border: 1px solid var(--glass-line);
-    color: var(--on-navy);
+    gap: var(--space-3);
+    width: 100%;
+    max-width: 296px;
+    padding: var(--space-4) var(--space-5);
+    border-radius: var(--radius-lg);
+    background:
+        linear-gradient(150deg, var(--glass-strong), var(--glass-faint) 64%),
+        var(--veil);
+    border: 1px solid var(--glass-line-strong);
+    box-shadow: var(--shadow-xl), var(--edge-light-strong);
+    transform: translateZ(18px);
 }
 
-.auth-point-body { min-width: 0; }
-
-.auth-point-title {
-    display: block;
-    font-size: var(--text-sm);
+.auth-scene-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-3xs);
     font-weight: 700;
-    line-height: var(--leading-snug);
-    letter-spacing: var(--tracking-tight);
-    margin-bottom: var(--space-1);
-    color: var(--on-navy);
-}
-
-.auth-point-text {
-    display: block;
-    font-size: var(--text-xs);
-    line-height: var(--leading-normal);
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
     color: var(--on-navy-soft);
 }
 
-/* ---- Cita / testimonio ----
-   Sin tarjeta ni desenfoque: el testimonio acompaña a los puntos de valor,
-   no compite con ellos. Una regla lateral basta para marcarlo como cita. */
+.auth-scene-eyebrow::before {
+    content: "";
+    width: 5px;
+    height: 5px;
+    border-radius: var(--radius-full);
+    background: var(--on-navy);
+}
+
+.auth-scene-headline {
+    font-family: var(--font-display);
+    font-size: var(--text-base);
+    font-weight: 700;
+    line-height: var(--leading-snug);
+    letter-spacing: var(--tracking-tight);
+    color: var(--on-navy);
+}
+
+.auth-scene-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.auth-scene-chip {
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-full);
+    background: var(--glass-soft);
+    border: 1px solid var(--glass-line);
+    font-size: var(--text-3xs);
+    font-weight: 650;
+    line-height: var(--leading-snug);
+    color: var(--on-navy);
+}
+
+/* ---- Las respuestas ----
+   Flotan a distintas profundidades. El desplazamiento base viaja en dos
+   variables para que un único fotograma sirva a las tres: dentro de
+   `@keyframes`, `var()` se resuelve contra el elemento que se anima. */
+.auth-scene-reply {
+    --fy: 0px;
+    --fz: 56px;
+
+    position: absolute;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    max-width: 190px;
+    padding: var(--space-2) var(--space-3) var(--space-2) var(--space-2);
+    border-radius: var(--radius-full);
+    background:
+        linear-gradient(140deg, var(--glass-strong), var(--glass-soft)),
+        var(--veil);
+    border: 1px solid var(--glass-line-strong);
+    box-shadow: var(--shadow-lg), var(--edge-light-strong);
+    transform: translate3d(0, var(--fy), var(--fz));
+    animation: auth-drift 7.5s var(--ease-in-out) infinite;
+}
+
+.auth-scene-reply.is-one {
+    --fy: 0px;
+    --fz: 74px;
+    top: -18px;
+    left: 54%;
+}
+
+.auth-scene-reply.is-two {
+    --fy: 0px;
+    --fz: 52px;
+    top: 56%;
+    left: 62%;
+    animation-delay: -2.6s;
+}
+
+.auth-scene-reply.is-three {
+    --fy: 0px;
+    --fz: 30px;
+    top: 104%;
+    left: 30%;
+    animation-delay: -5.1s;
+    opacity: 0.86;
+}
+
+@keyframes auth-drift {
+    0%, 100% { transform: translate3d(0, var(--fy), var(--fz)); }
+    50% { transform: translate3d(0, calc(var(--fy) - 9px), calc(var(--fz) + 26px)); }
+}
+
+.auth-scene-avatar {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-full);
+    background: var(--glass-line-strong);
+    font-size: var(--text-3xs);
+    font-weight: 700;
+    color: var(--on-navy);
+}
+
+.auth-scene-reply-body {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    min-width: 0;
+}
+
+.auth-scene-reply-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--text-3xs);
+    color: var(--on-navy-soft);
+}
+
+.auth-scene-reply-price {
+    flex-shrink: 0;
+    font-size: var(--text-2xs);
+    font-weight: 700;
+    letter-spacing: var(--tracking-tight);
+    color: var(--on-navy);
+    font-variant-numeric: tabular-nums;
+}
+
+/* --------------------------------------------------------------------------
+   El recorrido en tres pasos
+   Tres líneas cosidas por una guía vertical. Dice lo mismo que la escena, con
+   palabras, para quien no mira dibujos.
+   -------------------------------------------------------------------------- */
+.auth-flow {
+    position: relative;
+    display: grid;
+    gap: var(--space-4);
+    margin-bottom: var(--space-8);
+    padding: 0;
+    list-style: none;
+}
+
+/* La guía arranca y muere en el centro de los números de los extremos */
+.auth-flow::before {
+    content: "";
+    position: absolute;
+    top: 13px;
+    bottom: 13px;
+    left: 13px;
+    width: 1px;
+    background: linear-gradient(var(--glass-line-strong), var(--glass-line));
+}
+
+.auth-flow-step {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    min-width: 0;
+}
+
+.auth-flow-num {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 27px;
+    height: 27px;
+    border-radius: var(--radius-full);
+    background: var(--glass-strong);
+    border: 1px solid var(--glass-line-strong);
+    box-shadow: 0 0 0 4px var(--veil-deep);
+    font-size: var(--text-3xs);
+    font-weight: 750;
+    line-height: 1;
+    color: var(--on-navy);
+}
+
+.auth-flow-text {
+    min-width: 0;
+    font-size: var(--text-sm);
+    line-height: var(--leading-snug);
+    color: var(--on-navy-soft);
+}
+
+.auth-flow-text strong {
+    font-weight: 700;
+    color: var(--on-navy);
+}
+
+/* --------------------------------------------------------------------------
+   Cita / testimonio
+   Sin tarjeta ni desenfoque: el testimonio acompaña al recorrido, no compite
+   con él. Una regla lateral basta para marcarlo como cita.
+   -------------------------------------------------------------------------- */
 .auth-quote {
     padding-left: var(--space-5);
     border-left: 2px solid var(--glass-line-strong);
@@ -236,66 +531,231 @@
     color: var(--on-navy);
 }
 
-/* --------------------------------------------------------------------------
-   Columna del formulario
-   -------------------------------------------------------------------------- */
+/* ==========================================================================
+   COLUMNA DEL FORMULARIO
+   ========================================================================== */
 .auth-panel {
+    position: relative;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: var(--space-12) var(--space-6);
     background: var(--bg-base);
 }
 
-.auth-card {
-    width: 100%;
-    max-width: 460px;
+/* Luz cayendo desde arriba. Sin ella la mitad derecha es un rectángulo liso
+   junto a un panel con volumen, y el contraste entre las dos mitades delata
+   que una está trabajada y la otra no. */
+.auth-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 52%;
+    background: var(--gradient-glow);
+    pointer-events: none;
 }
 
-/* Cabecera compacta de marca: solo visible cuando el panel lateral se oculta.
-   Aquí el fondo es el del tema, así que el símbolo lleva el azul de marca
-   relleno; el vidrio blanco del panel desaparecería sobre el tema claro. */
-.auth-mobile-brand {
+/* La tarjeta que contiene el formulario.
+   `position` la pone por encima de la luz del panel, que es un pseudoelemento
+   posicionado y si no la taparía. */
+.auth-card {
+    position: relative;
+    width: 100%;
+    max-width: 468px;
+    padding: var(--space-8);
+    border-radius: var(--radius-xl);
+    background: var(--bg-surface);
+    background-image: var(--gradient-surface);
+    border: 1px solid var(--border-default);
+    box-shadow: var(--shadow-xl), var(--edge-light);
+}
+
+/* Filo de marca en el borde superior: dos píxeles, y la tarjeta deja de ser
+   una caja para pasar a ser algo apoyado con luz encima. */
+.auth-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 2px;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    background: linear-gradient(90deg, transparent, var(--brand) 22%, var(--accent) 62%, transparent);
+    opacity: 0.75;
+    pointer-events: none;
+}
+
+/* --------------------------------------------------------------------------
+   Portada compacta (solo cuando el panel lateral no cabe)
+
+   No es «el logo en pequeño»: es el mismo mensaje del panel en tres líneas.
+   Un formulario suelto en un teléfono no dice de qué va este sitio, y esta
+   es la primera pantalla que mucha gente va a ver.
+   -------------------------------------------------------------------------- */
+.auth-hero {
     display: none;
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    max-width: 468px;
+    margin-bottom: var(--space-5);
+    padding: var(--space-5);
+    border-radius: var(--radius-xl);
+    background: var(--gradient-brand);
+    box-shadow: var(--shadow-lg);
+
+    --glass-faint: color-mix(in srgb, var(--on-navy) 6%, transparent);
+    --glass-soft: color-mix(in srgb, var(--on-navy) 11%, transparent);
+    --glass-line: color-mix(in srgb, var(--on-navy) 18%, transparent);
+    --veil: color-mix(in srgb, var(--brand-950) 62%, transparent);
+    --veil-deep: color-mix(in srgb, var(--brand-950) 44%, transparent);
+}
+
+.auth-hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(70% 90% at 88% 108%, var(--veil-deep), transparent 66%),
+        linear-gradient(140deg, var(--veil), var(--veil));
+}
+
+/* Un halo que gira despacio tras el logotipo */
+.auth-hero::after {
+    content: "";
+    position: absolute;
+    inset: -40% -30% auto -30%;
+    height: 150%;
+    pointer-events: none;
+    background:
+        radial-gradient(32% 38% at 24% 34%, var(--glass-soft), transparent 70%),
+        radial-gradient(38% 34% at 78% 20%, var(--glass-faint), transparent 72%);
+    animation: auth-aurora 28s var(--ease-in-out) infinite;
+}
+
+.auth-hero > * {
+    position: relative;
+    z-index: 1;
+}
+
+.auth-mobile-brand {
+    display: flex;
     align-items: center;
     gap: var(--space-3);
-    margin-bottom: var(--space-6);
+    margin-bottom: var(--space-3);
+    font-family: var(--font-display);
     font-size: var(--text-base);
     font-weight: 700;
-    color: var(--text-primary);
-}
-
-.auth-mobile-brand .auth-brand-mark {
-    background: var(--gradient-brand);
-    border-color: transparent;
+    letter-spacing: var(--tracking-tight);
     color: var(--on-navy);
 }
 
+.auth-hero .auth-brand-mark {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    background: var(--glass-soft);
+    border-color: var(--glass-line);
+    box-shadow: 0 0 0 5px var(--glass-faint);
+    color: var(--on-navy);
+}
+
+.auth-hero-claim {
+    max-width: 30ch;
+    margin-bottom: var(--space-4);
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+    font-weight: 700;
+    line-height: var(--leading-tight);
+    letter-spacing: var(--tracking-tight);
+    text-wrap: balance;
+    color: var(--on-navy);
+}
+
+.auth-hero-steps {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 0;
+    list-style: none;
+    counter-reset: auth-hero-step;
+}
+
+.auth-hero-step {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-1) var(--space-3) var(--space-1) var(--space-1);
+    border-radius: var(--radius-full);
+    background: var(--glass-soft);
+    border: 1px solid var(--glass-line);
+    font-size: var(--text-3xs);
+    font-weight: 650;
+    line-height: var(--leading-snug);
+    color: var(--on-navy);
+}
+
+/* El orden lo lleva el número, no una flecha entre pastillas: a 320 px las
+   pastillas se reparten en dos filas y una flecha al final de la primera
+   apuntaría al vacío. */
+.auth-hero-step::before {
+    counter-increment: auth-hero-step;
+    content: counter(auth-hero-step);
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    border-radius: var(--radius-full);
+    background: var(--glass-line);
+    font-weight: 750;
+    line-height: 1;
+}
+
+/* --------------------------------------------------------------------------
+   Cabecera del formulario
+   -------------------------------------------------------------------------- */
 .auth-head { margin-bottom: var(--space-6); }
 
 .auth-title {
+    font-family: var(--font-display);
     font-size: var(--text-2xl);
     line-height: var(--leading-tight);
-    letter-spacing: var(--tracking-tight);
-    font-weight: 700;
+    letter-spacing: var(--tracking-display);
+    font-weight: 750;
     color: var(--text-primary);
     margin-bottom: var(--space-2);
+    text-wrap: balance;
 }
 
 .auth-subtitle {
     font-size: var(--text-sm);
-    line-height: var(--leading-snug);
+    line-height: var(--leading-normal);
     color: var(--text-secondary);
 }
 
 /* --------------------------------------------------------------------------
    Indicador de pasos (solo en el registro)
    Reutiliza .steps / .step / .step-dot de components.css; aquí solo se le
-   reserva sitio sobre el formulario.
+   reserva sitio sobre el formulario y se le da el mismo aire que la tarjeta.
    -------------------------------------------------------------------------- */
-.auth-steps { margin-bottom: var(--space-6); }
+.auth-steps {
+    margin-bottom: var(--space-6);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md);
+    background: var(--bg-sunken);
+    border: 1px solid var(--border-subtle);
+}
 
 .auth-steps[hidden] { display: none; }
+
+/* `.step` viene con `flex: 1` de components.css, pensado para una pasarela de
+   compra a todo lo ancho. Aquí los dos pasos reparten el hueco a partes
+   iguales y «Tipo de cuenta» se quedaba en «Tipo de cu…». Que cada paso mida
+   lo que mide su texto y sea la línea la que estire. */
+.auth-steps .step { flex: 0 1 auto; }
+.auth-steps .step-line { flex: 1 1 auto; }
 
 /* --------------------------------------------------------------------------
    Formulario
@@ -303,14 +763,14 @@
 .auth-form {
     display: flex;
     flex-direction: column;
-    gap: var(--space-4);
+    gap: var(--space-5);
 }
 
 /* Cada paso del registro es un bloque independiente dentro del mismo form */
 .auth-step {
     display: flex;
     flex-direction: column;
-    gap: var(--space-4);
+    gap: var(--space-5);
     min-width: 0;
 }
 
@@ -321,6 +781,132 @@
     gap: var(--space-4);
 }
 
+/* ---- Etiquetas y obligatoriedad ---- */
+.auth-card .label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--text-xs);
+    font-weight: 650;
+    color: var(--text-secondary);
+}
+
+/* components.css solo pinta `.label .required`, y el asterisco aparece además
+   en la leyenda y junto a los términos, fuera de cualquier etiqueta. */
+.auth-card .required {
+    margin-left: 0;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--danger);
+}
+
+.auth-card .label .text-muted { font-weight: 500; }
+
+/* Aviso de qué significa el asterisco. Un asterisco sin leyenda obliga a
+   adivinar, y adivinar en un formulario se paga en abandonos. */
+.auth-required-note {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-2xs);
+    line-height: var(--leading-snug);
+    color: var(--text-muted);
+}
+
+
+/* ---- Campos ----
+   El foco se marca con el anillo del sistema (`--focus-ring`) más un borde de
+   marca: el anillo solo es demasiado tímido sobre superficies claras. */
+.auth-card .input:focus,
+.auth-card .select:focus,
+.auth-card .textarea:focus {
+    outline: none;
+    border-color: var(--brand);
+    box-shadow: var(--focus-ring), 0 0 0 1px var(--brand);
+}
+
+.auth-card .input.is-invalid,
+.auth-card .select.is-invalid {
+    border-color: var(--danger);
+    box-shadow: 0 0 0 3px var(--danger-soft);
+}
+
+.auth-card .input.is-invalid:focus,
+.auth-card .select.is-invalid:focus {
+    box-shadow: 0 0 0 3px var(--danger-soft), 0 0 0 1px var(--danger);
+}
+
+/* El icono del campo y su marca de conforme comparten celda: se cruzan en el
+   mismo sitio, así que nada se mueve al aparecer una y marcharse la otra. */
+.auth-card .input-icon > svg {
+    grid-area: 1 / 1;
+    transition: opacity var(--duration-fast) var(--ease-out),
+                transform var(--duration-base) var(--ease-spring);
+}
+
+.auth-card .input-icon-ok {
+    opacity: 0;
+    transform: scale(0.55);
+    color: var(--success);
+}
+
+/* Estado conforme. Se apoya en la validación nativa —`type`, `pattern`,
+   `minlength`— que replica exactamente las reglas de auth.js, y se cancela si
+   el script ha marcado el campo. Solo lo llevan los campos donde el navegador
+   puede saber la verdad: la confirmación de contraseña no está entre ellos,
+   porque el HTML no sabe comparar dos campos, y un visto bueno falso es peor
+   que ninguno. */
+.auth-card .input-group:has(.input-icon-ok):has(.input:not(:placeholder-shown):valid:not(.is-invalid)) .input {
+    border-color: color-mix(in srgb, var(--success) 58%, var(--border-default));
+}
+
+/* El `:has(.input-icon-ok)` no sobra: sin él, un campo sin marca de conforme
+   —la confirmación de contraseña— se quedaría sin ningún icono al validarse,
+   porque el suyo se habría desvanecido para dejar sitio a uno que no existe. */
+.auth-card .input-group:has(.input-icon-ok):has(.input:not(:placeholder-shown):valid:not(.is-invalid)) .input-icon-base {
+    opacity: 0;
+    transform: scale(0.55);
+}
+
+.auth-card .input-group:has(.input-icon-ok):has(.input:not(:placeholder-shown):valid:not(.is-invalid)) .input-icon-ok {
+    opacity: 1;
+    transform: none;
+}
+
+/* ---- Mensaje de error ----
+   El texto lo escribe auth.js con `textContent`, que borra cualquier hijo: el
+   icono tiene que venir del CSS o no sobreviviría al primer error. Es el
+   mismo círculo con admiración de los avisos emergentes, recortado como
+   máscara para que tome el color del token en lugar de traer el suyo. */
+.auth-card .field-error {
+    align-items: flex-start;
+    gap: var(--space-2);
+    font-size: var(--text-2xs);
+    line-height: var(--leading-snug);
+    color: var(--danger);
+}
+
+.auth-card .field-error:not(:empty) {
+    animation: auth-nudge var(--duration-base) var(--ease-out);
+}
+
+.auth-card .field-error:not(:empty)::before {
+    content: "";
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    margin-top: 1px;
+    background-color: currentColor;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='10' cy='10' r='7.5'/%3E%3Cpath d='M10 6.5v4M10 13.5h.01'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='10' cy='10' r='7.5'/%3E%3Cpath d='M10 6.5v4M10 13.5h.01'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+@keyframes auth-nudge {
+    from { opacity: 0; transform: translateY(-3px); }
+    to { opacity: 1; transform: none; }
+}
+
+/* ---- Opciones bajo los campos ---- */
 .auth-options {
     display: flex;
     align-items: center;
@@ -331,20 +917,48 @@
     margin-inline: calc(var(--space-3) * -1);
 }
 
+/* La casilla nativa mide 17 px; quien recibe el toque es la etiqueta entera,
+   así que es ella la que tiene que llegar al mínimo accesible. */
+.auth-options .choice { min-height: 44px; }
+
 .auth-link {
+    display: inline-flex;
+    align-items: center;
+    /* Mínimo táctil accesible, también cuando el enlace es una sola palabra */
+    min-height: 44px;
     padding: var(--space-2) var(--space-3);
     border-radius: var(--radius-sm);
     font-size: var(--text-xs);
-    font-weight: 600;
+    font-weight: 650;
     color: var(--brand);
     text-align: left;
-    transition: color var(--duration-fast) var(--ease-out);
+    transition: color var(--duration-fast) var(--ease-out),
+                background-color var(--duration-fast) var(--ease-out);
 }
 
-.auth-link:hover { color: var(--brand-hover); text-decoration: underline; }
+.auth-link:hover {
+    color: var(--brand-hover);
+    background: var(--brand-soft);
+    text-decoration: underline;
+}
+
 .auth-link:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 
-.auth-submit { margin-top: var(--space-2); }
+.auth-submit { margin-top: var(--space-1); }
+
+/* La acción principal recibe el degradado de marca: en una pantalla donde
+   todo lo demás es superficie, es lo único que debe brillar. */
+.auth-card .btn-primary.auth-submit {
+    background: var(--gradient-brand);
+    color: var(--on-navy);
+    border-color: transparent;
+    box-shadow: var(--shadow-md), var(--edge-light-strong);
+}
+
+.auth-card .btn-primary.auth-submit:hover:not(:disabled) {
+    filter: brightness(1.12) saturate(1.05);
+    box-shadow: var(--shadow-lg), var(--edge-light-strong);
+}
 
 .auth-switch {
     margin-top: var(--space-6);
@@ -354,21 +968,31 @@
 }
 
 .auth-switch a {
+    display: inline-flex;
+    align-items: center;
+    /* Es el único camino a la otra pantalla: merece el mínimo táctil */
+    min-height: 44px;
+    padding-inline: var(--space-1);
+    border-radius: var(--radius-xs);
     font-weight: 650;
     color: var(--brand);
 }
 
 .auth-switch a:hover { color: var(--brand-hover); text-decoration: underline; }
 
+/* `.btn-sm` mide 36 px por diseño; dentro de esta tarjeta el único que lo usa
+   es una acción de primer nivel («Ver cuentas de demostración»). */
+.auth-card .btn-sm { min-height: 44px; }
+
 /* Banner de error / aviso sobre el formulario */
 .auth-banner { margin-bottom: var(--space-5); }
 .auth-banner[hidden] { display: none; }
 
-/* --------------------------------------------------------------------------
-   Paso 1 · Tarjetas de tipo de cuenta
+/* ==========================================================================
+   PASO 1 · Tarjetas de tipo de cuenta
    Es la decisión que define lo que la cuenta podrá hacer, así que cada
    tarjeta enseña su icono, su titular, un resumen y la lista de permisos.
-   -------------------------------------------------------------------------- */
+   ========================================================================== */
 .auth-roles-group {
     /* El fieldset solo agrupa semánticamente: sin marco ni relleno propios */
     min-width: 0;
@@ -380,7 +1004,8 @@
 .auth-roles-legend {
     padding: 0;
     margin-bottom: var(--space-4);
-    font-size: var(--text-base);
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
     font-weight: 700;
     line-height: var(--leading-snug);
     letter-spacing: var(--tracking-tight);
@@ -399,19 +1024,25 @@
     /* Hueco a la derecha para que el check nunca pise al titular */
     padding: var(--space-5) var(--space-12) var(--space-5) var(--space-5);
     border-radius: var(--radius-lg);
-    background: var(--bg-surface);
+    background: var(--bg-raised);
     background-image: var(--gradient-surface);
     border: 1px solid var(--border-default);
+    box-shadow: var(--shadow-sm);
     cursor: pointer;
     transition: border-color var(--duration-fast) var(--ease-out),
                 background-color var(--duration-fast) var(--ease-out),
-                box-shadow var(--duration-fast) var(--ease-out);
+                box-shadow var(--duration-base) var(--ease-out),
+                transform var(--duration-base) var(--ease-out);
 }
 
 .auth-role-card:hover {
     border-color: var(--border-strong);
-    background-color: var(--bg-raised);
+    background-color: var(--bg-hover);
+    transform: translateY(var(--depth-lift));
+    box-shadow: var(--shadow-md);
 }
+
+.auth-role-card:active { transform: scale(var(--depth-press)); }
 
 /* El radio real queda accesible al teclado, pero invisible: la tarjeta
    completa es la superficie sobre la que se hace clic. */
@@ -447,18 +1078,20 @@
     width: 24px;
     height: 24px;
     border-radius: var(--radius-full);
-    background: var(--bg-raised);
+    background: var(--bg-surface);
     border: 1px solid var(--border-strong);
     color: transparent;
     transition: background-color var(--duration-fast) var(--ease-out),
                 border-color var(--duration-fast) var(--ease-out),
-                color var(--duration-fast) var(--ease-out);
+                color var(--duration-fast) var(--ease-out),
+                transform var(--duration-base) var(--ease-spring);
 }
 
 .auth-role-card:has(.auth-role-input:checked) .auth-role-check {
     background: var(--brand);
     border-color: var(--brand);
     color: var(--brand-contrast);
+    transform: scale(1.08);
 }
 
 .auth-role-head {
@@ -480,12 +1113,16 @@
     font-size: var(--text-2xl);
     line-height: 1;
     transition: background-color var(--duration-fast) var(--ease-out),
-                border-color var(--duration-fast) var(--ease-out);
+                border-color var(--duration-fast) var(--ease-out),
+                transform var(--duration-base) var(--ease-spring);
 }
+
+.auth-role-card:hover .auth-role-icon { transform: rotate(-4deg) scale(1.04); }
 
 .auth-role-card:has(.auth-role-input:checked) .auth-role-icon {
     background: var(--bg-surface);
     border-color: var(--brand-ring);
+    box-shadow: var(--shadow-sm);
 }
 
 .auth-role-head-text {
@@ -497,6 +1134,7 @@
 
 .auth-role-name {
     min-width: 0;
+    font-family: var(--font-display);
     font-size: var(--text-lg);
     font-weight: 700;
     line-height: var(--leading-snug);
@@ -507,12 +1145,14 @@
 /* Promesa corta bajo el titular: cuándo queda lista la cuenta */
 .auth-role-tag {
     font-size: var(--text-3xs);
-    font-weight: 650;
+    font-weight: 700;
     line-height: var(--leading-snug);
     letter-spacing: var(--tracking-wide);
     text-transform: uppercase;
-    color: var(--text-secondary);
+    color: var(--text-muted);
 }
+
+.auth-role-card:has(.auth-role-input:checked) .auth-role-tag { color: var(--brand); }
 
 .auth-role-desc {
     font-size: var(--text-xs);
@@ -577,28 +1217,28 @@
 
 .auth-role-notice .alert-content { color: var(--text-secondary); }
 
-/* --------------------------------------------------------------------------
-   Paso 2 · Barra superior con «Volver» y el rol elegido
-   -------------------------------------------------------------------------- */
+/* ==========================================================================
+   PASO 2 · Barra superior con «Volver» y el rol elegido
+   ========================================================================== */
 .auth-step-bar {
     display: flex;
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: var(--space-3);
+    gap: var(--space-2);
     min-width: 0;
 }
 
 .auth-back {
     display: inline-flex;
     align-items: center;
-    gap: var(--space-1);
-    min-height: 36px;
+    gap: var(--space-2);
+    min-height: 44px;
     padding: var(--space-2) var(--space-3);
     margin-left: calc(var(--space-3) * -1);
     border-radius: var(--radius-sm);
     font-size: var(--text-xs);
-    font-weight: 600;
+    font-weight: 650;
     color: var(--text-secondary);
     transition: color var(--duration-fast) var(--ease-out),
                 background-color var(--duration-fast) var(--ease-out);
@@ -606,13 +1246,15 @@
 
 .auth-back:hover { color: var(--text-primary); background: var(--bg-hover); }
 .auth-back:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
-.auth-back svg { display: block; }
+.auth-back svg { display: block; transition: transform var(--duration-fast) var(--ease-out); }
+.auth-back:hover svg { transform: translateX(-2px); }
 
 .auth-role-pill {
     display: inline-flex;
     align-items: center;
     gap: var(--space-2);
     min-width: 0;
+    min-height: 44px;
     padding: var(--space-1) var(--space-2) var(--space-1) var(--space-3);
     border-radius: var(--radius-full);
     background: var(--brand-soft);
@@ -621,7 +1263,7 @@
     color: var(--text-secondary);
 }
 
-.auth-role-pill-icon { flex-shrink: 0; font-size: var(--text-sm); }
+.auth-role-pill-icon { flex-shrink: 0; font-size: var(--text-base); line-height: 1; }
 
 .auth-role-pill-text {
     min-width: 0;
@@ -630,39 +1272,54 @@
     white-space: nowrap;
 }
 
-.auth-role-pill-text strong { color: var(--text-primary); font-weight: 650; }
+.auth-role-pill-text strong { color: var(--text-primary); font-weight: 700; }
 
 .auth-role-pill-change {
+    position: relative;
     flex-shrink: 0;
-    padding: var(--space-1) var(--space-2);
+    min-height: 36px;
+    padding: var(--space-1) var(--space-3);
     font-size: var(--text-3xs);
 }
 
 /* Recordatorio de la revisión en el paso 2 */
 .auth-seller-reminder[hidden] { display: none; }
 
-/* --------------------------------------------------------------------------
+/* ==========================================================================
    Medidor de fortaleza de la contraseña
-   -------------------------------------------------------------------------- */
+   ========================================================================== */
 .auth-meter {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: var(--space-1);
-    margin-top: var(--space-2);
+    margin-top: var(--space-1);
 }
 
 .auth-meter-segment {
-    height: 4px;
+    height: 5px;
     border-radius: var(--radius-full);
     background: var(--border-default);
-    transition: background-color var(--duration-base) var(--ease-out);
+    transition: background-color var(--duration-base) var(--ease-out),
+                box-shadow var(--duration-base) var(--ease-out);
 }
 
 /* Cada nivel colorea tantos segmentos como puntuación tenga */
-.auth-meter[data-score="1"] .auth-meter-segment:nth-child(-n + 1) { background: var(--danger); }
-.auth-meter[data-score="2"] .auth-meter-segment:nth-child(-n + 2) { background: var(--warning); }
-.auth-meter[data-score="3"] .auth-meter-segment:nth-child(-n + 3) { background: var(--info); }
-.auth-meter[data-score="4"] .auth-meter-segment:nth-child(-n + 4) { background: var(--success); }
+.auth-meter[data-score="1"] .auth-meter-segment:nth-child(-n + 1) {
+    background: var(--danger);
+    box-shadow: 0 0 10px var(--danger-soft);
+}
+.auth-meter[data-score="2"] .auth-meter-segment:nth-child(-n + 2) {
+    background: var(--warning);
+    box-shadow: 0 0 10px var(--warning-soft);
+}
+.auth-meter[data-score="3"] .auth-meter-segment:nth-child(-n + 3) {
+    background: var(--info);
+    box-shadow: 0 0 10px var(--info-soft);
+}
+.auth-meter[data-score="4"] .auth-meter-segment:nth-child(-n + 4) {
+    background: var(--success);
+    box-shadow: 0 0 10px var(--success-soft);
+}
 
 .auth-meter-label {
     display: flex;
@@ -677,7 +1334,8 @@
 
 .auth-meter-level {
     flex-shrink: 0;
-    font-weight: 650;
+    font-weight: 700;
+    letter-spacing: var(--tracking-tight);
     color: var(--text-muted);
 }
 
@@ -694,21 +1352,27 @@
 .auth-meter-label[data-score="3"] .auth-meter-level { color: var(--info); }
 .auth-meter-label[data-score="4"] .auth-meter-level { color: var(--success); }
 
-/* --------------------------------------------------------------------------
+/* ==========================================================================
    Términos y condiciones
-   -------------------------------------------------------------------------- */
+   ========================================================================== */
 .auth-terms {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: var(--space-3);
     min-width: 0;
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    background: var(--bg-sunken);
+    border: 1px solid var(--border-subtle);
+    transition: border-color var(--duration-fast) var(--ease-out);
 }
+
+.auth-terms:has(input:checked) { border-color: var(--brand-ring); }
 
 .auth-terms input[type="checkbox"] {
     flex-shrink: 0;
-    width: 17px;
-    height: 17px;
-    margin-top: 2px;
+    width: 18px;
+    height: 18px;
     accent-color: var(--brand);
     cursor: pointer;
 }
@@ -720,13 +1384,24 @@
     color: var(--text-secondary);
 }
 
-.auth-terms-text label { cursor: pointer; }
+/* La casilla nativa no crece; quien recibe el toque es esta etiqueta, así que
+   es ella la que llega al mínimo accesible. */
+.auth-terms-text label {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    cursor: pointer;
+}
 
-/* El enlace de términos vive dentro del párrafo: sin relleno extra */
+/* El enlace de términos vive dentro del párrafo: sin relleno ni alto extra */
 .auth-terms-text .auth-link {
     display: inline;
+    min-height: 0;
     padding: 0;
     font-size: inherit;
+    background: none;
+    text-decoration: underline;
+    text-underline-offset: 2px;
 }
 
 /* Texto legal dentro de los modales de términos, contraseña y bienvenida */
@@ -740,21 +1415,24 @@
 
 .auth-legal strong { color: var(--text-primary); }
 
-/* --------------------------------------------------------------------------
+/* ==========================================================================
    Cuentas de demostración
-   Es lo primero que toca quien llega sin cuenta: cada fila debe decir de un
-   vistazo qué permiso prueba, con su color e icono de rol.
-   -------------------------------------------------------------------------- */
+
+   Es lo primero que toca quien llega sin cuenta. Cada cuenta es una tarjeta
+   entera pulsable —no una fila con un botoncito al lado—, porque lo que se
+   elige aquí es el perfil, no un botón: el objetivo tiene el tamaño de la
+   decisión.
+   ========================================================================== */
 .auth-demo { margin-top: var(--space-6); }
 .auth-demo[hidden] { display: none; }
 .auth-demo .alert-body { margin-bottom: var(--space-3); }
 
-/* Variante de tarjeta: la lista de cuentas necesita más aire que una alerta */
+/* Variante de panel: la lista de cuentas necesita más aire que una alerta */
 .auth-demo-card {
     padding: var(--space-5);
     border-radius: var(--radius-lg);
-    background: var(--bg-surface);
-    border: 1px solid var(--border-default);
+    background: var(--bg-sunken);
+    border: 1px solid var(--border-subtle);
 }
 
 .auth-demo-head {
@@ -766,8 +1444,13 @@
 }
 
 .auth-demo-icon {
+    display: grid;
+    place-items: center;
     flex-shrink: 0;
-    margin-top: 1px;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    background: var(--info-soft);
     color: var(--info);
 }
 
@@ -775,7 +1458,8 @@
 
 .auth-demo-title {
     font-size: var(--text-sm);
-    font-weight: 650;
+    font-weight: 700;
+    letter-spacing: var(--tracking-tight);
     color: var(--text-primary);
     margin-bottom: var(--space-1);
 }
@@ -797,49 +1481,85 @@
 }
 
 .auth-demo-list {
-    display: flex;
-    flex-direction: column;
+    display: grid;
     gap: var(--space-2);
     list-style: none;
     padding: 0;
     margin: 0;
 }
 
-/* Cada rol lleva su color semántico en `--demo-tone`; el resto de la fila lo
-   consume, así que añadir un perfil nuevo es declarar una sola variable. */
+/* Cada rol lleva su color semántico en `--demo-tone`; el resto de la tarjeta
+   lo consume, así que añadir un perfil nuevo es declarar una sola variable. */
 .auth-demo-row {
     --demo-tone: var(--text-secondary);
     --demo-wash: var(--bg-hover);
 
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    align-items: center;
-    gap: var(--space-3);
     min-width: 0;
-    padding: var(--space-3);
-    border-radius: var(--radius-md);
-    background: var(--bg-raised);
-    border: 1px solid var(--border-subtle);
-    transition: border-color var(--duration-fast) var(--ease-out);
 }
-
-.auth-demo-row:hover { border-color: var(--border-default); }
 
 .auth-demo-row.is-admin { --demo-tone: var(--accent); --demo-wash: var(--accent-soft); }
 .auth-demo-row.is-seller { --demo-tone: var(--success); --demo-wash: var(--success-soft); }
 .auth-demo-row.is-pending { --demo-tone: var(--warning); --demo-wash: var(--warning-soft); }
 .auth-demo-row.is-buyer { --demo-tone: var(--info); --demo-wash: var(--info-soft); }
 
+.auth-demo-use {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-3);
+    width: 100%;
+    min-height: 44px;
+    padding: var(--space-3);
+    padding-left: var(--space-4);
+    border-radius: var(--radius-md);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    text-align: left;
+    cursor: pointer;
+    overflow: hidden;
+    transition: border-color var(--duration-fast) var(--ease-out),
+                background-color var(--duration-fast) var(--ease-out),
+                box-shadow var(--duration-base) var(--ease-out),
+                transform var(--duration-base) var(--ease-out);
+}
+
+/* Listón del color del rol en el canto izquierdo: identifica la cuenta antes
+   de que se haya leído una sola palabra. */
+.auth-demo-use::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 3px;
+    background: var(--demo-tone);
+    opacity: 0.85;
+}
+
+.auth-demo-use:hover {
+    background: var(--bg-raised);
+    border-color: color-mix(in srgb, var(--demo-tone) 45%, var(--border-default));
+    transform: translateY(var(--depth-lift));
+    box-shadow: var(--shadow-md);
+}
+
+.auth-demo-use:active { transform: scale(var(--depth-press)); }
+
+.auth-demo-use:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+}
+
 .auth-demo-avatar {
     display: grid;
     place-items: center;
     flex-shrink: 0;
-    width: 38px;
-    height: 38px;
+    width: 40px;
+    height: 40px;
     border-radius: var(--radius-md);
     background: var(--demo-wash);
     box-shadow: inset 0 0 0 1px var(--demo-tone);
-    font-size: var(--text-base);
+    font-size: var(--text-lg);
     line-height: 1;
 }
 
@@ -868,27 +1588,34 @@
 .auth-demo-email {
     font-family: var(--font-mono);
     font-size: var(--text-3xs);
-    color: var(--text-secondary);
-    /* Un correo largo se parte antes que desbordar la fila */
+    color: var(--text-muted);
+    /* Un correo largo se parte antes que desbordar la tarjeta */
     overflow-wrap: anywhere;
 }
 
-/* .btn-sm mide 36 px; aquí se recupera el área táctil accesible */
-.auth-demo-use {
+/* Flecha de «entrar con esta»: avanza al pasar por encima */
+.auth-demo-go {
+    display: grid;
+    place-items: center;
     flex-shrink: 0;
-    min-height: 44px;
-    white-space: normal;
+    width: 26px;
+    height: 26px;
+    border-radius: var(--radius-full);
+    background: var(--demo-wash);
+    color: var(--demo-tone);
+    transition: transform var(--duration-base) var(--ease-spring);
 }
 
-/* --------------------------------------------------------------------------
+.auth-demo-use:hover .auth-demo-go { transform: translateX(3px); }
+
+/* ==========================================================================
    Aviso de sesión ya iniciada
-   -------------------------------------------------------------------------- */
+   ========================================================================== */
+/* Vive dentro de la tarjeta, así que no lleva chapa propia: un marco dentro
+   de otro marco solo añade ruido. */
 .auth-session {
-    padding: var(--space-6);
-    border-radius: var(--radius-lg);
-    background: var(--bg-surface);
-    border: 1px solid var(--border-default);
-    box-shadow: var(--shadow-sm);
+    position: relative;
+    padding-block: var(--space-4) var(--space-2);
     text-align: center;
 }
 
@@ -897,22 +1624,27 @@
 .auth-session-avatar {
     display: grid;
     place-items: center;
-    width: 56px;
-    height: 56px;
+    width: 64px;
+    height: 64px;
     margin: 0 auto var(--space-4);
     border-radius: var(--radius-full);
     background: var(--brand-soft);
+    box-shadow: 0 0 0 1px var(--brand-ring), 0 0 0 8px var(--brand-soft);
     color: var(--brand);
-    font-size: var(--text-lg);
-    font-weight: 700;
+    font-family: var(--font-display);
+    font-size: var(--text-xl);
+    font-weight: 750;
 }
 
 .auth-session-title {
+    font-family: var(--font-display);
     font-size: var(--text-lg);
-    font-weight: 650;
+    font-weight: 700;
+    letter-spacing: var(--tracking-tight);
     color: var(--text-primary);
     margin-bottom: var(--space-2);
     overflow-wrap: anywhere;
+    text-wrap: balance;
 }
 
 .auth-session-role {
@@ -922,11 +1654,11 @@
     margin-bottom: var(--space-2);
 }
 
-.auth-session-role strong { color: var(--text-primary); font-weight: 650; }
+.auth-session-role strong { color: var(--text-primary); font-weight: 700; }
 
 .auth-session-text {
     font-size: var(--text-sm);
-    line-height: var(--leading-snug);
+    line-height: var(--leading-normal);
     color: var(--text-secondary);
     margin-bottom: var(--space-6);
 }
@@ -937,11 +1669,39 @@
     gap: var(--space-3);
 }
 
-/* --------------------------------------------------------------------------
+/* ==========================================================================
+   Entrada de la pantalla
+   La mitad de marca y la del formulario entran escalonadas. Es medio segundo
+   y es la diferencia entre una página que aparece y una que se presenta.
+   ========================================================================== */
+.auth-brand-inner > *,
+.auth-hero,
+.auth-card > * {
+    animation: fade-in-up var(--duration-slow) var(--ease-cinema) backwards;
+}
+
+.auth-brand-inner > *:nth-child(1) { animation-delay: 40ms; }
+.auth-brand-inner > *:nth-child(2) { animation-delay: 90ms; }
+.auth-brand-inner > *:nth-child(3) { animation-delay: 140ms; }
+.auth-brand-inner > *:nth-child(4) { animation-delay: 190ms; }
+.auth-brand-inner > *:nth-child(5) { animation-delay: 240ms; }
+.auth-brand-inner > *:nth-child(n + 6) { animation-delay: 290ms; }
+
+.auth-card > *:nth-child(1) { animation-delay: 60ms; }
+.auth-card > *:nth-child(2) { animation-delay: 120ms; }
+.auth-card > *:nth-child(n + 3) { animation-delay: 180ms; }
+
+/* ==========================================================================
    Responsive
-   -------------------------------------------------------------------------- */
+   ========================================================================== */
 @media (max-width: 1100px) {
     .auth-brand { padding: var(--space-12) var(--space-8); }
+
+    /* A esta anchura la columna de marca se estrecha y las respuestas de la
+       escena se salían por el canto: se recogen sobre el pedido. */
+    .auth-scene-reply.is-one { left: 48%; }
+    .auth-scene-reply.is-two { left: 54%; }
+    .auth-scene-reply.is-three { left: 24%; }
 }
 
 @media (max-width: 900px) {
@@ -952,12 +1712,14 @@
 
     .auth-brand { display: none; }
 
-    .auth-mobile-brand { display: flex; }
+    .auth-hero { display: block; }
 
     .auth-panel {
-        align-items: flex-start;
-        padding: var(--space-8) var(--space-5) var(--space-12);
+        justify-content: flex-start;
+        padding: var(--space-6) var(--space-5) var(--space-12);
     }
+
+    .auth-card { padding: var(--space-6); }
 }
 
 @media (max-width: 520px) {
@@ -984,18 +1746,11 @@
     .auth-role-check { top: var(--space-4); right: var(--space-4); }
     .auth-role-icon { width: 46px; height: 46px; font-size: var(--text-xl); }
     .auth-role-name { font-size: var(--text-base); }
+    .auth-roles-legend { font-size: var(--text-base); }
 
-    /* Correo y botón dejan de caber en línea: se apilan */
-    .auth-demo-row {
-        grid-template-columns: auto minmax(0, 1fr);
-        row-gap: var(--space-3);
-    }
-
-    /* El botón pasa debajo, ocupando las dos columnas */
-    .auth-demo-use {
-        grid-column: 1 / -1;
-        width: 100%;
-    }
+    /* La flecha se va: a este ancho cada píxel es del contenido */
+    .auth-demo-go { display: none; }
+    .auth-demo-use { grid-template-columns: auto minmax(0, 1fr); }
 }
 
 @media (max-width: 380px) {
@@ -1003,18 +1758,66 @@
 
     .auth-title { font-size: var(--text-xl); }
 
+    .auth-card { padding: var(--space-5) var(--space-4); }
     .auth-demo-card { padding: var(--space-4); }
+    .auth-hero { padding: var(--space-4); }
+    .auth-hero-claim { font-size: var(--text-base); }
 
     .auth-step-bar {
         flex-direction: column;
         align-items: flex-start;
     }
+
+    .auth-role-pill { width: 100%; }
+    .auth-role-pill-text { flex: 1; }
+
+    .auth-demo-avatar { width: 34px; height: 34px; font-size: var(--text-base); }
 }
 
+/* ==========================================================================
+   Dedos
+
+   Dos controles se quedan por debajo del mínimo táctil por una razón de
+   diseño: el ojo que enseña la contraseña vive dentro de un campo de 44 px y
+   no cabe más grande, y «Cambiar» vive dentro de una pastilla. En lugar de
+   deformarlos, en un dispositivo táctil se les amplía la zona que recibe el
+   toque hasta los 44 px, sin mover un píxel de lo que se ve.
+   ========================================================================== */
+@media (pointer: coarse) {
+    .auth-card .input-action::after,
+    .auth-role-pill-change::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 44px;
+        height: 44px;
+        transform: translate(-50%, -50%);
+    }
+}
+
+/* ==========================================================================
+   Movimiento reducido
+
+   base.css ya detiene toda animación del sitio; aquí se retiran además las
+   transiciones y los desplazamientos que quedarían a medio camino, y la
+   escena se aplana: una perspectiva quieta se lee bien, pero un giro que no
+   puede acompañarse con movimiento marea más de lo que aporta.
+   ========================================================================== */
 @media (prefers-reduced-motion: reduce) {
     .auth-meter-segment,
     .auth-role-card,
     .auth-role-icon,
-    .auth-demo-row,
-    .auth-role-check { transition: none; }
+    .auth-role-check,
+    .auth-demo-use,
+    .auth-demo-go,
+    .auth-back svg,
+    .auth-card .input-icon > svg { transition: none; }
+
+    .auth-role-card:hover,
+    .auth-demo-use:hover { transform: none; }
+
+    .auth-role-card:hover .auth-role-icon { transform: none; }
+
+    .auth-scene-stage { transform: rotateX(4deg) rotateY(-7deg); }
 }

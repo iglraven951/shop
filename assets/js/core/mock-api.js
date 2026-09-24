@@ -28,8 +28,23 @@
    las fotos reales del catálogo, la bandeja de la IA y los ajustes; la v4 trae
    el estado de venta, la fecha de guardado, las denuncias y los avisos que ya
    se escribían pero que nadie llegaba a ver. */
-    const STORAGE_KEY = 'discoveryshop:db:v6';
-    const SCHEMA_VERSION = 6;
+    const STORAGE_KEY = 'discoveryshop:db:v8';
+    const SCHEMA_VERSION = 8;
+
+    /* Cuántos pedidos abiertos puede tener una persona a la vez. Sin tope,
+       unas pocas cuentas llenan el tablón y lo que busca el resto deja de
+       verse. Los resueltos, cancelados y rechazados no cuentan: lo que se
+       limita es el ruido presente, no lo que alguien pidió alguna vez. */
+    const MAX_OPEN_REQUESTS = 5;
+
+    /** Fotos por mensaje de chat. Cuatro es lo que la burbuja dibuja sin
+        recortar; más allá el chat se convierte en una galería. */
+    const MAX_CHAT_PHOTOS = 4;
+
+    /* Y cuánto vive un pedido. En días hábiles porque así se cuentan los
+       plazos aquí, y porque quince días naturales caen en tres fines de
+       semana y se hacen cortos. */
+    const REQUEST_LIFE_WORKING_DAYS = 15;
 
     /* ----------------------------------------------------------------------
        Utilidades
@@ -104,9 +119,70 @@
        Base de datos
        ---------------------------------------------------------------------- */
 
+    /**
+     * Fecha resultante de sumar días hábiles, saltando sábados y domingos.
+     * @param {string|Date} from
+     * @param {number} days
+     * @returns {Date}
+     */
+    function addWorkingDays(from, days) {
+        const date = new Date(from);
+        let left = days;
+
+        while (left > 0) {
+            date.setDate(date.getDate() + 1);
+            const weekday = date.getDay();
+            if (weekday !== 0 && weekday !== 6) left -= 1;
+        }
+
+        return date;
+    }
+
+    /** Cuándo caduca un pedido, en ISO. */
+    function expiryOf(request) {
+        return addWorkingDays(request.created_at, REQUEST_LIFE_WORKING_DAYS).toISOString();
+    }
+
+    /** Días hábiles que le quedan; 0 si ya se le pasó. */
+    function workingDaysLeft(request, now = Date.now()) {
+        const end = new Date(expiryOf(request)).getTime();
+        if (end <= now) return 0;
+
+        let left = 0;
+        const cursor = new Date(now);
+        while (cursor.getTime() < end) {
+            cursor.setDate(cursor.getDate() + 1);
+            const weekday = cursor.getDay();
+            if (weekday !== 0 && weekday !== 6) left += 1;
+        }
+        return left;
+    }
+
     class MockDatabase {
         constructor() {
             this.state = this.load();
+            this.expireStaleRequests();
+        }
+
+        /**
+         * Retira lo que se pasó de fecha.
+         *
+         * Corre al abrir, que es el único momento que existe sin servidor. Solo
+         * se lleva lo que sigue abierto: un pedido con oferta aceptada es la
+         * mitad de una compra, y su trato sostiene la reputación del vendedor
+         * que respondió. Envejecer no deshace un acuerdo.
+         */
+        expireStaleRequests() {
+            const now = Date.now();
+            const before = this.state.requests.length;
+
+            this.state.requests = this.state.requests.filter((request) => {
+                if (request.state !== 'open') return true;
+                if (request.status === 'rejected') return true;
+                return new Date(expiryOf(request)).getTime() > now;
+            });
+
+            if (this.state.requests.length !== before) this.persist(this.state);
         }
 
         load() {
@@ -281,7 +357,7 @@
                 const reason = {
                     pending: 'Tu solicitud de vendedor está en revisión. Te avisaremos cuando la aprobemos.',
                     rejected: 'Tu solicitud de vendedor fue rechazada. Puedes volver a enviarla desde tu perfil.',
-                }[user.seller_status] || 'Necesitas una cuenta de vendedor aprobada para responder pedidos.';
+                }[user.seller_status] || 'Necesitas una cuenta de vendedor aprobado para responder pedidos.';
 
                 fail(reason, 403);
             }
@@ -372,6 +448,7 @@
                 ['GET', /^\/api\/admin\/requests$/, this.adminRequests],
                 ['POST', /^\/api\/admin\/requests\/([\w-]+)\/approve$/, this.approveRequest],
                 ['POST', /^\/api\/admin\/requests\/([\w-]+)\/reject$/, this.rejectRequest],
+                ['POST', /^\/api\/admin\/requests\/([\w-]+)\/adult$/, this.setRequestAdult],
                 ['GET', /^\/api\/admin\/sellers$/, this.adminSellers],
                 ['POST', /^\/api\/admin\/sellers\/([\w-]+)\/approve$/, this.approveSeller],
                 ['POST', /^\/api\/admin\/sellers\/([\w-]+)\/reject$/, this.rejectSeller],
@@ -418,13 +495,33 @@
 
             return {
                 ...request,
+                expires_at: expiryOf(request),
+                /* Solo tiene sentido en un pedido vivo: uno ya resuelto no
+                   caduca, se queda como está. */
+                days_left: request.state === 'open' ? workingDaysLeft(request) : null,
                 me_too_by_me: id ? request.me_too.includes(id) : false,
                 saved: id ? request.saves.includes(id) : false,
                 is_mine: id ? request.buyer.id === id : false,
                 offers_count: offers.length,
                 // Si quien mira es vendedor, si ya respondió y con qué
-                my_offer: id ? (offers.find((o) => o.seller.id === id) || null) : null,
+                my_offer: id ? this.withThread(offers.find((o) => o.seller.id === id)) : null,
             };
+        }
+
+        /**
+         * Le cuelga a una oferta el hilo donde se sigue hablando.
+         *
+         * `listOffers` ya lo hacía, pero esa ruta solo la pide el comprador;
+         * el vendedor ve su oferta a través de `my_offer`, que no pasaba por
+         * ahí. Resultado: al vendedor le aceptaban la oferta y su ficha le
+         * ofrecía un «Ir a Mensajes» a secas, mientras el comprador sí tenía
+         * el botón que abre la conversación concreta. El mismo trato, dos
+         * caminos distintos, y el peor para quien esperaba la respuesta.
+         */
+        withThread(offer) {
+            if (!offer) return null;
+            const conversation = this.state.conversations.find((c) => c.offer_id === offer.id);
+            return conversation ? { ...offer, conversation_id: conversation.id } : offer;
         }
 
         /** El pedido, o un 404 que no distingue entre «no existe» y «no es tuyo». */
@@ -585,6 +682,14 @@
             const category = this.state.categories.find((c) => c.id === body.category_id);
             if (!category) fail('Elige una categoría para tu pedido');
 
+            /* El tope mira lo que está vivo, no el historial. Quien resolvió
+               sus cinco pedidos puede pedir otros cinco; quien los tiene los
+               cinco esperando respuesta, no. */
+            if (this.openRequestsOf(user.id) >= MAX_OPEN_REQUESTS) {
+                fail(`Ya tienes ${MAX_OPEN_REQUESTS} pedidos abiertos, que es el máximo. `
+                    + 'Cierra o elimina alguno para publicar otro.');
+            }
+
             // El presupuesto es opcional, pero si se da tiene que tener sentido
             const hasBudget = body.budget_min !== undefined && body.budget_min !== ''
                 || body.budget_max !== undefined && body.budget_max !== '';
@@ -693,6 +798,12 @@
 
             request.status = verdict.decision;
             request.rejection_reason = verdict.decision === 'rejected' ? verdict.reason : null;
+
+            /* La edad se evalúa aparte del contenido, y por eso es un campo
+               aparte. Un cuchillo de cocina o una botella de pisco son pedidos
+               perfectamente legítimos que no se rechazan: se marcan, y quien
+               responda lo sabe antes de escribir. */
+            request.adult = Boolean(verdict.signals && verdict.signals.adult);
             request.review = {
                 by: 'ia',
                 decision: verdict.decision,
@@ -814,6 +925,15 @@
             return ok({ request: this.decorate(request, user) });
         }
 
+        /** Pedidos vivos de una cuenta: los que cuentan para el tope. */
+        openRequestsOf(userId) {
+            return this.state.requests.filter(
+                (r) => r.buyer.id === userId
+                    && r.status !== 'rejected'
+                    && (r.state === 'open' || r.state === 'matched')
+            ).length;
+        }
+
         deleteRequest({ params, token }) {
             const user = this.requireUser(token);
             const index = this.state.requests.findIndex((p) => p.id === params.id);
@@ -823,10 +943,32 @@
                 fail('Solo puedes eliminar tus propios pedidos', 403);
             }
 
+            const request = this.state.requests[index];
+
+            /* Las ofertas que seguían esperando respuesta se retiran con el
+               pedido: no queda nada a lo que respondan. La aceptada se queda,
+               porque sostiene el trato, su precio y la conversación —y esos
+               viven aparte del anuncio, que es justo lo que permite borrarlo.
+               A cada vendedor que se quedó a medias se le avisa: había dedicado
+               tiempo a escribir un precio. */
+            const dropped = (this.state.offers || []).filter(
+                (o) => o.request_id === request.id && o.status === 'pending'
+            );
+
+            dropped.forEach((offer) => {
+                this.notify(offer.seller.id, 'offer_declined', request.id,
+                    `«${request.title}» se retiró del tablón. Tu oferta ya no está pendiente.`);
+            });
+
+            this.state.offers = (this.state.offers || []).filter(
+                (o) => o.request_id !== request.id || o.status !== 'pending'
+            );
+
             this.state.requests.splice(index, 1);
+            dropped.forEach((offer) => this.refreshUserCounters(offer.seller.id));
             this.save();
 
-            return ok({ deleted: params.id });
+            return ok({ deleted: params.id, offers_withdrawn: dropped.length });
         }
 
         /* ====================================================================
@@ -885,8 +1027,11 @@
                 return new Date(b.created_at) - new Date(a.created_at);
             });
 
+            /* Dónde seguir hablando. Sin esto, aceptar una oferta abría una
+               conversación que no se enlazaba desde ninguna parte: existía y no
+               había forma de llegar a ella salvo dar la vuelta por Mensajes. */
             return ok({
-                offers,
+                offers: offers.map((offer) => this.withThread(offer)),
                 total: this.offersFor(request.id).length,
                 can_see_all: Boolean(isOwner || isAdmin),
             });
@@ -1086,6 +1231,8 @@
                 participants: [request.buyer.id, offer.seller.id],
                 seller: offer.seller,
                 buyer: request.buyer,
+                // Las que el vendedor puede volver a mandar si se las piden
+                photos_of_offer: offer.photos || [],
                 messages: [{
                     id: uid('msg'),
                     sender_id: offer.seller.id,
@@ -1165,7 +1312,15 @@
                 `${user.username} confirmó la compra de «${deal.request_title}».`);
 
             this.save();
-            return ok({ deal, request: request ? this.decorate(request, user) : null });
+
+            /* El trato ya está guardado aparte, con su precio y su vendedor, así
+               que el pedido puede retirarse sin llevarse por delante ni la
+               compra ni la reputación que saldrá de calificarla. */
+            return ok({
+                deal,
+                request: request ? this.decorate(request, user) : null,
+                can_delete_request: Boolean(request),
+            });
         }
 
         /**
@@ -1242,6 +1397,8 @@
                 .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
                 .map((p) => this.decorate(p, user));
 
+            const open = this.openRequestsOf(user.id);
+
             return ok({
                 requests,
                 summary: {
@@ -1249,6 +1406,15 @@
                     approved: requests.filter((p) => p.status === 'approved').length,
                     pending: requests.filter((p) => p.status === 'pending').length,
                     rejected: requests.filter((p) => p.status === 'rejected').length,
+                },
+                /* Las dos reglas del tablón, dichas por el servidor que las
+                   aplica. Sin esto la pantalla tendría que repetir los números
+                   a mano y acabarían discrepando el día que cambien. */
+                limits: {
+                    max_open: MAX_OPEN_REQUESTS,
+                    open,
+                    left: Math.max(0, MAX_OPEN_REQUESTS - open),
+                    life_working_days: REQUEST_LIFE_WORKING_DAYS,
                 },
             });
         }
@@ -1529,7 +1695,7 @@
          * Los locales que responden pedidos, situados en el mapa.
          *
          * Antes esto mostraba a quien tenía cosas publicadas. Ahora muestra a
-         * quien las consigue: para quien busca algo, saber qué tiendas hay
+         * quien las consigue: para quien busca algo, saber qué vendedores hay
          * cerca y qué han resuelto ya vale más que un catálogo.
          */
         mapSellers({ query }) {
@@ -1700,6 +1866,45 @@
             return ok({ request });
         }
 
+        /**
+         * Marca —o desmarca— un pedido como no apto para menores.
+         *
+         * La IA ya lo evalúa al publicar, pero su vocabulario no lo abarca
+         * todo, y para eso está la denuncia «No es apto para menores»: sin una
+         * forma de APLICARLA, ese motivo sería un buzón sin destinatario.
+         *
+         * Va aparte de aprobar y rechazar a propósito (ADR-027): marcar la
+         * edad no cambia si el pedido sale al tablón, solo a quién avisa.
+         */
+        setRequestAdult({ params, body, token }) {
+            const admin = this.requireAdmin(token);
+            const request = this.state.requests.find((p) => p.id === params.id);
+
+            if (!request) fail('Pedido no encontrado', 404);
+
+            const adult = Boolean(body.adult);
+            if (request.adult === adult) {
+                fail(adult ? 'Este pedido ya está marcado +18' : 'Este pedido no está marcado +18');
+            }
+
+            request.adult = adult;
+            request.updated_at = nowIso();
+
+            this.logModeration(admin, adult ? 'flag_adult' : 'unflag_adult', request.id,
+                adult
+                    ? `Marcó «${request.title}» como +18`
+                    : `Quitó la marca +18 de «${request.title}»`);
+
+            this.notify(request.buyer.id, adult ? 'request_flagged_adult' : 'request_unflagged_adult',
+                request.id,
+                adult
+                    ? `Tu pedido «${request.title}» quedó marcado como +18. Sigue publicado; solo avisamos a quien responda.`
+                    : `Quitamos la marca +18 de tu pedido «${request.title}».`);
+
+            this.save();
+            return ok({ request });
+        }
+
         adminSellers({ query, token }) {
             this.requireAdmin(token);
 
@@ -1733,7 +1938,7 @@
 
             this.logModeration(admin, 'approve_seller', user.id, `Aprobó a ${user.username} como vendedor`);
             this.notify(user.id, 'seller_approved', null,
-                '¡Tu cuenta de vendedor fue aprobada! Ya puedes publicar tus artículos.');
+                '¡Tu cuenta de vendedor fue aprobada! Ya puedes responder pedidos con tus ofertas.');
 
             this.save();
             return ok({ user: this.publicUser(user) });
@@ -2142,7 +2347,18 @@
             }
 
             const text = String(body.text || '').trim();
-            if (!text) fail('El mensaje no puede estar vacío');
+            /* Una foto es `{ url }`, igual que en las ofertas: el chat las
+               dibuja con `photo.url` y el visor las abre por esa clave. Se
+               admite también la cadena suelta y se normaliza, para no exigir
+               al llamante que conozca la forma interna. */
+            const photos = (Array.isArray(body.photos) ? body.photos : [])
+                .map((p) => (typeof p === 'string' ? { url: p } : p))
+                .filter((p) => p && typeof p.url === 'string' && p.url)
+                .slice(0, MAX_CHAT_PHOTOS);
+
+            /* Una foto sola es un mensaje válido: enseñar el producto es media
+               conversación, y obligar a escribir algo al lado no la mejora. */
+            if (!text && !photos.length) fail('El mensaje no puede estar vacío');
             if (text.length > 1000) fail('El mensaje no puede superar los 1000 caracteres');
 
             const message = {
@@ -2150,6 +2366,7 @@
                 sender_id: user.id,
                 sender_name: user.username,
                 text,
+                photos,
                 read: true,
                 created_at: nowIso(),
             };
@@ -2164,35 +2381,35 @@
         /**
          * Respuesta automática del vendedor en modo demo: mantiene la
          * conversación viva sin necesidad de WebSockets.
+         *
+         * Quién contesta y qué contesta lo decide `SellerBot`, que recuerda
+         * la conversación y negocia: el precio al que bajó queda escrito en
+         * `conversation.haggle` y por eso sobrevive a recargar la página.
+         * Aquí solo queda el trabajo de almacén.
          */
         autoReply(conversationId, userText) {
             const conversation = this.state.conversations.find((c) => c.id === conversationId);
             if (!conversation) return null;
 
-            const text = normalize(userText);
-            let reply;
-
-            if (/precio|cuesta|descuento|rebaja|oferta|barato|ultimo/.test(text)) {
-                reply = `Lo tengo en S/ ${Number(conversation.price || 0).toFixed(2)}. Si lo recoges esta semana podemos conversar el precio.`;
-            } else if (/donde|zona|distrito|direccion|ver|recoger|entrega/.test(text)) {
-                reply = `Estoy en ${conversation.seller.district}. Podemos quedar en un punto céntrico del distrito cuando te acomode.`;
-            } else if (/estado|condicion|usado|funciona|falla|detalle/.test(text)) {
-                reply = 'Está tal cual lo describí en la publicación, funcionando perfecto. Si quieres te envío más fotos ahora mismo.';
-            } else if (/foto|imagen|video/.test(text)) {
-                reply = 'Claro, te mando fotos adicionales por aquí en un momento.';
-            } else if (/hola|buenas|buenos dias|buenas tardes|saludos/.test(text)) {
-                reply = '¡Hola! Qué tal, dime en qué te puedo ayudar con la publicación.';
-            } else if (/gracias|perfecto|listo|ok|dale/.test(text)) {
-                reply = '¡Con gusto! Cualquier otra duda me escribes sin problema.';
-            } else {
-                reply = 'Claro que sí, déjame revisarlo y te confirmo enseguida. ¿Necesitas algún otro detalle?';
+            /* Las fotos que el vendedor puede volver a mandar son las que ya
+               adjuntó a su oferta. Se resuelven una vez y quedan guardadas:
+               las conversaciones sembradas no las traían aparte. */
+            if (!conversation.photos_of_offer) {
+                const offer = (this.state.offers || []).find((o) => o.id === conversation.offer_id);
+                const first = conversation.messages.find((m) => Array.isArray(m.photos) && m.photos.length);
+                conversation.photos_of_offer = (offer && offer.photos) || (first && first.photos) || [];
             }
+
+            const answer = global.SellerBot
+                ? global.SellerBot.reply(conversation, userText)
+                : { text: 'Déjame revisarlo y te confirmo enseguida.' };
 
             const message = {
                 id: uid('msg'),
                 sender_id: conversation.seller.id,
                 sender_name: conversation.seller.username,
-                text: reply,
+                text: answer.text,
+                photos: answer.photos || [],
                 read: false,
                 created_at: nowIso(),
             };

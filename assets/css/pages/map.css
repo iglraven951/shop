@@ -15,7 +15,10 @@
     flex-direction: column;
     gap: var(--space-4);
     width: 100%;
-    max-width: 1500px;
+    /* Antes eran 1500 px inventados aquí: el mapa salía más ancho que el resto
+       del sitio y la cabecera no cuadraba con su contenido. Ahora comparte el
+       contenedor de todas las demás pantallas. */
+    max-width: var(--container-max);
     margin-inline: auto;
     padding: var(--space-5);
     height: calc(100vh - var(--map-chrome) - var(--ds-bottom-nav));
@@ -38,13 +41,50 @@
     min-width: 0;
 }
 
+/* Línea de entrada. La pantalla arrancaba directamente en el titular y no
+   decía de dónde sale lo que se ve; esto la sitúa en dos palabras. */
+.map-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0 0 var(--space-2);
+    padding: 3px var(--space-3) 3px 3px;
+    background: linear-gradient(
+        100deg,
+        color-mix(in srgb, var(--brand) 16%, transparent),
+        color-mix(in srgb, var(--accent) 10%, transparent));
+    border: 1px solid color-mix(in srgb, var(--brand) 30%, transparent);
+    border-radius: var(--radius-full);
+    box-shadow: var(--edge-light);
+    color: var(--text-secondary);
+    font-size: var(--text-3xs);
+    font-weight: 700;
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    line-height: var(--leading-snug);
+}
+
+.map-eyebrow-mark {
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    border-radius: var(--radius-full);
+    background: var(--brand);
+    color: var(--brand-contrast);
+}
+
 .map-title {
     margin: 0;
-    font-size: var(--text-xl);
-    font-weight: 700;
-    letter-spacing: var(--tracking-tight);
+    font-family: var(--font-display);
+    /* Crece con la ventana en vez de saltar: a 360 px un titular fijo de
+       22 px comparte fila con el botón «Ver lista» y parte la palabra. */
+    font-size: clamp(1.25rem, 1.05rem + 0.9vw, 1.75rem);
+    font-weight: 750;
+    letter-spacing: var(--tracking-display);
     color: var(--text-primary);
     line-height: var(--leading-tight);
+    text-wrap: balance;
 }
 
 .map-subtitle {
@@ -52,6 +92,8 @@
     font-size: var(--text-sm);
     color: var(--text-secondary);
     line-height: var(--leading-snug);
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: break-word;
 }
 
 /* El conmutador del panel solo tiene sentido cuando la lista es un cajón */
@@ -62,25 +104,50 @@
 
 /* --------------------------------------------------------------------------
    Aviso (mapa no disponible)
+
+   No es una alerta: es el anuncio de que la pantalla está sirviendo lo mismo
+   de otra forma. Por eso pierde el amarillo de advertencia y toma el azul de
+   la marca, que aquí significa «esto es información», no «algo va mal».
    -------------------------------------------------------------------------- */
 .map-notice {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: var(--space-3);
     margin: 0;
     padding: var(--space-3) var(--space-4);
-    background: var(--warning-soft);
-    border: 1px solid var(--border-subtle);
+    background: color-mix(in srgb, var(--brand) 10%, var(--bg-surface));
+    border: 1px solid color-mix(in srgb, var(--brand) 28%, transparent);
     border-radius: var(--radius-md);
+    box-shadow: var(--edge-light);
     color: var(--text-secondary);
     font-size: var(--text-sm);
     line-height: var(--leading-snug);
     flex-shrink: 0;
 }
 
+/* El emoji 🛰️ de antes lo dibujaba cada sistema a su manera y no se parecía
+   a ningún otro icono del sitio; ahora es un SVG de línea como los demás. */
 .map-notice-icon {
-    font-size: var(--text-lg);
-    line-height: 1;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-md);
+    background: color-mix(in srgb, var(--brand) 16%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 30%, transparent);
+    color: var(--brand);
+}
+
+.map-notice-text {
+    min-width: 0;
+    overflow-wrap: break-word;
+    text-wrap: pretty;
+}
+
+.map-notice-text strong {
+    color: var(--text-primary);
+    font-weight: 700;
 }
 
 /* --------------------------------------------------------------------------
@@ -105,6 +172,7 @@
     background: var(--bg-surface);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm), var(--edge-light);
     overflow: hidden;
 }
 
@@ -139,8 +207,37 @@
     flex-direction: column;
     gap: var(--space-3);
     padding: var(--space-4);
+    /* Un matiz de marca separa los filtros de la lista mejor que una línea
+       sola, y deja claro que son dos cosas distintas dentro del mismo panel. */
+    background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--brand) 8%, transparent),
+        transparent);
     border-bottom: 1px solid var(--border-subtle);
     flex-shrink: 0;
+}
+
+.map-filters-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: var(--text-3xs);
+    font-weight: 700;
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+}
+
+.map-filters-mark {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    border-radius: var(--radius-xs);
+    background: var(--brand-soft);
+    color: var(--brand);
 }
 
 .map-filter-row {
@@ -183,6 +280,7 @@
 }
 
 .map-seller {
+    position: relative;
     display: flex;
     align-items: center;
     gap: var(--space-3);
@@ -197,7 +295,8 @@
     text-align: left;
     cursor: pointer;
     transition: background var(--duration-fast) var(--ease-out),
-                border-color var(--duration-fast) var(--ease-out);
+                border-color var(--duration-fast) var(--ease-out),
+                transform var(--duration-fast) var(--ease-out);
 }
 
 .map-seller:hover {
@@ -214,11 +313,30 @@
     border-color: var(--brand-ring);
 }
 
+/* El elegido lleva un carril de marca en el canto: al pulsar un marcador la
+   lista se desplaza sola hasta él, y el aro solo no bastaba para encontrarlo
+   con la vista en una columna de doce. */
+.map-seller.is-active::before {
+    content: "";
+    position: absolute;
+    inset: var(--space-2) auto var(--space-2) 0;
+    width: 3px;
+    border-radius: 0 var(--radius-full) var(--radius-full) 0;
+    background: var(--brand);
+}
+
+.map-seller:active { transform: scale(var(--depth-press)); }
+
 .map-seller-avatar {
     width: 38px;
     height: 38px;
     border-radius: 50%;
     flex-shrink: 0;
+    box-shadow: 0 0 0 2px var(--bg-surface), 0 0 0 3px var(--border-default);
+}
+
+.map-seller.is-active .map-seller-avatar {
+    box-shadow: 0 0 0 2px var(--bg-surface), 0 0 0 3px var(--brand);
 }
 
 .map-seller-body {
@@ -270,9 +388,11 @@
     padding-inline: var(--space-2);
     background: var(--brand-soft);
     border-radius: var(--radius-full);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 28%, transparent);
     color: var(--brand);
     font-size: var(--text-2xs);
     font-weight: 700;
+    font-variant-numeric: tabular-nums;
 }
 
 /* Esqueleto de carga */
@@ -295,6 +415,13 @@
    internos de Leaflet (z-index 400-800) se dibujarían sobre la cabecera.
    -------------------------------------------------------------------------- */
 .map-stage {
+    /* Medidas de la columna de controles. Viven aquí porque las comparten tres
+       piezas —nuestros botones, el zoom de Leaflet y la leyenda— y cuadrarlas
+       a mano en cada una es como se desalinearon antes. */
+    --map-control-size: 44px;
+    --map-control-top: var(--space-3);
+    --map-control-edge: var(--space-3);
+
     position: relative;
     z-index: 0;
     min-height: 0;
@@ -302,6 +429,7 @@
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-lg);
     background: var(--bg-sunken);
+    box-shadow: var(--shadow-sm), var(--edge-light);
     overflow: hidden;
 }
 
@@ -326,10 +454,37 @@
     font-size: var(--text-xs);
 }
 
+/* --- El zoom de Leaflet, dentro de nuestra columna de controles ---
+   Venía en la esquina superior izquierda, con su propio tamaño y su propio
+   margen: dos juegos de botones distintos en dos esquinas distintas, que es
+   lo que hace que un mapa parezca una demostración. Se trae a la derecha,
+   debajo de los nuestros, con la misma caja y el mismo lenguaje. De paso
+   libera la esquina izquierda, que es donde la leyenda cabe sin estorbar. */
+.map-stage .leaflet-top.leaflet-left {
+    top: calc(var(--map-control-top)
+              + (var(--map-control-size) * 2)
+              + (var(--space-2) * 2));
+    left: auto;
+    right: var(--map-control-edge);
+}
+
+.map-stage .leaflet-control-zoom {
+    margin: 0;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
 .map-stage .leaflet-control-zoom a {
+    width: var(--map-control-size);
+    height: var(--map-control-size);
+    line-height: var(--map-control-size);
     background: var(--bg-surface);
     border-bottom-color: var(--border-subtle);
-    color: var(--text-primary);
+    color: var(--text-secondary);
+    font-size: var(--text-lg);
+    font-weight: 600;
+    transition: background var(--duration-fast) var(--ease-out),
+                color var(--duration-fast) var(--ease-out);
 }
 
 .map-stage .leaflet-control-zoom a:hover {
@@ -337,8 +492,16 @@
     color: var(--text-primary);
 }
 
+.map-stage .leaflet-control-zoom a:focus-visible {
+    /* El anillo va en `box-shadow` y no en `outline`: Leaflet recorta sus
+       controles y un contorno exterior se perdería bajo el borde. */
+    box-shadow: inset 0 0 0 2px var(--brand);
+    color: var(--brand);
+}
+
 .map-stage .leaflet-bar {
     border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
     box-shadow: var(--shadow-md);
 }
 
@@ -348,6 +511,14 @@
     font-size: var(--text-3xs);
     padding: 2px var(--space-2);
     border-top-left-radius: var(--radius-xs);
+}
+
+/* La licencia de OpenStreetMap exige que la atribución se lea, y en escritorio
+   el botón flotante del asistente se posa exactamente encima de ella: en una
+   ventana de 1366 px tapaba desde «OpenStr…» hasta el final. Se aparta lo justo
+   para salir de debajo del botón. */
+.map-stage .leaflet-bottom.leaflet-right {
+    right: calc(var(--space-16) + var(--space-4));
 }
 
 .map-stage .leaflet-control-attribution a {
@@ -450,18 +621,23 @@
     box-shadow: none;
 }
 
+/* 36 px: con 28 el aspa quedaba por debajo del blanco táctil cómodo y era el
+   único control del mapa que no se podía cerrar sin apuntar. */
 .map-stage .leaflet-popup-close-button {
-    width: 28px;
-    height: 28px;
+    width: 36px;
+    height: 36px;
     padding: 0;
     color: var(--text-muted);
     font-size: var(--text-lg);
-    line-height: 28px;
+    line-height: 36px;
+    border-radius: var(--radius-sm);
+    transition: color var(--duration-fast) var(--ease-out),
+                background var(--duration-fast) var(--ease-out);
 }
 
 .map-stage .leaflet-popup-close-button:hover {
     color: var(--text-primary);
-    background: none;
+    background: var(--bg-hover);
 }
 
 .map-popup {
@@ -477,11 +653,16 @@
     align-items: center;
     gap: var(--space-3);
     min-width: 0;
-    padding-right: var(--space-5);
+    /* Sitio para el aspa, que ahora mide 36 px */
+    padding-right: var(--space-6);
 }
 
 .map-popup-ident {
     min-width: 0;
+}
+
+.map-popup-head .avatar {
+    box-shadow: 0 0 0 2px var(--bg-raised), 0 0 0 3px var(--border-default);
 }
 
 .map-popup-name {
@@ -490,15 +671,19 @@
     gap: var(--space-1);
     margin: 0;
     min-width: 0;
-    font-size: var(--text-sm);
-    font-weight: 700;
+    font-family: var(--font-display);
+    font-size: var(--text-base);
+    font-weight: 750;
+    letter-spacing: var(--tracking-tight);
     color: var(--text-primary);
 }
 
 .map-popup-meta {
-    margin: 2px 0 0;
+    margin: 3px 0 0;
     font-size: var(--text-2xs);
     color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: break-word;
 }
 
 .map-popup-previews {
@@ -506,9 +691,19 @@
     flex-direction: column;
     gap: var(--space-1);
     margin: 0;
-    padding: var(--space-2) 0 0;
+    padding: var(--space-3) 0 0;
     list-style: none;
     border-top: 1px solid var(--border-subtle);
+}
+
+/* Qué son esas tres filas. Sin rótulo se leían como un menú de acciones. */
+.map-popup-previews::before {
+    content: "Pedidos que ha resuelto";
+    color: var(--text-muted);
+    font-size: var(--text-3xs);
+    font-weight: 700;
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
 }
 
 .map-preview-link {
@@ -554,10 +749,13 @@
     color: var(--text-primary);
 }
 
+/* Es el precio al que se cerró el trato, no el presupuesto de quien pedía: va
+   en el verde que este sitio reserva para los precios. */
 .map-preview-price {
     font-size: var(--text-2xs);
     font-weight: 700;
-    color: var(--brand);
+    color: var(--success);
+    font-variant-numeric: tabular-nums;
 }
 
 .map-popup-actions {
@@ -575,8 +773,8 @@
    -------------------------------------------------------------------------- */
 .map-controls {
     position: absolute;
-    top: var(--space-3);
-    right: var(--space-3);
+    top: var(--map-control-top);
+    right: var(--map-control-edge);
     /* Por encima de los marcadores (600) pero por debajo de los globos (700),
        para que un globo abierto en esta esquina nunca quede tapado. */
     z-index: 650;
@@ -588,22 +786,25 @@
 .map-control {
     display: grid;
     place-items: center;
-    width: 44px;
-    height: 44px;
+    width: var(--map-control-size);
+    height: var(--map-control-size);
     background: var(--bg-surface);
     border: 1px solid var(--border-default);
     border-radius: var(--radius-md);
-    box-shadow: var(--shadow-md);
+    box-shadow: var(--shadow-md), var(--edge-light);
     color: var(--text-secondary);
     cursor: pointer;
     transition: background var(--duration-fast) var(--ease-out),
-                color var(--duration-fast) var(--ease-out);
+                color var(--duration-fast) var(--ease-out),
+                transform var(--duration-fast) var(--ease-out);
 }
 
 .map-control:hover {
     background: var(--bg-hover);
     color: var(--text-primary);
 }
+
+.map-control:active { transform: scale(var(--depth-press)); }
 
 .map-control:focus-visible {
     outline: 2px solid var(--brand);
@@ -616,20 +817,102 @@
     color: var(--brand);
 }
 
+/* --------------------------------------------------------------------------
+   Leyenda
+
+   Contaba una sola de las tres cosas que hay que saber para leer este mapa:
+   decía qué significa el número de un marcador, pero no qué es el anillo
+   verde ni que ese mismo número pasa a contar vendedores en cuanto los
+   marcadores se agrupan. Y por debajo de 720 px desaparecía entera, que es
+   justo donde menos sitio hay para deducirlo.
+
+   Ahora están las tres, y la que corresponde al zoom actual se ilumina sola:
+   `map.js` marca `.map-stage` con `is-clustered` al agrupar, y de ahí cuelga
+   el resaltado. Va dentro de un `<details>` abierto para que en un teléfono
+   se pueda plegar con un toque en lugar de ocultarla por decreto.
+   -------------------------------------------------------------------------- */
 .map-legend {
     position: absolute;
     left: var(--space-3);
     bottom: var(--space-3);
     z-index: 650;
+    max-width: min(340px, calc(100% - var(--space-8)));
+    background: color-mix(in srgb, var(--bg-surface) 90%, transparent);
+    backdrop-filter: blur(var(--blur-md));
+    -webkit-backdrop-filter: blur(var(--blur-md));
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md), var(--edge-light);
+    overflow: hidden;
+}
+
+.map-legend-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    /* 36 px de alto y el ancho completo del panel: es el control que abre y
+       cierra, y en un táctil tiene que poder pulsarse sin apuntar. */
+    min-height: 36px;
+    padding: var(--space-2) var(--space-3);
+    color: var(--text-secondary);
+    font-size: var(--text-3xs);
+    font-weight: 700;
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    cursor: pointer;
+    user-select: none;
+    /* Fuera el triángulo del agente de usuario: el galón es nuestro */
+    list-style: none;
+}
+
+.map-legend-summary::-webkit-details-marker { display: none; }
+
+.map-legend-summary:hover { color: var(--text-primary); }
+
+.map-legend-summary:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: -2px;
+}
+
+.map-legend-chevron {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    /* Cerrado apunta hacia abajo; abierto, hacia arriba */
+    transform: rotate(180deg);
+    transition: transform var(--duration-base) var(--ease-out);
+}
+
+.map-legend[open] .map-legend-chevron { transform: rotate(0deg); }
+
+.map-legend-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    margin: 0;
+    padding: var(--space-2) var(--space-2) var(--space-2);
+    border-top: 1px solid var(--border-subtle);
+    list-style: none;
+}
+
+.map-legend-item {
     display: flex;
     align-items: center;
     gap: var(--space-3);
-    max-width: min(360px, calc(100% - var(--space-8)));
-    padding: var(--space-2) var(--space-3);
-    background: var(--bg-surface);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-md);
+    padding: var(--space-1) var(--space-2);
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    /* Nada de atenuar con `opacity`: el texto perdería contraste. Lo que
+       cambia es el fondo de la fila que está en juego. */
+    transition: background var(--duration-base) var(--ease-out),
+                border-color var(--duration-base) var(--ease-out);
+}
+
+.map-stage:not(.is-clustered) .map-legend-item.is-single,
+.map-stage.is-clustered .map-legend-item.is-cluster {
+    background: var(--brand-soft);
+    border-color: color-mix(in srgb, var(--brand) 26%, transparent);
 }
 
 .map-legend-sample {
@@ -640,16 +923,35 @@
     height: 28px;
     border-radius: var(--radius-full);
     background: var(--brand);
-    border: 2px solid var(--success);
+    /* Igual que el marcador real: el borde neutro es el del vendedor a secas */
+    border: 2px solid var(--bg-surface);
+    box-shadow: var(--shadow-sm);
     color: var(--brand-contrast);
     font-size: var(--text-3xs);
     font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.map-legend-sample.is-verified { border-color: var(--success); }
+
+.map-legend-sample.is-cluster {
+    width: 32px;
+    height: 32px;
+    box-shadow: 0 0 0 4px var(--brand-soft), var(--shadow-sm);
+    font-size: var(--text-2xs);
 }
 
 .map-legend-text {
+    min-width: 0;
     font-size: var(--text-3xs);
     color: var(--text-secondary);
     line-height: var(--leading-snug);
+    overflow-wrap: break-word;
+}
+
+.map-legend-text strong {
+    color: var(--text-primary);
+    font-weight: 700;
 }
 
 /* --------------------------------------------------------------------------
@@ -673,8 +975,12 @@
     align-items: center;
     gap: var(--space-2);
     margin: 0;
-    font-size: var(--text-sm);
+    padding-bottom: var(--space-2);
+    border-bottom: 1px solid var(--border-subtle);
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
     font-weight: 700;
+    letter-spacing: var(--tracking-tight);
     color: var(--text-primary);
 }
 
@@ -705,19 +1011,24 @@
     align-items: center;
     gap: var(--space-3);
     min-height: 60px;
-    padding: var(--space-2) var(--space-3);
+    padding: var(--space-3);
     background: var(--bg-surface);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm), var(--edge-light);
     color: inherit;
     text-decoration: none;
     transition: border-color var(--duration-fast) var(--ease-out),
-                background var(--duration-fast) var(--ease-out);
+                background var(--duration-fast) var(--ease-out),
+                box-shadow var(--duration-base) var(--ease-out),
+                transform var(--duration-base) var(--ease-out);
 }
 
 .map-fallback-link:hover {
     background: var(--bg-hover);
-    border-color: var(--border-default);
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-md), var(--edge-light-strong);
+    transform: translateY(var(--depth-lift));
 }
 
 .map-fallback-link:focus-visible {
@@ -771,6 +1082,13 @@
     overflow: visible;
     background: none;
     border: 0;
+    box-shadow: none;
+}
+
+/* Sin mapa, el panel deja de ser un cajón y vuelve a ser una columna: aquí sí
+   quiere su sombra y su borde completos. */
+.map-page.is-fallback .map-filters {
+    background: none;
 }
 
 /* --------------------------------------------------------------------------
@@ -803,7 +1121,14 @@
         position: fixed;
         left: 0;
         right: 0;
-        bottom: 0;
+        /* Por encima de la navegación inferior, no encima de ella.
+           Estaba anclado a `bottom: 0`, y como el cajón vive en la capa de
+           superposición (900) y la barra en la de pegado (100), en un teléfono
+           el asa se pintaba justo sobre «Inicio» y «Pedir»: dos barras fijas
+           ocupando los mismos píxeles, y los toques se los quedaba la de
+           arriba. `--ds-bottom-nav` vale 0 donde no hay barra, así que la
+           misma línea sirve para tableta y para móvil. */
+        bottom: var(--ds-bottom-nav);
         z-index: var(--z-overlay);
         /* Cerrado mide justo el asa. Se anima el alto y no la posición
            porque el panel recorta lo que sobra: con `transform` la mitad
@@ -829,7 +1154,7 @@
     .map-stage .leaflet-bottom.leaflet-right {
         right: auto;
         left: 0;
-        bottom: 48px;
+        bottom: calc(var(--ds-bottom-nav) + 48px);
     }
 
     .map-stage .leaflet-control-attribution {
@@ -841,8 +1166,28 @@
         max-height: 46vh;
     }
 
+    /* La leyenda sube a la esquina de arriba a la izquierda. Abajo la esperan
+       el cajón, la atribución y el botón flotante del asistente; arriba, desde
+       que el zoom de Leaflet se mudó a la columna de la derecha, no hay nada.
+       Ahí cabe sin tapar ni ser tapada, y sin tener que desaparecer. */
     .map-legend {
-        max-width: calc(100% - var(--space-6));
+        top: var(--map-control-top);
+        bottom: auto;
+        left: var(--map-control-edge);
+        /* Deja libre la columna de controles de la derecha, y sigue sin pasar
+           de 360: en una tableta, estirada a los 630 px disponibles, la leyenda
+           se leía como una banda sobre el mapa en vez de como una nota. */
+        max-width: min(360px, calc(100% - var(--map-control-size) - var(--space-12)));
+    }
+
+    /* El botón flotante del asistente se posa en la esquina inferior derecha,
+       justo encima del asa del cajón: el mismo choque que ya se resolvió en la
+       ficha del pedido. Cede el asa, reservando el ancho del botón para que su
+       texto no quede debajo y el toque llegue a quien debe. Va aquí, con el
+       cajón, y no en el corte de 720: entre 721 y 900 el cajón ya existe y el
+       botón todavía no se ha subido por encima de la barra inferior. */
+    .map-sheet-handle {
+        padding-right: calc(58px + var(--space-2));
     }
 }
 
@@ -865,13 +1210,21 @@
         font-size: var(--text-xs);
     }
 
+    /* La leyenda YA NO se oculta aquí. Se plegaba entera por debajo de 720 px,
+       que es justo donde el mapa ocupa toda la pantalla y nadie tiene otro
+       sitio donde averiguar qué significa cada círculo. Se queda, más
+       estrecha, y quien no la necesite la cierra con un toque. */
     .map-legend {
-        display: none;
+        max-width: min(360px, calc(100% - var(--map-control-size) - var(--space-10)));
     }
 
-    .map-controls {
-        top: var(--space-2);
-        right: var(--space-2);
+    .map-legend-list { padding: var(--space-1); }
+
+    .map-legend-item { gap: var(--space-2); }
+
+    .map-stage {
+        --map-control-top: var(--space-2);
+        --map-control-edge: var(--space-2);
     }
 
     .map-fallback {
@@ -906,6 +1259,15 @@
         width: 34px;
         height: 34px;
     }
+
+    /* A 360 px la leyenda abierta se come media pantalla: la muestra y el
+       texto se estrechan, y las tres filas siguen cabiendo sin desbordar. */
+    .map-legend { max-width: calc(100% - var(--map-control-size) - var(--space-8)); }
+
+    .map-legend-sample { width: 24px; height: 24px; }
+    .map-legend-sample.is-cluster { width: 28px; height: 28px; }
+
+    .map-legend-summary { padding: var(--space-1) var(--space-2); }
 }
 
 /* Respeta a quien prefiere menos movimiento */
@@ -913,7 +1275,19 @@
     .map-panel,
     .map-marker,
     .map-marker-cluster,
-    .map-seller {
+    .map-seller,
+    .map-control,
+    .map-legend-item,
+    .map-legend-chevron,
+    .map-fallback-link {
         transition: none;
+    }
+
+    /* El cambio de color y de sombra se queda —eso es información—; lo que
+       desaparece es el desplazamiento. */
+    .map-seller:active,
+    .map-control:active,
+    .map-fallback-link:hover {
+        transform: none;
     }
 }

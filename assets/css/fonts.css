@@ -1,0 +1,50 @@
+/* ==========================================================================
+   DiscoveryShop · Tipografía
+
+   Dos familias variables, servidas desde el propio sitio.
+
+   Por qué locales y no desde un CDN: estos archivos viajan dentro del APK,
+   donde una petición a fonts.gstatic.com sin red deja la interfaz con la
+   fuente del sistema — justo el estado del que se viene. Son 57 KB entre las
+   dos, se cachean para siempre y no dependen de nadie.
+
+   Por qué variables: el CSS de este proyecto pide pesos 550, 650, 680 y 750
+   en más de cincuenta sitios. Con una fuente estática esos valores se
+   redondean al peso más cercano y toda esa afinación se pierde; con un eje
+   continuo se ven exactamente como se escribieron.
+
+   Por qué dos: una sola familia en toda la interfaz se lee uniforme y plana.
+   Outfit, geométrica y de formas abiertas, sostiene los títulos; Manrope,
+   con más altura de x y mejor separación, sostiene todo lo que se lee de
+   verdad. Se llevan bien porque ambas son geométricas y comparten la misma
+   lógica de construcción.
+   ========================================================================== */
+
+/* Interfaz y texto corrido */
+@font-face {
+    font-family: "Manrope";
+    font-style: normal;
+    font-weight: 200 800;
+    font-display: swap;
+    src: url("../fonts/manrope-variable.woff2") format("woff2-variations"),
+         url("../fonts/manrope-variable.woff2") format("woff2");
+    /* Latín básico y suplemento: cubre el español con sus tildes y la ñ */
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,
+                   U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F,
+                   U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF,
+                   U+FFFD;
+}
+
+/* Titulares */
+@font-face {
+    font-family: "Outfit";
+    font-style: normal;
+    font-weight: 300 900;
+    font-display: swap;
+    src: url("../fonts/outfit-variable.woff2") format("woff2-variations"),
+         url("../fonts/outfit-variable.woff2") format("woff2");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,
+                   U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F,
+                   U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF,
+                   U+FFFD;
+}

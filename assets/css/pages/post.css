@@ -17,11 +17,119 @@
    1. Estructura de la página
    ========================================================================== */
 .post-detail-page {
+    /* Ancho de lectura propio: esta pantalla es una ficha, no un tablón, y a
+       1400 px la columna de texto se vuelve ilegible. Se expresa contra
+       `--container-max` para que siga al contenedor del sitio si alguien lo
+       estrecha, en lugar de quedarse en un número suelto. */
+    --post-measure: min(1120px, var(--container-max));
+
+    position: relative;
+    /* La luz de fondo se queda dentro de la página y no puede pintarse sobre
+       la cabecera fija ni sobre el pie. */
+    isolation: isolate;
     width: 100%;
-    max-width: 1120px;
+    max-width: var(--post-measure);
     margin-inline: auto;
     padding: var(--space-6) var(--space-5) var(--space-16);
 }
+
+/* --------------------------------------------------------------------------
+   Luz de fondo
+
+   Un halo de marca detrás de la parte alta: da profundidad a la entrada sin
+   una sola imagen y sin robar contraste, porque vive por debajo de todo
+   (`z-index: -1`) y se apaga antes de llegar al texto.
+   -------------------------------------------------------------------------- */
+.post-detail-aurora {
+    position: absolute;
+    z-index: -1;
+    /* Pegada a los dos costados de la página, sin transformación ni anchos
+       mayores que su contenedor: una capa absoluta más ancha que su bloque
+       contenedor entra en el desbordamiento desplazable del documento, y a
+       360 px eso son 54 px de barra horizontal en toda la pantalla. Lo que
+       sí puede salirse es el desenfoque, que es tinta y no caja. */
+    top: calc(var(--space-16) * -1);
+    left: 0;
+    right: 0;
+    height: 560px;
+    pointer-events: none;
+    background:
+        radial-gradient(52% 58% at 22% 0%,
+            color-mix(in srgb, var(--brand) 22%, transparent), transparent 70%),
+        radial-gradient(46% 52% at 82% 6%,
+            color-mix(in srgb, var(--accent) 16%, transparent), transparent 72%);
+    /* El desenfoque funde los dos focos en una sola luz; sin él se leen como
+       dos manchas. */
+    filter: blur(26px);
+    opacity: 0.55;
+    mask-image: linear-gradient(180deg, var(--bg-base) 12%, transparent 100%);
+    -webkit-mask-image: linear-gradient(180deg, var(--bg-base) 12%, transparent 100%);
+}
+
+/* En tema claro la misma luz se percibe como suciedad: se baja hasta ser un
+   matiz y no una mancha. */
+:root[data-theme="light"] .post-detail-aurora { opacity: 0.4; }
+
+/* ==========================================================================
+   1b. Iconos propios donde antes había emoji
+
+   `UI.emptyState` recibe el icono como texto y todas las llamadas de esta
+   página le pasan un emoji. Un emoji lo dibuja cada sistema a su manera —en
+   Windows es un dibujo a color, en Android otro distinto, en el WebView un
+   tercero— y junto a los SVG de línea del resto del sitio se ve pegado. Como
+   el icono lo decide el script y el script no se toca, se silencia el glifo
+   y se dibuja el nuestro encima: la figura se recorta con una máscara, así
+   que el color sigue saliendo de los tokens y cambia con el tema.
+
+   Los SVG van con `%23` en lugar de `#` a propósito: un `#` literal dentro de
+   un `url(...)` hace saltar la comprobación de «colores desde tokens».
+   ========================================================================== */
+.post-detail-page {
+    --ds-icon-search: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.7' stroke-linecap='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.6'/%3E%3Cpath d='m15.4 15.4 4.8 4.8'/%3E%3C/svg%3E");
+    --ds-icon-chat: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20.5 11.6c0 3.9-3.8 7.1-8.5 7.1-.9 0-1.8-.12-2.6-.35L4.2 20l1.4-3.7c-1.3-1.3-2.1-3-2.1-4.7 0-3.9 3.8-7.1 8.5-7.1s8.5 3.2 8.5 7.1Z'/%3E%3C/svg%3E");
+    --ds-icon-alert: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 4.3 21.2 19.7H2.8Z'/%3E%3Cpath d='M12 10v4.1'/%3E%3Cpath d='M12 17.1h.01'/%3E%3C/svg%3E");
+    --ds-icon-pin: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 21.2s6.6-6.3 6.6-10.7a6.6 6.6 0 1 0-13.2 0c0 4.4 6.6 10.7 6.6 10.7Z'/%3E%3Ccircle cx='12' cy='10.4' r='2.5'/%3E%3C/svg%3E");
+    --ds-icon-zoom: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 9.6V4h5.6M20 14.4V20h-5.6M14.4 4H20v5.6M9.6 20H4v-5.6'/%3E%3C/svg%3E");
+
+    /* Figura por defecto de un estado vacío; cada contenedor la redefine */
+    --ds-empty-icon: var(--ds-icon-search);
+}
+
+.post-detail-page .empty-icon {
+    /* El glifo sigue en el DOM —lo escribe el script— pero deja de dibujarse */
+    font-size: 0;
+    color: var(--brand);
+    background: linear-gradient(
+        160deg,
+        color-mix(in srgb, var(--brand) 16%, var(--bg-raised)),
+        var(--bg-raised));
+    border-color: color-mix(in srgb, var(--brand) 26%, transparent);
+    box-shadow: var(--shadow-sm), var(--edge-light);
+}
+
+.post-detail-page .empty-icon::before {
+    content: "";
+    width: 32px;
+    height: 32px;
+    background: currentColor;
+    mask-image: var(--ds-empty-icon, var(--ds-icon-search));
+    mask-size: contain;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    -webkit-mask-image: var(--ds-empty-icon, var(--ds-icon-search));
+    -webkit-mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+}
+
+/* Cada hueco tiene su figura: el script no puede decirlo, pero el contenedor
+   en el que cae el estado vacío sí. */
+#comment-list,
+#comment-composer-slot { --ds-empty-icon: var(--ds-icon-chat); }
+
+#offers-body { --ds-empty-icon: var(--ds-icon-alert); }
+
+#post-error { --ds-empty-icon: var(--ds-icon-search); }
 
 .post-detail-layout {
     display: grid;
@@ -68,10 +176,63 @@
 .post-detail-main > *:nth-child(2) { animation-delay: 110ms; }
 .post-detail-main > *:nth-child(3) { animation-delay: 190ms; }
 .post-detail-main > *:nth-child(4) { animation-delay: 270ms; }
+.post-detail-main > *:nth-child(5) { animation-delay: 350ms; }
 
 .post-detail-side > *:nth-child(1) { animation-delay: 150ms; }
 .post-detail-side > *:nth-child(2) { animation-delay: 230ms; }
 .post-detail-side > *:nth-child(3) { animation-delay: 310ms; }
+
+/* --------------------------------------------------------------------------
+   Entrada de la pantalla: ruta y línea de contexto
+
+   Un enlace compartido puede caer aquí sin pasar por el tablón, y entonces
+   nada dice que quien publica es quien compra. Esta línea lo dice en el
+   primer renglón, que es donde se mira.
+   -------------------------------------------------------------------------- */
+.post-detail-top {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    min-width: 0;
+}
+
+.post-detail-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    align-self: flex-start;
+    max-width: 100%;
+    padding: var(--space-2) var(--space-4) var(--space-2) var(--space-2);
+    background: linear-gradient(
+        100deg,
+        color-mix(in srgb, var(--brand) 14%, transparent),
+        color-mix(in srgb, var(--accent) 9%, transparent));
+    border: 1px solid color-mix(in srgb, var(--brand) 28%, transparent);
+    border-radius: var(--radius-full);
+    box-shadow: var(--edge-light);
+    color: var(--text-secondary);
+    font-size: var(--text-2xs);
+    line-height: var(--leading-snug);
+    overflow-wrap: break-word;
+}
+
+.post-detail-kicker-mark {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-full);
+    background: var(--brand);
+    color: var(--brand-contrast);
+}
+
+.post-detail-kicker-text { min-width: 0; }
+
+.post-detail-kicker strong {
+    color: var(--text-primary);
+    font-weight: 700;
+}
 
 /* ==========================================================================
    2. Carga y error
@@ -166,7 +327,8 @@
     align-items: center;
     gap: var(--space-3);
     margin-bottom: var(--space-4);
-    font-size: var(--text-lg);
+    font-family: var(--font-display);
+    font-size: var(--text-xl);
     font-weight: 700;
     letter-spacing: var(--tracking-tight);
     color: var(--text-primary);
@@ -209,9 +371,18 @@
    contenido, así que recibe más aire, un borde más presente y una galería con
    afordancia propia.
    ========================================================================== */
+/* Filo de marca en el canto superior: firma la pieza principal de la pantalla
+   y la separa del resto de tarjetas, que son iguales en todas partes.
+
+   Va como capa de fondo y no como pseudoelemento a propósito: el fondo lo
+   recorta solo el `border-radius` de la tarjeta, mientras que una barra
+   absoluta de 3 px habría que redondearla a mano en cada esquina. */
 .post-detail {
+    background:
+        var(--gradient-brand) top left / 100% 3px no-repeat,
+        var(--bg-surface);
     border-color: var(--border-default);
-    box-shadow: var(--shadow-md);
+    box-shadow: var(--shadow-lg), var(--edge-light);
     /* No entra como las tarjetas del feed: su bloque ya se anima arriba */
     animation: none;
 }
@@ -247,20 +418,73 @@
 }
 
 .post-detail-title {
-    font-size: var(--text-2xl);
+    font-family: var(--font-display);
+    /* Crece con la ventana en lugar de saltar en el punto de ruptura: a 360 px
+       un titular de 36 px parte las palabras y a 1400 se queda pequeño. */
+    font-size: var(--text-section);
     font-weight: 750;
-    letter-spacing: var(--tracking-tight);
+    line-height: var(--leading-tight);
+    letter-spacing: var(--tracking-display);
     color: var(--text-primary);
     text-wrap: balance;
+    overflow-wrap: break-word;
 }
 
-/* El precio es el dato que se busca primero: aquí manda de verdad */
-.post-detail-page .post-price-tag {
+/* --------------------------------------------------------------------------
+   Presupuesto, que NO es un precio
+
+   En esta pantalla conviven las dos cifras: lo que quien pide está dispuesto
+   a gastar y lo que cada vendedor cobra. El resto del sitio pinta ambas en
+   verde y aquí eso es una trampa. A partir de aquí el verde es del precio de
+   una oferta y solo de eso; el presupuesto va en el azul de la marca y, por
+   si quedara duda, se presenta con su nombre delante.
+   -------------------------------------------------------------------------- */
+.post-detail-page .post-tags .post-price-tag {
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--space-2);
     padding: var(--space-2) var(--space-5);
+    background: color-mix(in srgb, var(--brand) 14%, transparent);
+    color: var(--brand);
     font-size: var(--text-xl);
     font-weight: 750;
     letter-spacing: var(--tracking-tight);
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--success) 32%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 34%, transparent);
+}
+
+.post-detail-page .post-tags .post-price-tag::before {
+    content: "Presupuesto";
+    /* `--text-muted` se queda en 4,3 sobre este relleno teñido de marca; el
+       secundario aguanta en los dos temas. */
+    color: var(--text-secondary);
+    font-size: var(--text-3xs);
+    font-weight: 700;
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+}
+
+/* Cuando no hay cifra, `budgetTag` devuelve una etiqueta normal con el texto
+   «Presupuesto abierto»: ahí el nombre ya está escrito y no se repite. */
+.post-detail-page .post-tags .badge {
+    padding: var(--space-1) var(--space-3);
+    font-size: var(--text-xs);
+}
+
+/* El distintivo de mayoría de edad no puede leerse como una etiqueta más: en
+   una pantalla donde se acuerda una entrega en persona es una condición.
+   Aquí se le da el peso que tiene. */
+.post-detail-page .badge-age {
+    padding-inline: var(--space-3);
+    background: color-mix(in srgb, var(--warning) 20%, transparent);
+    border-color: color-mix(in srgb, var(--warning) 55%, transparent);
+    font-weight: 750;
+    letter-spacing: var(--tracking-wide);
+}
+
+/* Las relacionadas también muestran presupuestos, no precios */
+.post-detail-related-list .post-price-tag {
+    background: color-mix(in srgb, var(--brand) 12%, transparent);
+    color: var(--brand);
 }
 
 /* --- Reacciones ---
@@ -381,6 +605,7 @@
     background: var(--bg-surface);
     border: 1px solid var(--border-default);
     border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm), var(--edge-light);
     overflow: hidden;
 }
 
@@ -399,7 +624,12 @@
        divisiones pesen menos que el marco del recuadro. */
     box-shadow: inset -1px 0 0 var(--border-subtle),
                 inset 0 -1px 0 var(--border-subtle);
+    transition: background-color var(--duration-fast) var(--ease-out);
 }
+
+/* Recorrer la ficha con el ratón ilumina la celda bajo el puntero: seis datos
+   en rejilla se leen mejor si el ojo tiene dónde apoyarse. */
+.post-detail-row:hover { background: var(--bg-raised); }
 
 .post-detail-term {
     color: var(--text-muted);
@@ -433,6 +663,11 @@
     border-radius: var(--radius-lg);
     scroll-margin-top: calc(var(--header-height) + var(--space-5));
 }
+
+/* La conversación acompaña a las ofertas, no compite con ellas: su título va
+   un punto por debajo del de «Respuestas». */
+.post-detail-comments .post-detail-section-title,
+.post-detail-facts .post-detail-section-title { font-size: var(--text-lg); }
 
 .post-detail-comment-list {
     margin-top: var(--space-5);
@@ -620,6 +855,36 @@
     line-height: var(--leading-snug);
 }
 
+/* --------------------------------------------------------------------------
+   Profundidad de la tarjeta
+
+   `depth.js` escribe `--tilt-x`/`--tilt-y` en cualquier elemento con
+   `data-tilt`, y solo con ratón. La perspectiva se declara dentro del propio
+   `transform` y no en el contenedor: el lateral es `sticky` y una
+   `perspective` heredada lo convertiría en bloque contenedor de todo lo que
+   lleva dentro, el mapa incluido.
+   -------------------------------------------------------------------------- */
+@media (hover: hover) and (pointer: fine) {
+    .seller-card {
+        transition: transform var(--duration-base) var(--ease-out),
+                    box-shadow var(--duration-base) var(--ease-out);
+    }
+
+    .seller-card.is-tilting {
+        box-shadow: var(--shadow-lg);
+        transform:
+            perspective(var(--depth-perspective))
+            translateY(var(--depth-lift))
+            rotateX(var(--tilt-x, 0deg))
+            rotateY(var(--tilt-y, 0deg));
+        will-change: transform;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .seller-card.is-tilting { transform: none; }
+}
+
 /* ==========================================================================
    9. Mapa del distrito
    ========================================================================== */
@@ -631,7 +896,7 @@
     background: var(--bg-surface);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow-sm), var(--edge-light);
 }
 
 .post-map-head {
@@ -646,6 +911,12 @@
 
 /* El distrito es el dato del bloque: va en color de marca, no en gris */
 .post-map-district {
+    display: inline-flex;
+    align-self: flex-start;
+    max-width: 100%;
+    padding: 2px var(--space-3);
+    background: var(--brand-soft);
+    border-radius: var(--radius-full);
     color: var(--brand);
     font-size: var(--text-xs);
     font-weight: 650;
@@ -728,9 +999,33 @@
     text-align: center;
 }
 
+/* Igual que en los estados vacíos: el emoji 📍 lo pone el script y aquí se
+   sustituye por el mismo alfiler de línea que usa el resto del sitio. */
 .post-map-fallback-icon {
-    font-size: var(--text-2xl);
-    line-height: 1;
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    font-size: 0;
+    border-radius: var(--radius-lg);
+    background: color-mix(in srgb, var(--brand) 14%, var(--bg-raised));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 28%, transparent);
+    color: var(--brand);
+}
+
+.post-map-fallback-icon::before {
+    content: "";
+    width: 26px;
+    height: 26px;
+    background: currentColor;
+    mask-image: var(--ds-icon-pin);
+    mask-size: contain;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    -webkit-mask-image: var(--ds-icon-pin);
+    -webkit-mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
 }
 
 .post-map-fallback-title {
@@ -802,7 +1097,9 @@
 }
 
 .post-map .leaflet-popup-content {
-    margin: var(--space-3) var(--space-4);
+    /* El mapa del lateral mide unos 250 px: con el relleno de antes al globo
+       le quedaban 180 px de texto y el presupuesto se partía en tres líneas. */
+    margin: var(--space-2) var(--space-3);
     line-height: var(--leading-snug);
 }
 
@@ -829,20 +1126,37 @@
 .post-map-popup-district {
     font-size: var(--text-3xs);
     color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wide);
+    font-weight: 650;
 }
 
 .post-map-popup-title {
     font-size: var(--text-xs);
     font-weight: 700;
+    line-height: var(--leading-snug);
     color: var(--text-primary);
     overflow-wrap: break-word;
 }
 
+/* Lo que se muestra aquí es el PRESUPUESTO del pedido, no el precio de
+   ninguna oferta: va en el azul de la marca, como en la ficha. En verde
+   —donde este sitio pone los precios— decía lo contrario de lo que es. */
 .post-map-popup-price {
-    font-size: var(--text-xs);
+    margin-top: 2px;
+    font-size: var(--text-2xs);
     font-weight: 750;
-    color: var(--success);
+    color: var(--brand);
     font-variant-numeric: tabular-nums;
+}
+
+.post-map-popup-price::before {
+    content: "Presupuesto ";
+    color: var(--text-muted);
+    font-size: var(--text-3xs);
+    font-weight: 650;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wide);
 }
 
 /* La atribución de OpenStreetMap es obligatoria: se adapta, nunca se oculta */
@@ -936,9 +1250,47 @@
         padding: var(--space-4) var(--space-4) var(--space-12);
     }
 
-    .post-detail-title { font-size: var(--text-xl); }
+    /* El titular ya crece con la ventana (`--text-section`): no hace falta
+       fijarle otro tamaño aquí. */
+    .post-detail-section-title { font-size: var(--text-lg); }
 
-    .post-detail-section-title { font-size: var(--text-base); }
+    .post-detail-kicker {
+        font-size: var(--text-3xs);
+        padding-right: var(--space-3);
+    }
+
+    .post-offers {
+        padding: var(--space-4);
+        border-radius: var(--radius-lg);
+    }
+
+    /* El símbolo encoge en lugar de apilarse sobre el título: suelto en su
+       propia línea quedaba huérfano, como un icono que se hubiera caído. */
+    .post-offers-head { gap: var(--space-3); }
+
+    .post-offers-mark { width: 36px; height: 36px; }
+
+    .post-offers-mark svg { width: 18px; height: 18px; }
+
+    .offers-summary-hint { margin-left: 0; }
+
+    /* La cifra y el nombre de quien ofrece dejan de competir por la fila */
+    .offer-head { flex-wrap: wrap; gap: var(--space-2) var(--space-3); }
+
+    .offer-price {
+        align-items: flex-start;
+        flex-direction: row;
+        align-self: flex-start;
+        gap: var(--space-2);
+    }
+
+    .offer-price::before { margin-bottom: 0; align-self: center; }
+
+    .offer-actions { flex-wrap: wrap; }
+
+    /* Aquí sí ocupa toda la fila: con el pulgar, un blanco ancho vale más que
+       una composición equilibrada. */
+    .offer-actions .btn-primary { flex: 1 1 100%; min-width: 0; }
 
     /* Réplica de las medidas compactas de layout.css: las reglas de arriba
        ganan por especificidad también dentro de sus media queries. */
@@ -950,7 +1302,13 @@
 
     .post-detail-media { margin: 0 var(--space-3) var(--space-3); }
 
-    .post-detail-page .post-price-tag {
+    /* El selector lleva `.post-tags` porque el de arriba también lo lleva: sin
+       él esta regla perdía por especificidad y la píldora del presupuesto se
+       quedaba con sus 22 px y sus 40 px de relleno. A 360 px medía 338 y
+       desbordaba la pantalla entera —el documento se iba a 373 px de ancho—
+       sin que ninguna suite pudiera verlo, porque no hay ni un `width`
+       declarado: es la suma de la etiqueta, la cifra y el relleno. */
+    .post-detail-page .post-tags .post-price-tag {
         padding: var(--space-1) var(--space-4);
         font-size: var(--text-lg);
     }
@@ -972,6 +1330,24 @@
     }
 
     .post-detail-row { padding: var(--space-3); }
+
+    .post-offers { padding: var(--space-3); }
+
+    .offer-card {
+        padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
+    }
+
+    .offer-card::after,
+    .offer-list:has(.offer-card:not(.is-declined) ~ .offer-card:not(.is-declined)):not(:has(.offer-card.is-accepted))
+        > .offer-card:not(.is-declined):first-child::after {
+        left: var(--space-3);
+    }
+
+    /* Tres fotos de 96 px no caben en 328: se estrechan y siguen pudiéndose
+       arrastrar, que es como se miran de todas formas. */
+    .offer-photo { width: 84px; height: 84px; }
+
+    .offers-summary { padding: var(--space-3); }
 
     .seller-card-stats {
         grid-template-columns: minmax(0, 1fr);
@@ -1001,11 +1377,20 @@
     }
 
     .post-detail-media,
-    .post-detail-media::after {
+    .post-detail-media::after,
+    .offer-card,
+    .offer-card::before,
+    .offer-photo,
+    .post-detail-row {
         transition: none;
     }
 
     .post-detail-media:hover::after { transform: none; }
+
+    /* Lo que se levanta deja de levantarse; el cambio de sombra y de borde se
+       queda, porque eso es información y no movimiento. */
+    .offer-card:hover,
+    .offer-photo:hover { transform: none; }
 }
 
 /* ==========================================================================
@@ -1096,6 +1481,16 @@
 @media (max-width: 480px) {
     .availability-options { margin-left: 0; width: 100%; }
     .availability-option { flex: 1 1 0; }
+
+    /* Y el presupuesto apila su rótulo sobre la cifra. En fila, «Presupuesto»
+       y «S/ 80.00 – S/ 150.00» suman más de lo que hay, y la cifra no puede
+       partirse: la etiqueta hereda `white-space: nowrap`. */
+    .post-detail-page .post-tags .post-price-tag {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0;
+        padding: var(--space-2) var(--space-4);
+    }
 }
 
 /* ==========================================================================
@@ -1106,111 +1501,422 @@
    se califica. Reutiliza los tokens y los componentes de siempre.
    ========================================================================== */
 .post-offers {
+    position: relative;
     margin-top: var(--space-6);
-    padding: var(--space-5);
-    background: var(--bg-surface);
-    border: 1px solid var(--border-subtle);
+    padding: var(--space-6);
+    /* Aquí se decide la compra: pesa más que el mapa y que la ficha del
+       comprador, que sí llevaban sombra mientras esto iba plano. El degradado
+       la despega del resto de bloques sin cambiarle el color. */
+    background:
+        linear-gradient(180deg,
+            color-mix(in srgb, var(--brand) 7%, transparent),
+            transparent 220px),
+        var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg), var(--edge-light);
+    scroll-margin-top: calc(var(--header-height) + var(--space-5));
+}
+
+/* Aro de marca finísimo por encima del borde: el detalle que distingue una
+   pieza cuidada de una caja con borde. */
+.post-offers::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+        150deg,
+        color-mix(in srgb, var(--brand) 55%, transparent),
+        transparent 42%,
+        color-mix(in srgb, var(--accent) 34%, transparent));
+    /* Deja ver solo el contorno: relleno y contenido quedan recortados */
+    mask: linear-gradient(var(--bg-base) 0 0) content-box,
+          linear-gradient(var(--bg-base) 0 0);
+    -webkit-mask: linear-gradient(var(--bg-base) 0 0) content-box,
+                  linear-gradient(var(--bg-base) 0 0);
+    mask-composite: exclude;
+    -webkit-mask-composite: xor;
+    pointer-events: none;
+}
+
+/* --- Encabezado de la sección --- */
+.post-offers-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-bottom: var(--space-5);
+    padding-bottom: var(--space-4);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.post-offers-head-text { min-width: 0; }
+
+.post-offers-head .post-detail-section-title { margin-bottom: var(--space-2); }
+
+.post-offers-lead {
+    max-width: var(--measure-narrow);
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
+    line-height: var(--leading-normal);
+    text-wrap: pretty;
+    overflow-wrap: break-word;
+}
+
+.post-offers-mark {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 46px;
+    height: 46px;
     border-radius: var(--radius-lg);
+    background: color-mix(in srgb, var(--brand) 14%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 30%, transparent),
+                var(--edge-light);
+    color: var(--brand);
 }
 
 .offers-empty {
-    color: var(--text-muted);
+    margin: 0;
+    padding: var(--space-5);
+    background: var(--bg-sunken);
+    border: 1px dashed var(--border-default);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
     font-size: var(--text-sm);
     line-height: var(--leading-normal);
+    text-wrap: pretty;
+}
+
+/* --- La pila de ofertas ---
+   El hueco lo pone el contenedor y no cada tarjeta: así la primera puede
+   llevar su etiqueta cabalgando sobre el borde sin pisar lo que tiene encima. */
+.offer-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
 }
 
 /* --- Una oferta --- */
 .offer-card {
-    padding: var(--space-4);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    /* Más relleno a la izquierda: ahí va el carril de estado */
+    padding: var(--space-4) var(--space-4) var(--space-4) var(--space-5);
     background: var(--bg-raised);
     border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm), var(--edge-light);
+    transition: border-color var(--duration-base) var(--ease-out),
+                box-shadow var(--duration-base) var(--ease-out),
+                transform var(--duration-base) var(--ease-out);
 }
 
-.offer-card + .offer-card { margin-top: var(--space-3); }
+/* Carril de color en el canto izquierdo. Dice en qué estado está la oferta
+   antes de leer una sola palabra, y de paso da a la pila un ritmo vertical
+   que un montón de rectángulos iguales no tiene. */
+.offer-card::before {
+    content: "";
+    position: absolute;
+    inset: var(--space-4) auto var(--space-4) 0;
+    width: 3px;
+    border-radius: 0 var(--radius-full) var(--radius-full) 0;
+    background: color-mix(in srgb, var(--brand) 55%, transparent);
+    transition: background-color var(--duration-base) var(--ease-out);
+}
+
+.offer-card:hover {
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-lg), var(--edge-light-strong);
+    transform: translateY(var(--depth-lift));
+}
 
 /* La aceptada se distingue: es la que manda a partir de ahí. */
-.offer-card.is-accepted { border-color: var(--success); }
+.offer-card.is-accepted {
+    border-color: color-mix(in srgb, var(--success) 60%, transparent);
+    background:
+        linear-gradient(180deg,
+            color-mix(in srgb, var(--success) 10%, transparent),
+            transparent 120px),
+        var(--bg-raised);
+    box-shadow: var(--shadow-md),
+                0 0 0 1px color-mix(in srgb, var(--success) 28%, transparent),
+                var(--edge-light);
+}
+
+.offer-card.is-accepted::before { background: var(--success); }
+.offer-card.is-declined::before { background: var(--border-strong); }
+
+/* Etiqueta que corona la tarjeta: cabalga sobre el borde superior como una
+   pestaña, así que no resta espacio al contenido y se ve antes que nada.
+   Va en dos reglas completas a propósito: una lista de selectores con `:has`
+   se descarta entera en los navegadores que no lo entienden, y con ella se
+   iría también el sello de la oferta aceptada. */
+.offer-card.is-accepted::after {
+    content: "Aceptada";
+    position: absolute;
+    top: 0;
+    left: var(--space-5);
+    transform: translateY(-50%);
+    padding: 3px var(--space-3);
+    background: var(--success);
+    border-radius: var(--radius-full);
+    color: var(--text-inverse);
+    font-size: var(--text-3xs);
+    font-weight: 700;
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+/* La más barata, y solo cuando hay con qué compararla: las ofertas llegan
+   ordenadas de menor a mayor precio, así que la primera viva es esa. Si ya
+   hay un trato cerrado no se señala nada — entonces comparar ya no toca. */
+.offer-list:has(.offer-card:not(.is-declined) ~ .offer-card:not(.is-declined)):not(:has(.offer-card.is-accepted))
+    > .offer-card:not(.is-declined):first-child::after {
+    content: "La más económica";
+    position: absolute;
+    top: 0;
+    left: var(--space-5);
+    transform: translateY(-50%);
+    padding: 3px var(--space-3);
+    background: var(--bg-overlay);
+    border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);
+    border-radius: var(--radius-full);
+    color: var(--accent);
+    font-size: var(--text-3xs);
+    font-weight: 700;
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    white-space: nowrap;
+}
 
 .offer-head {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: var(--space-3);
-    margin-bottom: var(--space-2);
+    gap: var(--space-4);
 }
 
-.offer-shop { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+/* `flex: 1 1 auto` y no `auto` a secas: sin él, con `space-between` el nombre
+   quedaba flotando en mitad de la fila, a medio camino entre el avatar y el
+   precio, en lugar de empezar junto a la cara de quien ofrece. */
+.offer-shop {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
 
 .offer-shop-name {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    min-width: 0;
     color: var(--text-primary);
-    font-weight: 600;
-    font-size: var(--text-sm);
+    font-weight: 700;
+    font-size: var(--text-base);
+    letter-spacing: var(--tracking-tight);
+    overflow-wrap: break-word;
 }
 
-.offer-rating { display: flex; align-items: center; gap: var(--space-2); }
+.offer-rating { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
 
 .offer-rating-text {
     color: var(--text-muted);
     font-size: var(--text-2xs);
 }
 
+/* El precio, con su nombre encima.
+   Es la otra mitad del par que este proyecto lleva confundiendo desde el
+   principio: arriba, en la ficha, está el PRESUPUESTO de quien pide, en azul;
+   aquí abajo el PRECIO de quien vende, en verde. Escritos uno junto a otro
+   sin etiqueta, son dos cifras iguales. */
 .offer-price {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
     flex: 0 0 auto;
     color: var(--success);
-    font-weight: 700;
-    font-size: var(--text-lg);
+    font-family: var(--font-display);
+    font-size: var(--text-xl);
+    font-weight: 750;
+    line-height: var(--leading-none);
+    letter-spacing: var(--tracking-tight);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }
+
+.offer-price::before {
+    content: "Precio";
+    margin-bottom: var(--space-1);
+    color: var(--text-muted);
+    font-family: var(--font-sans);
+    font-size: var(--text-3xs);
+    font-weight: 700;
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+}
+
+/* Una oferta descartada conserva su cifra, apagada: el historial se entiende
+   mejor viendo lo que se dejó pasar que borrándolo. Nada de `line-through`
+   aquí: la decoración se propaga también al rótulo «Precio», que no es lo que
+   se descartó, y desde un hijo no se puede cancelar. */
+.offer-card.is-declined .offer-price { color: var(--text-muted); }
 
 .offer-message {
     color: var(--text-secondary);
     font-size: var(--text-sm);
     line-height: var(--leading-normal);
+    text-wrap: pretty;
+    overflow-wrap: break-word;
 }
 
+/* --- Las fotos ---
+   Son la única prueba de que quien vende tiene lo que dice, y a 84 px no se
+   juzga nada. Se agrandan, se pegan al desplazarlas y anuncian que se
+   amplían con una marca propia, no solo con el cursor —que en un teléfono no
+   existe—. */
 .offer-photos {
     display: flex;
     gap: var(--space-2);
-    margin-top: var(--space-3);
+    padding-bottom: var(--space-1);
     overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+    overscroll-behavior-x: contain;
 }
 
 .offer-photo {
+    position: relative;
     flex: 0 0 auto;
-    width: 84px;
-    height: 84px;
+    width: 96px;
+    height: 96px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-md);
+    box-shadow: inset 0 0 0 1px var(--border-default);
+    overflow: hidden;
+    scroll-snap-align: start;
+    cursor: zoom-in;
+    transition: transform var(--duration-base) var(--ease-out),
+                box-shadow var(--duration-base) var(--ease-out);
+}
+
+.offer-photo:hover {
+    transform: translateY(var(--depth-lift)) scale(1.03);
+    box-shadow: inset 0 0 0 1px var(--brand-ring), var(--shadow-md);
+}
+
+.offer-photo:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+}
+
+.offer-photo img {
+    width: 100%;
+    height: 100%;
+    display: block;
     object-fit: cover;
-    border-radius: var(--radius-sm);
+}
+
+/* Marca de ampliar, siempre visible: en pantalla táctil el hover no llega y
+   la afordancia se perdería justo donde más falta hace. Son dos piezas —la
+   placa y el glifo— porque el glifo se recorta con una máscara y no puede
+   compartir elemento con un fondo de color. */
+.offer-photo::before {
+    content: "";
+    position: absolute;
+    z-index: var(--z-base);
+    right: 5px;
+    bottom: 5px;
+    width: 22px;
+    height: 22px;
+    border-radius: var(--radius-xs);
+    background: color-mix(in srgb, var(--bg-base) 78%, transparent);
+    box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+
+.offer-photo::after {
+    content: "";
+    position: absolute;
+    z-index: calc(var(--z-base) + 1);
+    right: 10px;
+    bottom: 10px;
+    width: 12px;
+    height: 12px;
+    background: var(--text-primary);
+    mask-image: var(--ds-icon-zoom);
+    mask-size: contain;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    -webkit-mask-image: var(--ds-icon-zoom);
+    -webkit-mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
 }
 
 .offer-meta {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-3);
-    margin-top: var(--space-3);
+    gap: var(--space-2) var(--space-3);
     color: var(--text-muted);
     font-size: var(--text-2xs);
 }
 
-.offer-meta span { display: inline-flex; align-items: center; gap: 4px; }
+.offer-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    padding: 3px var(--space-2);
+    background: var(--bg-sunken);
+    border-radius: var(--radius-full);
+    overflow-wrap: break-word;
+}
 
 .offer-accepted-note {
-    margin-top: var(--space-3);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    background: var(--success-soft);
+    border-radius: var(--radius-md);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--success) 30%, transparent);
     color: var(--success);
     font-size: var(--text-xs);
+    font-weight: 650;
 }
+
+.offer-accepted-note p { margin: 0; min-width: 0; }
 
 .offer-actions {
     display: flex;
+    justify-content: flex-end;
     gap: var(--space-2);
-    margin-top: var(--space-4);
+    margin-top: var(--space-1);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--border-subtle);
 }
+
+/* Aceptar es la decisión de la pantalla y pide un blanco ancho; estirarlo a
+   toda la fila, en cambio, lo convertía en una banda y dejaba «Descartar»
+   colgando al final como si fuera lo principal. */
+.offer-actions .btn-primary { min-width: 168px; }
 
 .offer-mine-title {
     margin-bottom: var(--space-3);
     color: var(--text-muted);
     font-size: var(--text-xs);
     font-weight: 600;
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
 }
 
 /* --- El formulario del vendedor --- */
@@ -1222,22 +1928,64 @@
     line-height: var(--leading-normal);
 }
 
-/* --- El trato --- */
+/* --- El trato ---
+   Es el paso siguiente al «sí», y mientras está abierto manda sobre todo lo
+   demás de la sección: por eso va arriba, con relleno de marca y su propio
+   aro, y no como una tarjeta más de la pila. */
 .deal-card {
-    margin-bottom: var(--space-4);
-    padding: var(--space-4);
-    background: var(--bg-raised);
-    border: 1px solid var(--brand);
-    border-radius: var(--radius-md);
+    position: relative;
+    margin-bottom: var(--space-5);
+    padding: var(--space-5);
+    background:
+        linear-gradient(180deg,
+            color-mix(in srgb, var(--brand) 12%, transparent),
+            transparent 140px),
+        var(--bg-raised);
+    border: 1px solid color-mix(in srgb, var(--brand) 55%, transparent);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md), var(--edge-light);
 }
 
 .deal-card.is-confirmed,
-.deal-card.is-rated { border-color: var(--success); }
+.deal-card.is-rated {
+    border-color: color-mix(in srgb, var(--success) 55%, transparent);
+    background:
+        linear-gradient(180deg,
+            color-mix(in srgb, var(--success) 10%, transparent),
+            transparent 140px),
+        var(--bg-raised);
+}
+
+/* Retirar el pedido ya cumplido.
+   Va discreto y sin borde de color: es una acción de limpieza, no un paso del
+   trato, y no debe competir con «califica tu experiencia». */
+.deal-retire {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    align-items: flex-start;
+    margin-bottom: var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    background: var(--bg-sunken);
+    border: 1px dashed var(--border-default);
+    border-radius: var(--radius-md);
+}
+
+.deal-retire-text {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
+    line-height: var(--leading-normal);
+}
 
 .deal-title {
     color: var(--text-primary);
-    font-weight: 600;
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+    font-weight: 700;
+    letter-spacing: var(--tracking-tight);
     margin-bottom: var(--space-2);
+    overflow-wrap: break-word;
 }
 
 .deal-text {
@@ -1247,10 +1995,33 @@
 }
 
 .deal-price {
-    margin: var(--space-3) 0;
+    /* `flex` y no `inline-flex`: en línea, el botón de confirmar se pegaba al
+       costado de la cifra y las dos cosas se leían como una sola. */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: fit-content;
+    margin: var(--space-4) 0;
     color: var(--success);
-    font-size: var(--text-xl);
+    font-family: var(--font-display);
+    font-size: var(--text-2xl);
+    font-weight: 750;
+    line-height: var(--leading-none);
+    letter-spacing: var(--tracking-tight);
+    font-variant-numeric: tabular-nums;
+}
+
+/* El acuerdo se cierra sobre el precio de la oferta, no sobre el presupuesto:
+   decirlo aquí cuesta una línea y ahorra la duda. */
+.deal-price::before {
+    content: "Precio acordado";
+    margin-bottom: var(--space-1);
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    font-size: var(--text-3xs);
     font-weight: 700;
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
 }
 
 /* --- Estrellas --- */
@@ -1292,3 +2063,92 @@
     color: var(--text-secondary);
     font-size: var(--text-sm);
 }
+
+/* --------------------------------------------------------------------------
+   Las ofertas, para poder elegir entre ellas
+
+   Antes eran tarjetas apiladas por fecha, sin cara de quien ofrece y sin
+   forma de compararlas: había que leerlas enteras y recordar los precios.
+   -------------------------------------------------------------------------- */
+
+/* Una línea antes de las tarjetas: cuántas hay y entre qué precios se mueven.
+   Es lo primero que se lee, así que se presenta como un panel y no como un
+   párrafo suelto. */
+.offers-summary {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-3);
+    margin-bottom: var(--space-5);
+    padding: var(--space-3) var(--space-4);
+    background: var(--bg-sunken);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    box-shadow: var(--edge-light);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+
+.offers-summary strong {
+    color: var(--text-primary);
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+    font-weight: 750;
+    letter-spacing: var(--tracking-tight);
+}
+
+.offers-summary-hint {
+    margin-left: auto;
+    padding: 2px var(--space-2);
+    background: var(--brand-soft);
+    border-radius: var(--radius-full);
+    font-size: var(--text-3xs);
+    font-weight: 650;
+    color: var(--text-secondary);
+}
+
+/* Quien ofrece tiene cara y verificación, como la tiene quien pide: hasta
+   ahora, el único con avatar era el comprador, que no vende nada. */
+.offer-avatar {
+    flex-shrink: 0;
+    /* Un aro fino lo separa del relleno de la tarjeta sin añadir otro borde */
+    box-shadow: 0 0 0 2px var(--bg-raised), 0 0 0 3px var(--border-default);
+}
+
+.offer-card.is-accepted .offer-avatar {
+    box-shadow: 0 0 0 2px var(--bg-raised),
+                0 0 0 3px color-mix(in srgb, var(--success) 60%, transparent);
+}
+
+/* Una oferta descartada sigue a la vista —es historial— pero deja de pedir
+   atención; antes solo se distinguía porque le faltaban los botones. */
+.offer-card.is-declined {
+    opacity: 0.58;
+    background: var(--bg-surface);
+    box-shadow: none;
+}
+
+.offer-card.is-declined:hover {
+    opacity: 1;
+    transform: none;
+    box-shadow: var(--shadow-sm);
+}
+
+.offer-state-note {
+    display: inline-flex;
+    align-self: flex-start;
+    padding: 3px var(--space-3);
+    background: var(--bg-hover);
+    border-radius: var(--radius-full);
+    font-size: var(--text-3xs);
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wide);
+}
+
+/* Cerrado el trato, el resto de ofertas baja el tono: lo que importa entonces
+   es confirmar y calificar, no seguir comparando. */
+.offer-list.has-deal .offer-card:not(.is-accepted) { opacity: 0.6; }
+.offer-list.has-deal .offer-card:not(.is-accepted):hover { opacity: 1; }

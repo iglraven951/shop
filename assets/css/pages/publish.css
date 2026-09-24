@@ -6,6 +6,19 @@
    ========================================================================== */
 
 .publish-page {
+    /* Iconos en línea. Se pintan con `mask`, así que heredan `currentColor`:
+       el mismo trazo sirve en ámbar, en rojo y en los dos temas. Van aquí
+       porque los elementos que los llevan —los avisos del revisor, las
+       pantallas de bloqueo, el aviso de borrador— los genera `publish.js`,
+       donde no se puede insertar un <svg> desde el marcado. */
+    --publish-icon-block: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='10' cy='10' r='7.4'/%3E%3Cpath d='M5.4 5.4 14.6 14.6'/%3E%3C/svg%3E");
+    --publish-icon-fix: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M13.2 3.6 16.4 6.8 7.6 15.6 4 16.6l1-3.6Z'/%3E%3Cpath d='M11.6 5.2 14.8 8.4'/%3E%3C/svg%3E");
+    --publish-icon-tip: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7.6 13.6a5.4 5.4 0 1 1 4.8 0v1.4a1.2 1.2 0 0 1-1.2 1.2H8.8a1.2 1.2 0 0 1-1.2-1.2Z'/%3E%3Cpath d='M8.2 13.6h3.6'/%3E%3C/svg%3E");
+    --publish-icon-age: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 2.4 16.2 4.6v4.8c0 3.6-2.5 6.6-6.2 8.2-3.7-1.6-6.2-4.6-6.2-8.2V4.6Z'/%3E%3Cpath d='M10 7.4v3.2M10 13.2h.01'/%3E%3C/svg%3E");
+    --publish-icon-lock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='black' stroke-width='2.1' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='6.5' y='14' width='19' height='13' rx='3.2'/%3E%3Cpath d='M11 14v-3.5a5 5 0 0 1 10 0V14'/%3E%3Cpath d='M16 19.5v3'/%3E%3C/svg%3E");
+    --publish-icon-signal: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 20.5a13.5 13.5 0 0 1 20 0'/%3E%3Cpath d='M10.5 25a7.5 7.5 0 0 1 11 0'/%3E%3Cpath d='M16 29h.01'/%3E%3Cpath d='M4.5 5.5 27 28'/%3E%3C/svg%3E");
+    --publish-icon-draft: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.4 5.2a1.8 1.8 0 0 1 1.8-1.8h7l4.4 4.4v7a1.8 1.8 0 0 1-1.8 1.8H5.2a1.8 1.8 0 0 1-1.8-1.8Z'/%3E%3Cpath d='M6.6 3.4v4h5.2v-4'/%3E%3Cpath d='M6.6 16.6v-4.4h6.8v4.4'/%3E%3C/svg%3E");
+
     max-width: 1150px;
     margin-inline: auto;
     padding: var(--space-8) var(--space-5) var(--space-16);
@@ -50,10 +63,11 @@
 
 .publish-title {
     margin-bottom: var(--space-3);
-    font-size: var(--text-3xl);
-    font-weight: 700;
-    letter-spacing: var(--tracking-tight);
-    line-height: var(--leading-tight);
+    font-family: var(--font-display);
+    font-size: var(--text-section);
+    font-weight: 750;
+    letter-spacing: var(--tracking-display);
+    line-height: var(--leading-display);
 }
 
 .publish-subtitle {
@@ -98,12 +112,31 @@
 /* Cada paso es una tarjeta cerrada con su propia barra de título: separarlos
    así evita que el formulario se lea como una lista larga de campos. */
 .publish-section {
+    position: relative;
     background: var(--bg-surface);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow-sm), var(--edge-light);
     overflow: hidden;
+    transition: border-color var(--duration-base) var(--ease-out),
+                box-shadow var(--duration-base) var(--ease-out);
     animation: fade-in-up var(--duration-base) var(--ease-out) backwards;
+}
+
+/* Los tres pasos entran escalonados: el formulario se presenta como una
+   secuencia, que es como se recorre, y no como tres cajas que aparecen a la
+   vez. Es el único momento en que el orden se ve de un vistazo. */
+/* Se cuenta desde 2 porque `.publish-assist` es la primera <section> de la
+   columna, aunque no sea un paso del formulario. */
+.publish-section:nth-of-type(3) { animation-delay: 70ms; }
+.publish-section:nth-of-type(n+4) { animation-delay: 140ms; }
+
+/* La sección en la que se está escribiendo se levanta del resto. Antes las
+   tres pesaban igual y en un formulario de esta longitud no se sabía dónde
+   estaba uno al volver de mirar la vista previa. */
+.publish-section:focus-within {
+    border-color: var(--brand-ring);
+    box-shadow: var(--shadow-lg), var(--edge-light);
 }
 
 .publish-section-head {
@@ -114,6 +147,10 @@
     background: var(--bg-raised);
     background-image: var(--gradient-surface);
     border-bottom: 1px solid var(--border-subtle);
+}
+
+.publish-section:focus-within .publish-section-step {
+    box-shadow: 0 0 0 4px var(--brand-soft), var(--shadow-sm);
 }
 
 /* Número relleno, no un fondo suave: es lo que ordena el formulario */
@@ -172,6 +209,94 @@
 .publish-fieldset > .label {
     display: block;
     margin-bottom: var(--space-3);
+}
+
+/* --------------------------------------------------------------------------
+   Estado de cada campo
+
+   Un formulario de esta longitud necesita decir en qué campo estás y cuál
+   quedó mal sin obligarte a leer. La etiqueta se tiñe con el foco y el
+   mensaje de error entra con su icono en lugar de aparecer como una línea
+   roja de texto suelto.
+   -------------------------------------------------------------------------- */
+.publish-form .field { position: relative; }
+
+.publish-form .field:focus-within > .label,
+.publish-form .field:focus-within .publish-label-row > .label,
+.publish-fieldset:focus-within > .label {
+    color: var(--brand);
+}
+
+.publish-form .field-hint,
+.publish-form .field-error { line-height: var(--leading-snug); }
+
+/* --- Campo resuelto ---
+   El asterisco rojo de «obligatorio» se convierte en una marca verde en
+   cuanto el campo cumple. Es el mismo sitio, el mismo tamaño y no mueve
+   nada: la diferencia entre «te falta esto» y «esto ya está» se ve
+   recorriendo la columna con la vista, sin leer.
+
+   `:valid` es exacto en los dos <select> —obligatorio y con valor— y en el
+   título y la descripción se apoya en su `minlength`. El exceso de
+   caracteres no lo cubre `:valid`, porque `maxlength` lo corta antes de
+   llegar al límite real que aplica el servidor; de eso se ocupa el veto del
+   contador en rojo. */
+.publish-form .field:not(:has(.publish-counter.is-error)):has(:required:valid:not(.is-invalid)) .label .required {
+    color: var(--success);
+    font-size: 0;
+    line-height: 0;
+}
+
+.publish-form .field:not(:has(.publish-counter.is-error)):has(:required:valid:not(.is-invalid)) .label .required::after {
+    content: '';
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    vertical-align: -1px;
+    background-color: currentColor;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3 8.4 3.6 3.6L13 4.6'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3 8.4 3.6 3.6L13 4.6'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+/* El alto de la línea de error se reserva siempre (viene de components.css):
+   el mensaje aparece y desaparece con cada tecla mientras se corrige, y sin
+   ese hueco el campo daría un salto en cada pulsación. */
+.publish-form .field-error:not(:empty) {
+    align-items: flex-start;
+    gap: var(--space-2);
+    font-weight: 600;
+    animation: publish-error-in var(--duration-fast) var(--ease-out);
+}
+
+.publish-form .field-error:not(:empty)::before {
+    content: '';
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    margin-top: 1px;
+    background-color: currentColor;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='10' cy='10' r='7.5'/%3E%3Cpath d='M10 6.5v4M10 13.5h.01'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='10' cy='10' r='7.5'/%3E%3Cpath d='M10 6.5v4M10 13.5h.01'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+@keyframes publish-error-in {
+    from { opacity: 0; transform: translateY(-3px); }
+    to   { opacity: 1; transform: none; }
+}
+
+/* El campo que la IA acaba de rellenar se señala dos segundos: `publish.js`
+   pone y quita esta clase, pero no existía ninguna regla para ella, así que
+   el asistente rellenaba media pantalla en silencio y había que adivinar
+   qué había cambiado. */
+.publish-form .is-ai-filled {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px var(--brand-soft);
+    animation: publish-ai-fill 1.6s var(--ease-out);
+}
+
+@keyframes publish-ai-fill {
+    0%   { background-color: var(--brand-soft); }
+    100% { background-color: var(--bg-surface); }
 }
 
 /* --------------------------------------------------------------------------
@@ -269,6 +394,27 @@
     color: var(--text-primary);
 }
 
+/* Los tres emoji (✨ 👌 👍) pasaron a trazo: se dibujaban de una forma en
+   Android, de otra en Windows y de otra en iOS, y al lado de los SVG del
+   resto de la página cada tarjeta parecía de una familia distinta. */
+.publish-condition-icon {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    color: var(--text-muted);
+    background: var(--bg-sunken);
+    border-radius: var(--radius-xs);
+    transition: color var(--duration-fast) var(--ease-out),
+                background-color var(--duration-fast) var(--ease-out);
+}
+
+.publish-condition:has(input:checked) .publish-condition-icon {
+    color: var(--brand);
+    background: color-mix(in srgb, var(--brand) 18%, transparent);
+}
+
 .publish-condition-text {
     font-size: var(--text-2xs);
     color: var(--text-secondary);
@@ -278,6 +424,7 @@
 .publish-condition:has(input:checked) {
     background: var(--brand-soft);
     border-color: var(--brand);
+    box-shadow: inset 0 0 0 1px var(--brand), var(--shadow-sm);
 }
 
 .publish-condition:has(input:focus-visible) {
@@ -346,7 +493,41 @@
     min-height: calc((var(--text-sm) * var(--leading-normal) * 6) + (var(--space-3) * 2));
 }
 
-.publish-tip-list {
+/* Los tres avisos del formulario llevan ahora un icono de trazo en lugar de
+   un emoji (📋 💡 ⏳). `.alert-icon` no fija caja, así que se la damos: sin
+   ella el SVG se apoyaba en la línea base del texto y quedaba descolgado. */
+.publish-form .alert-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    margin-top: 0;
+    background: color-mix(in srgb, currentColor 14%, transparent);
+    border-radius: var(--radius-sm);
+}
+
+/* El aviso de borrador lo pinta `publish.js` y todavía trae su emoji (💾):
+   se tapa el glifo y se dibuja el icono con `mask`, como en el revisor. */
+.publish-draft .alert-icon {
+    font-size: 0;
+    line-height: 0;
+}
+
+.publish-draft .alert-icon::before {
+    content: '';
+    width: 15px;
+    height: 15px;
+    background-color: currentColor;
+    -webkit-mask: var(--publish-icon-draft) center / contain no-repeat;
+    mask: var(--publish-icon-draft) center / contain no-repeat;
+}
+
+/* Los consejos y las reglas se leen igual: misma lista, distinto nombre
+   porque uno se puede ignorar y el otro no. */
+.publish-tip-list,
+.publish-rule-list {
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
@@ -356,42 +537,15 @@
     line-height: var(--leading-snug);
 }
 
-.publish-tip-list strong { color: var(--text-primary); }
+.publish-tip-list strong,
+.publish-rule-list strong { color: var(--text-primary); }
 
 /* --------------------------------------------------------------------------
    Precio con prefijo «S/»
    -------------------------------------------------------------------------- */
-.publish-price {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-.publish-price-prefix {
-    position: absolute;
-    left: var(--space-4);
-    font-size: var(--text-sm);
-    font-weight: 650;
-    color: var(--text-secondary);
-    pointer-events: none;
-}
-
-.publish-price-input {
-    padding-left: calc(var(--space-4) + 26px);
-    font-variant-numeric: tabular-nums;
-}
-
-/* Las flechas del campo numérico estorban más de lo que ayudan */
-.publish-price-input::-webkit-outer-spin-button,
-.publish-price-input::-webkit-inner-spin-button {
-    appearance: none;
-    margin: 0;
-}
-
-.publish-price-input {
-    -moz-appearance: textfield;
-    appearance: textfield;
-}
+/* El campo de importe con prefijo «S/» vive ahora en components.css: lo usan
+   este formulario y el de hacer una oferta, y estando aquí la ficha del pedido
+   lo pintaba sin estilos. */
 
 /* --------------------------------------------------------------------------
    Aviso de moderación y botones
@@ -433,11 +587,28 @@
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: var(--space-2);
+    gap: var(--space-3);
+    /* Sin límite, la columna crece con los avisos del revisor hasta salirse
+       de la ventana y deja el final fuera de alcance: lo que sobra se
+       desplaza dentro del panel, no arrastrando la página entera. */
+    max-height: calc(100vh - var(--header-height) - var(--space-10));
+    max-height: calc(100dvh - var(--header-height) - var(--space-10));
     padding: var(--space-4);
+    overflow-y: auto;
+    overscroll-behavior: contain;
     background: var(--bg-sunken);
+    background-image: var(--gradient-surface);
     border: 1px dashed var(--brand-ring);
     border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md);
+}
+
+.publish-preview-head {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+    width: 100%;
 }
 
 /* El título hace de etiqueta del marco, no de encabezado de sección */
@@ -456,8 +627,15 @@
     letter-spacing: var(--tracking-wide);
 }
 
+.publish-preview-eye {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 13px;
+    height: 13px;
+}
+
 .publish-preview-hint {
-    margin-bottom: var(--space-1);
     font-size: var(--text-2xs);
     color: var(--text-secondary);
     line-height: var(--leading-snug);
@@ -521,18 +699,28 @@
     gap: var(--space-4);
 }
 
+/* Flex y no rejilla: el emoji sigue siendo un nodo de texto dentro y en una
+   rejilla ocuparía su propia fila, bajando el trazo unos píxeles. Como
+   elemento flexible de ancho cero no mueve nada. */
 .publish-stage > .empty-state .empty-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     width: 76px;
     height: 76px;
+    color: var(--brand);
     background: var(--brand-soft);
     border-color: var(--brand-ring);
     border-radius: var(--radius-full);
-    font-size: var(--text-3xl);
+    /* El emoji que trae `UI.loginGate` (🔐) se tapa y en su sitio va el trazo */
+    font-size: 0;
+    line-height: 0;
 }
 
 .publish-gate-icon {
-    display: grid;
-    place-items: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     width: 76px;
     height: 76px;
     margin: 0 auto var(--space-6);
@@ -541,8 +729,29 @@
     /* Anillo fino del color del estado más un halo del mismo tinte: se
        reconoce de qué va la pantalla antes de leer el titular. */
     box-shadow: inset 0 0 0 1px var(--gate-tone), 0 0 0 8px var(--gate-wash);
-    font-size: var(--text-3xl);
-    line-height: 1;
+    color: var(--gate-tone);
+    /* El emoji que trae `publish.js` (📡) se tapa y en su sitio va el trazo */
+    font-size: 0;
+    line-height: 0;
+}
+
+.publish-gate-icon::before {
+    content: '';
+    width: 36px;
+    height: 36px;
+    background-color: currentColor;
+    -webkit-mask: var(--publish-icon-signal) center / contain no-repeat;
+    mask: var(--publish-icon-signal) center / contain no-repeat;
+}
+
+/* Sin sesión la pantalla la fabrica `UI.loginGate`, con un candado */
+.publish-stage > .empty-state .empty-icon::before {
+    content: '';
+    width: 36px;
+    height: 36px;
+    background-color: currentColor;
+    -webkit-mask: var(--publish-icon-lock) center / contain no-repeat;
+    mask: var(--publish-icon-lock) center / contain no-repeat;
 }
 
 .publish-gate-title {
@@ -663,13 +872,21 @@
     }
 
     /* En móvil la vista previa va arriba: es la referencia mientras escribes */
-    .publish-preview-col { order: -1; }
+    /* Sin `order: -1`: en el teléfono esto ponía una tarjeta vacía —y con
+       `inert`, así que no responde— por delante del primer campo. La vista
+       previa acompaña; no se presenta. */
+    .publish-preview-col { order: 0; }
 
+    /* Deja de ser una columna fija: sin ventana que respetar tampoco hay
+       nada que recortar, y un panel con su propio desplazamiento dentro de
+       una página que ya se desplaza es una trampa en un teléfono. */
     .publish-preview-sticky {
         position: static;
-        max-width: 560px;
-        margin-inline: auto;
         width: 100%;
+        max-width: 560px;
+        max-height: none;
+        margin-inline: auto;
+        overflow: visible;
     }
 }
 
@@ -693,7 +910,18 @@
     .publish-stage > .empty-state { padding: var(--space-8) var(--space-4); }
 
     .publish-gate-title { font-size: var(--text-xl); }
-    .publish-gate-icon { width: 64px; height: 64px; font-size: var(--text-2xl); }
+
+    /* Ojo: no devolver aquí un `font-size` al disco. El emoji que trae el
+       JavaScript sigue dentro y volvería a verse bajo el trazo. */
+    .publish-gate-icon { width: 64px; height: 64px; }
+    .publish-gate-icon::before { width: 30px; height: 30px; }
+
+    .publish-stage > .empty-state .empty-icon { width: 64px; height: 64px; }
+    .publish-stage > .empty-state .empty-icon::before { width: 30px; height: 30px; }
+
+    .publish-assist { padding: var(--space-4); }
+    .publish-assist-icon { width: 34px; height: 34px; }
+    .publish-review { padding: var(--space-3); padding-left: var(--space-4); }
 
     .publish-gate-actions { flex-direction: column; }
     .publish-gate-actions .btn { width: 100%; }
@@ -716,11 +944,15 @@
     .publish-section,
     .publish-gate,
     .publish-stage > .empty-state,
-    .publish-draft { animation: none; }
+    .publish-draft,
+    .publish-assist-result:not(:empty),
+    .publish-form .field-error:not(:empty),
+    .publish-form .is-ai-filled { animation: none; }
 
     .publish-emoji,
     .publish-emoji:hover,
-    .publish-emoji.is-selected { transform: none; }
+    .publish-emoji.is-selected,
+    .publish-assist-chip:hover { transform: none; }
 }
 
 /* --------------------------------------------------------------------------
@@ -745,9 +977,26 @@
 }
 
 @media (max-width: 420px) {
-    .publish-budget { flex-wrap: wrap; }
+    .publish-budget { flex-wrap: wrap; gap: var(--space-3); }
     .publish-budget .publish-price { flex: 1 1 100%; }
     .publish-budget-sep { display: none; }
+
+    /* Lado a lado con el guion en medio, los dos campos se leen como una
+       horquilla: el de la izquierda es el mínimo. Apilados no, y en cuanto
+       se escribe una cifra el marcador de posición («desde», «hasta»)
+       desaparece y quedan dos cajas idénticas. La etiqueta va dentro del
+       campo, a la derecha, y no se va con lo que se escribe. */
+    .publish-budget .publish-price::after {
+        content: 'mínimo';
+        position: absolute;
+        right: var(--space-4);
+        font-size: var(--text-3xs);
+        color: var(--text-muted);
+        pointer-events: none;
+    }
+
+    .publish-budget .publish-price:last-of-type::after { content: 'máximo'; }
+    .publish-budget .publish-price-input { padding-right: var(--space-16); }
 }
 
 /* --------------------------------------------------------------------------
@@ -757,26 +1006,45 @@
    no un paso obligatorio. Quien prefiera escribirlo a mano ni la mira.
    -------------------------------------------------------------------------- */
 .publish-assist {
+    position: relative;
     margin-bottom: var(--space-5);
-    padding: var(--space-4);
+    padding: var(--space-5);
+    overflow: hidden;
     background: var(--brand-soft);
+    background-image: var(--gradient-glow);
+    background-repeat: no-repeat;
+    background-size: 100% 120px;
     border: 1px solid var(--brand);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md), var(--edge-light);
 }
 
 .publish-assist-head {
     display: flex;
     align-items: flex-start;
     gap: var(--space-3);
-    margin-bottom: var(--space-3);
+    margin-bottom: var(--space-4);
 }
 
-.publish-assist-icon { font-size: var(--text-xl); line-height: 1; }
+.publish-assist-icon {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 38px;
+    height: 38px;
+    color: var(--brand);
+    background: var(--bg-surface);
+    border-radius: var(--radius-md);
+    box-shadow: inset 0 0 0 1px var(--brand-ring), var(--shadow-sm);
+}
 
 .publish-assist-title {
     color: var(--text-primary);
-    font-size: var(--text-base);
-    font-weight: 600;
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+    font-weight: 700;
+    letter-spacing: var(--tracking-tight);
+    line-height: var(--leading-snug);
 }
 
 .publish-assist-hint {
@@ -808,20 +1076,35 @@
     font-size: var(--text-2xs);
     cursor: pointer;
     transition: border-color var(--duration-fast) var(--ease-out),
-                color var(--duration-fast) var(--ease-out);
+                color var(--duration-fast) var(--ease-out),
+                box-shadow var(--duration-fast) var(--ease-out),
+                transform var(--duration-fast) var(--ease-out);
 }
 
 .publish-assist-chip:hover {
     border-color: var(--brand);
     color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
+    transform: translateY(var(--depth-lift));
 }
 
+.publish-assist-chip:active { transform: scale(var(--depth-press)); }
+.publish-assist-chip:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+/* La respuesta del asistente no es un párrafo más: se separa con su propio
+   marco para que se distinga de la ayuda fija de arriba. */
 .publish-assist-result:not(:empty) {
     display: block;
-    margin-top: var(--space-3);
+    margin-top: var(--space-4);
+    padding: var(--space-3);
+    background: var(--bg-surface);
+    border-left: 3px solid var(--brand);
+    border-radius: var(--radius-sm);
     color: var(--text-secondary);
     font-size: var(--text-xs);
     line-height: var(--leading-normal);
+    overflow-wrap: anywhere;
+    animation: publish-error-in var(--duration-base) var(--ease-out);
 }
 
 /* En un móvil el botón baja: «Rellenar» junto a un campo de texto deja al
@@ -830,4 +1113,230 @@
     .publish-assist-row { flex-wrap: wrap; }
     .publish-assist-row .input { flex: 1 1 100%; }
     .publish-assist-row .btn { width: 100%; }
+}
+
+/* ======================================================================
+   El revisor automático, a la vista
+
+   Es el corazón de esta pantalla: la misma IA que decide si un pedido sale
+   al tablón, dicha mientras todavía se puede cambiar. Va bajo la vista
+   previa y cambia de color con el veredicto, pero el color nunca va solo —
+   el símbolo del sello y el texto del título dicen lo mismo, porque uno de
+   cada doce hombres no distingue el verde del rojo.
+
+   Los tres veredictos tiñen el panel a través de `--verdict`: una sola
+   variable por estado en lugar de tres bloques repetidos.
+   ====================================================================== */
+
+.publish-review {
+    --verdict: var(--brand);
+    --verdict-soft: var(--brand-soft);
+    --verdict-ink: var(--brand-contrast);
+
+    position: relative;
+    width: 100%;
+    margin-top: var(--space-4);
+    padding: var(--space-4);
+    padding-left: var(--space-5);
+    overflow: hidden;
+    background: color-mix(in srgb, var(--verdict) 7%, var(--bg-surface));
+    border: 1px solid color-mix(in srgb, var(--verdict) 40%, var(--border-subtle));
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md), var(--edge-light);
+    animation: publish-review-in var(--duration-base) var(--ease-out) both;
+}
+
+/* El raíl del veredicto. Es lo primero que se ve de reojo al escribir, sin
+   apartar la vista del campo. */
+.publish-review::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 4px;
+    background: var(--verdict);
+}
+
+.publish-review[hidden] { display: none; }
+
+@keyframes publish-review-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: none; }
+}
+
+.publish-review-head {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+}
+
+/* El sello: un disco con el símbolo del veredicto */
+.publish-review-badge {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-full);
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+    font-weight: 750;
+    line-height: 1;
+    color: var(--verdict-ink);
+    background: var(--verdict);
+    box-shadow: 0 0 0 4px var(--verdict-soft);
+}
+
+.publish-review-heading { min-width: 0; }
+
+.publish-review-title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: var(--text-base);
+    font-weight: 700;
+    letter-spacing: var(--tracking-tight);
+    line-height: var(--leading-snug);
+    color: var(--text-primary);
+    text-wrap: balance;
+}
+
+.publish-review-sub {
+    margin: var(--space-1) 0 0;
+    font-size: var(--text-xs);
+    line-height: var(--leading-normal);
+    color: var(--text-secondary);
+    overflow-wrap: anywhere;
+}
+
+/* --- Los tres veredictos ---
+   `--brand-contrast` es claro sobre tema oscuro y blanco sobre tema claro,
+   así que sirve de tinta encima de los tres rellenos saturados. El ámbar es
+   la excepción: sobre él hace falta tinta oscura en los dos temas. */
+
+.publish-review[data-decision="approved"] {
+    --verdict: var(--success);
+    --verdict-soft: var(--success-soft);
+    --verdict-ink: var(--text-inverse);
+}
+
+/* El ámbar cambia de claro a oscuro con el tema, así que su tinta tiene que
+   cambiar con él: `--brand-contrast` es azul profundo sobre tema oscuro y
+   blanco sobre tema claro, y llega a 10,1 y 5,4 de contraste sobre cada uno
+   de los dos ámbares. Una tinta fija se quedaba en 2,88 en el tema claro. */
+.publish-review[data-decision="pending"] {
+    --verdict: var(--warning);
+    --verdict-soft: var(--warning-soft);
+    --verdict-ink: var(--brand-contrast);
+}
+
+.publish-review[data-decision="rejected"] {
+    --verdict: var(--danger);
+    --verdict-soft: var(--danger-soft);
+    --verdict-ink: var(--brand-contrast);
+}
+
+/* --- Los avisos --- */
+
+.publish-review-notes {
+    display: grid;
+    gap: var(--space-2);
+    margin: var(--space-4) 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.publish-review-notes[hidden] { display: none; }
+
+/* Sin animación de entrada, a propósito. `publish.js` reconstruye esta lista
+   entera cada 200 ms mientras se escribe, así que una entrada escalonada —que
+   es lo primero que se le ocurre a cualquiera— reinicia su primer fotograma en
+   cada repintado y deja los avisos parpadeando durante toda la redacción. Lo
+   que entra una vez es el panel; los avisos de dentro cambian en silencio. */
+.publish-review-note {
+    --note-tone: var(--text-secondary);
+    --note-wash: var(--bg-raised);
+
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Cada nivel con su color y su trazo. Lo que bloquea y lo que solo sugiere
+   no pueden parecer lo mismo. */
+.publish-review-note.is-block { --note-tone: var(--danger); --note-wash: var(--danger-soft); }
+.publish-review-note.is-age   { --note-tone: var(--danger); --note-wash: var(--danger-soft); }
+.publish-review-note.is-fix   { --note-tone: var(--warning); --note-wash: var(--warning-soft); }
+.publish-review-note.is-tip   { --note-tone: var(--info); --note-wash: var(--info-soft); }
+
+/* El emoji que pone `publish.js` (⛔ ✂️ 💡 🔞) se dibuja distinto en cada
+   sistema y desentona al lado de una interfaz hecha con SVG de trazo. El
+   glifo se tapa —el contenedor ya es `aria-hidden`— y en su sitio se pinta
+   el icono con `mask`, que hereda el color del nivel. */
+.publish-review-note-icon {
+    /* Flex, no rejilla: el emoji sigue en el DOM y en una rejilla ocuparía
+       su propia fila. Con ancho cero, como elemento flexible, no mueve nada. */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 26px;
+    height: 26px;
+    font-size: 0;
+    line-height: 0;
+    color: var(--note-tone);
+    background: var(--note-wash);
+    border-radius: var(--radius-sm);
+}
+
+.publish-review-note-icon::before {
+    content: '';
+    width: 15px;
+    height: 15px;
+    background-color: currentColor;
+    -webkit-mask: var(--publish-icon-tip) center / contain no-repeat;
+    mask: var(--publish-icon-tip) center / contain no-repeat;
+}
+
+.publish-review-note.is-block .publish-review-note-icon::before {
+    -webkit-mask-image: var(--publish-icon-block);
+    mask-image: var(--publish-icon-block);
+}
+
+.publish-review-note.is-fix .publish-review-note-icon::before {
+    -webkit-mask-image: var(--publish-icon-fix);
+    mask-image: var(--publish-icon-fix);
+}
+
+.publish-review-note.is-age .publish-review-note-icon::before {
+    -webkit-mask-image: var(--publish-icon-age);
+    mask-image: var(--publish-icon-age);
+}
+
+.publish-review-note-body {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+
+.publish-review-note-body strong {
+    font-size: var(--text-sm);
+    font-weight: 650;
+    line-height: var(--leading-snug);
+    color: var(--text-primary);
+    overflow-wrap: anywhere;
+}
+
+.publish-review-note-body span {
+    font-size: var(--text-xs);
+    line-height: var(--leading-normal);
+    color: var(--text-secondary);
+    overflow-wrap: anywhere;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .publish-review { animation: none; }
 }

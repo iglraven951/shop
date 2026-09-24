@@ -1,23 +1,47 @@
 /* ==========================================================================
    DiscoveryShop · Entrada
 
-   Presentación de marca en cuatro actos, de unos 4,2 s:
+   Una secuencia de 2,2 s en un espacio con profundidad de verdad.
 
-     0,0 s  El símbolo se dibuja sobre el fondo oscuro mientras el contador
-            arranca y una rejilla se despliega desde el centro.
-     1,0 s  Un barrido de luz cruza el símbolo: la lupa «escanea».
-     1,4 s  El nombre sube palabra a palabra desde detrás de una máscara.
-     2,4 s  Aparecen la línea de lugar y el lema.
-     3,4 s  El contador llega a 100 y el telón se levanta descubriendo el foro.
+   La versión anterior era una marca plana con un barrido encima: todo vivía
+   en el mismo plano, así que por mucha animación que llevara, el ojo no tenía
+   nada que medir y la escena se leía como un GIF. Aquí `.intro` declara una
+   perspectiva y **todo cuelga de ella**: tres retículas a -1100, -560 y
+   -180 px, las motas a -320, el símbolo a +110 y el nombre a +50. Cuando en
+   el último acto la cámara avanza —un solo `translateZ` sobre `.intro-space`
+   y otro sobre `.intro-stage`—, cada pieza se desplaza a la velocidad que le
+   toca por su distancia. El paralaje no está dibujado: sale de la geometría,
+   que es lo que separa un fondo animado de una escena.
 
-   La secuencia está escrita en CSS y se completa sola, así que sigue
-   funcionando sin JavaScript. El script solo añade la memoria de sesión, el
-   poder saltarla y la precisión del contador.
+   Los actos, en milisegundos:
+
+        0   El espacio se abre: las retículas entran desde el fondo, las
+            motas caen y la línea de horizonte se despliega.
+      120   El símbolo llega desde lejos, girado y desenfocado, y se posa
+            sobre su charco de luz.
+      300   El asa se dibuja de un trazo; el cuerpo aparece detrás.
+      560   Un barrido cruza el símbolo: la lupa «escanea».
+      660   El nombre sube palabra a palabra desde detrás de una máscara; a los
+           1020 un brillo recorre la segunda, dentro de su propio degradado.
+     1020   Lugar y lema.
+     1440   El contador gira a 100 como un cuentakilómetros.
+     1480   La cámara avanza y estalla el destello.
+     1860   El telón sube y descubre el tablón. Termina a los 2200 ms.
+
+   Todo está escrito en CSS y se completa solo, así que sigue funcionando sin
+   JavaScript. El script solo añade la memoria de sesión, el poder saltarla y
+   la precisión del contador.
+
+   Paleta: la entrada se pinta SIEMPRE sobre el azul profundo de la marca, en
+   los dos temas. Por eso usa la escala `--brand-*` y `--on-navy`, que no se
+   invierten, y nunca `--accent` ni los semánticos, que se oscurecen en el
+   tema claro para cumplir contraste sobre blanco y aquí quedarían apagados
+   contra el fondo. La chispa la pone la luz, no un color.
    ========================================================================== */
 
 /* El contador se anima como número, no como texto: así el CSS puede llevarlo
    de 0 a 100 sin JavaScript. Donde no se admita `@property`, el script hace
-   el mismo trabajo. */
+   el mismo trabajo —y el relevo del último acto cierra en 100 en ambos casos. */
 @property --intro-count {
     syntax: "<integer>";
     inherits: false;
@@ -32,7 +56,14 @@
     place-items: center;
     background: var(--brand-950);
     overflow: hidden;
-    animation: intro-exit 800ms var(--ease-cinema) 4400ms forwards;
+
+    /* La perspectiva de la escena. Más cerrada que la de las tarjetas del
+       tablón (`--depth-perspective`, 1100 px) porque aquí se mira de frente y
+       desde cerca: es un plano corto, no una estantería. */
+    perspective: 1250px;
+    perspective-origin: 50% 44%;
+
+    animation: intro-exit 340ms var(--ease-cinema) 1860ms forwards;
 }
 
 .intro.is-done {
@@ -49,20 +80,39 @@
 }
 
 /* --------------------------------------------------------------------------
-   Acto 0 · Ambiente
+   Acto 0 · El espacio
+
+   Dos nebulosas en los pseudoelementos de `.intro` y, dentro de
+   `.intro-space`, las capas que sí tienen profundidad. Se separan a propósito:
+   los pseudoelementos son fondo plano y pueden llevar `filter` sin
+   consecuencias; `.intro-space` conserva `preserve-3d`, y cualquier `filter`
+   o `opacity` menor que uno sobre él aplanaría a sus hijos y se perdería el
+   relieve entero.
    -------------------------------------------------------------------------- */
 
-/* Tres halos que derivan a distinta velocidad: dan profundidad a un fondo
-   que de otro modo se vería plano en pantallas grandes. */
+/* Nebulosas: tres halos que derivan a distinta velocidad y dan color al vacío.
+
+   Van deliberadamente contenidos. La primera versión los puso anchos y al 32,
+   46 y 24 %, y el resultado —visto en pantalla, no leído en el código— fue un
+   campo azul medio uniforme de lado a lado: la retícula desaparecía dentro, el
+   barrido de la lupa reventaba a blanco al mezclarse en `overlay`, y la
+   escena entera perdía el negro contra el que se recortan las luces. Una
+   escena oscura se ilumina con puntos, no con un baño. */
 .intro::before {
     content: "";
     position: absolute;
-    inset: -35%;
+    inset: -20%;
     background:
-        radial-gradient(34% 34% at 24% 26%, rgba(34, 211, 238, 0.34), transparent 66%),
-        radial-gradient(42% 42% at 76% 70%, rgba(56, 136, 221, 0.42), transparent 68%),
-        radial-gradient(28% 28% at 58% 18%, rgba(150, 193, 237, 0.22), transparent 70%);
-    animation: intro-drift 9s var(--ease-in-out) infinite alternate;
+        radial-gradient(26% 26% at 22% 24%,
+            color-mix(in srgb, var(--brand-200) 17%, transparent), transparent 68%),
+        radial-gradient(32% 32% at 78% 72%,
+            color-mix(in srgb, var(--brand-400) 26%, transparent), transparent 70%),
+        radial-gradient(22% 22% at 58% 14%,
+            color-mix(in srgb, var(--brand-100) 13%, transparent), transparent 72%);
+    opacity: 0;
+    animation:
+        intro-appear 900ms var(--ease-out) forwards,
+        intro-drift 9s var(--ease-in-out) infinite alternate;
 }
 
 @keyframes intro-drift {
@@ -70,27 +120,169 @@
     to { transform: translate3d(3%, 2%, 0) scale(1.12) rotate(4deg); }
 }
 
-/* La rejilla se abre desde el centro, como si el espacio se revelara */
+/* Viñeta: oscurece las esquinas y cierra el encuadre. Sin ella la escena se
+   derrama hacia los bordes y pierde el centro.
+
+   El negro de aquí no es un color de marca: es sombra, y su trabajo es
+   apagar lo que tiene debajo sin teñirlo. No sale de un token porque los dos
+   que guardan un oscuro —`--text-inverse` y `--bg-sunken`— se invierten con
+   el tema, y esta pantalla es la misma en claro y en oscuro: con ellos, la
+   viñeta se volvería un halo blanco en cuanto alguien cambiara de tema. */
 .intro::after {
     content: "";
     position: absolute;
     inset: 0;
+    background: radial-gradient(76% 80% at 50% 42%,
+        transparent 26%,
+        rgba(0, 0, 0, 0.34) 68%,
+        rgba(0, 0, 0, 0.66) 100%);
+    pointer-events: none;
+}
+
+/* --- El volumen ---------------------------------------------------------- */
+
+.intro-space {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+    pointer-events: none;
+    /* El empujón final de cámara: un solo desplazamiento en Z que mueve las
+       cinco capas a la vez. Como cada una está a su distancia, cada una se
+       agranda en distinta proporción, y de ahí sale el paralaje. */
+    animation: intro-push 700ms var(--ease-cinema) 1480ms forwards;
+}
+
+@keyframes intro-push {
+    to { transform: translate3d(0, 0, 190px); }
+}
+
+/* --- Las retículas ---
+   Tres planos idénticos a distinta profundidad. El truco para que no cuesten
+   nada: la caja mide lo que la ventana —así el navegador solo rasteriza una
+   pantalla— y es el `scale` del propio transform el que la agranda hasta
+   cubrir el campo después de la división por perspectiva. Una capa de
+   220 vmax habría pedido un búfer cuatro veces mayor en cada fotograma. */
+.intro-plane {
+    position: absolute;
+    inset: 0;
     background-image:
-        linear-gradient(rgba(150, 193, 237, 0.08) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(150, 193, 237, 0.08) 1px, transparent 1px);
-    background-size: 72px 72px;
-    mask-image: radial-gradient(circle at 50% 50%, #000 var(--grid, 0%), transparent 74%);
-    -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 var(--grid, 0%), transparent 74%);
-    animation: intro-grid 2400ms var(--ease-cinema) 200ms forwards;
+        linear-gradient(var(--plane-ink) 1px, transparent 1px),
+        linear-gradient(90deg, var(--plane-ink) 1px, transparent 1px);
+    background-size: var(--plane-cell) var(--plane-cell);
+    /* Se desvanece hacia los bordes: una retícula que llega al marco se lee
+       como papel milimetrado, no como espacio. */
+    mask-image: radial-gradient(closest-side at 50% 46%,
+        var(--on-navy) 6%, transparent 70%);
+    -webkit-mask-image: radial-gradient(closest-side at 50% 46%,
+        var(--on-navy) 6%, transparent 70%);
+    opacity: 0;
+    animation: intro-plane-in 2300ms var(--ease-cinema) var(--plane-delay, 0ms) forwards;
 }
 
-@property --grid {
-    syntax: "<percentage>";
-    inherits: false;
-    initial-value: 0%;
+/* Un solo fotograma por plano: entra desde más lejos de su sitio y sigue
+   avanzando durante toda la secuencia, así nada se queda congelado. */
+@keyframes intro-plane-in {
+    0% {
+        opacity: 0;
+        transform: translate3d(0, 7%, var(--plane-from)) scale(var(--plane-scale));
+    }
+    38% { opacity: var(--plane-alpha); }
+    100% {
+        opacity: var(--plane-alpha);
+        transform: translate3d(0, -3%, var(--plane-z)) scale(var(--plane-scale));
+    }
 }
 
-@keyframes intro-grid { to { --grid: 32%; } }
+/* Lo lejano se ve más pequeño, más apretado y más tenue: es lo que el ojo
+   entiende como distancia sin que nadie se lo explique. */
+.intro-plane-far {
+    --plane-z: -1100px;
+    --plane-from: -1800px;
+    --plane-scale: 2.3;
+    --plane-cell: 46px;
+    --plane-alpha: 0.5;
+    --plane-delay: 0ms;
+    --plane-ink: color-mix(in srgb, var(--brand-200) 16%, transparent);
+}
+
+.intro-plane-mid {
+    --plane-z: -560px;
+    --plane-from: -1100px;
+    --plane-scale: 1.62;
+    --plane-cell: 78px;
+    --plane-alpha: 0.42;
+    --plane-delay: 90ms;
+    --plane-ink: color-mix(in srgb, var(--brand-200) 22%, transparent);
+}
+
+.intro-plane-near {
+    --plane-z: -180px;
+    --plane-from: -620px;
+    --plane-scale: 1.24;
+    --plane-cell: 128px;
+    --plane-alpha: 0.3;
+    --plane-delay: 180ms;
+    --plane-ink: color-mix(in srgb, var(--brand-100) 26%, transparent);
+}
+
+/* --- Las motas ---
+   Polvo en suspensión. Son dos tramas de puntos sobre una sola capa, no
+   cincuenta elementos: el navegador repite el mosaico y la animación se
+   reduce a mover una superficie, que es trabajo de compositor. */
+.intro-motes {
+    position: absolute;
+    inset: -20%;
+    background-image:
+        radial-gradient(circle at 50% 50%,
+            color-mix(in srgb, var(--on-navy) 58%, transparent) 0.9px, transparent 1.2px),
+        radial-gradient(circle at 50% 50%,
+            color-mix(in srgb, var(--brand-200) 50%, transparent) 1.3px, transparent 1.7px);
+    background-size: 118px 118px, 73px 73px;
+    background-position: 0 0, 37px 23px;
+    mask-image: radial-gradient(60% 60% at 50% 46%, var(--on-navy), transparent 82%);
+    -webkit-mask-image: radial-gradient(60% 60% at 50% 46%, var(--on-navy), transparent 82%);
+    opacity: 0;
+    animation: intro-motes-rise 2600ms var(--ease-cinema) 80ms forwards;
+}
+
+@keyframes intro-motes-rise {
+    0% { opacity: 0; transform: translate3d(0, 5%, -520px); }
+    30% { opacity: 0.75; }
+    100% { opacity: 0.75; transform: translate3d(-2%, -7%, -320px); }
+}
+
+/* --- El horizonte ---
+   Una línea fina con su resplandor encima, baja en el encuadre. Es lo que le
+   da suelo al espacio: sin ella las retículas flotan y la profundidad deja de
+   leerse. */
+.intro-horizon {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 22%;
+    height: 1px;
+    /* La luz se concentra en el centro y muere mucho antes de los bordes: una
+       línea que cruza la pantalla de lado a lado deja de ser un horizonte y
+       se convierte en la costura de dos bandas. Y la aureola va corta, porque
+       un `box-shadow` largo sobre una caja de un píxel de alto se dibuja como
+       un rectángulo difuso, no como un resplandor. */
+    background: linear-gradient(90deg,
+        transparent 12%,
+        color-mix(in srgb, var(--brand-200) 34%, transparent) 34%,
+        color-mix(in srgb, var(--on-navy) 62%, transparent) 50%,
+        color-mix(in srgb, var(--brand-200) 34%, transparent) 66%,
+        transparent 88%);
+    box-shadow: 0 0 22px 1px color-mix(in srgb, var(--brand-400) 26%, transparent);
+    transform-origin: 50% 50%;
+    opacity: 0;
+    animation: intro-horizon-in 1100ms var(--ease-cinema) 140ms forwards;
+}
+
+@keyframes intro-horizon-in {
+    0% { opacity: 0; transform: translate3d(0, 0, -420px) scaleX(0.1); }
+    45% { opacity: 1; }
+    100% { opacity: 0.72; transform: translate3d(0, 0, -420px) scaleX(1); }
+}
 
 /* --------------------------------------------------------------------------
    Composición
@@ -103,7 +295,16 @@
     align-items: center;
     gap: var(--space-5);
     padding: var(--space-8);
+    max-width: 100%;
     text-align: center;
+    transform-style: preserve-3d;
+    /* La cámara avanza sobre la composición al mismo tiempo que sobre el
+       espacio, pero más: lo cercano se acerca más deprisa. */
+    animation: intro-dolly 700ms var(--ease-cinema) 1480ms forwards;
+}
+
+@keyframes intro-dolly {
+    to { transform: translate3d(0, -1.5%, 130px); }
 }
 
 /* --------------------------------------------------------------------------
@@ -111,46 +312,64 @@
    -------------------------------------------------------------------------- */
 .intro-mark {
     position: relative;
-    width: clamp(78px, 15vmin, 116px);
+    width: clamp(92px, 18vmin, 148px);
     aspect-ratio: 1;
     color: var(--on-navy);
+    /* Delante del nombre: es la pieza que se acerca al espectador */
+    transform: translate3d(0, 0, 110px);
     opacity: 0;
     animation:
-        intro-mark-in 1100ms var(--ease-cinema) 120ms forwards,
-        intro-mark-settle 2600ms var(--ease-in-out) 1400ms;
+        intro-mark-in 860ms var(--ease-cinema) 120ms forwards,
+        intro-mark-float 1600ms var(--ease-in-out) 980ms;
 }
 
+/* Llega desde el fondo, girado sobre su eje y sin foco. El desenfoque hace el
+   trabajo que la escala sola no puede: un objeto que se acerca no solo crece,
+   entra en foco. */
 @keyframes intro-mark-in {
-    0% { opacity: 0; transform: scale(0.5) rotate(-18deg); filter: blur(10px); }
-    55% { opacity: 1; filter: blur(0); }
-    100% { opacity: 1; transform: scale(1) rotate(0); filter: blur(0); }
+    0% {
+        opacity: 0;
+        transform: translate3d(0, 6%, -540px) rotateY(-42deg) rotateZ(-10deg);
+        filter: blur(14px);
+    }
+    58% { opacity: 1; filter: blur(0); }
+    100% {
+        opacity: 1;
+        transform: translate3d(0, 0, 110px) rotateY(0deg) rotateZ(0deg);
+        filter: blur(0);
+    }
 }
 
 /* Respiración lenta mientras el resto de la secuencia avanza: sin esto el
    símbolo se queda congelado y la pantalla parece detenida. */
-@keyframes intro-mark-settle {
-    0%, 100% { transform: translateY(0) scale(1); }
-    50% { transform: translateY(-5px) scale(1.03); }
+@keyframes intro-mark-float {
+    0%, 100% { transform: translate3d(0, 0, 110px); }
+    50% { transform: translate3d(0, -5px, 138px); }
 }
 
-/* Aro que late alrededor del símbolo */
+/* Aro que se abre alrededor del símbolo, un paso por delante de él */
 .intro-mark::before {
     content: "";
     position: absolute;
-    inset: -28%;
-    border: 1px solid rgba(150, 193, 237, 0.4);
+    inset: -24%;
+    border: 1px solid color-mix(in srgb, var(--brand-200) 46%, transparent);
     border-radius: 50%;
     opacity: 0;
-    animation: intro-ring 2200ms var(--ease-cinema) 700ms forwards;
+    animation: intro-ring 1000ms var(--ease-cinema) 640ms forwards;
 }
 
 @keyframes intro-ring {
-    0% { opacity: 0; transform: scale(0.6); }
+    0% { opacity: 0; transform: scale(0.55); }
     40% { opacity: 1; }
-    100% { opacity: 0; transform: scale(1.5); }
+    100% { opacity: 0; transform: scale(1.55); }
 }
 
-.intro-mark svg { width: 100%; height: 100%; }
+.intro-mark svg {
+    width: 100%;
+    height: 100%;
+    /* El símbolo proyecta luz sobre el vacío en lugar de recortarse contra él */
+    filter: drop-shadow(0 10px 30px color-mix(in srgb, var(--brand-400) 60%, transparent));
+}
 
 /* El asa se dibuja de un trazo.
    El script mide la longitud exacta con getTotalLength() y la escribe en
@@ -159,34 +378,55 @@
 .intro-mark .draw {
     stroke-dasharray: var(--len, 19);
     stroke-dashoffset: var(--len, 19);
-    animation: intro-draw 900ms var(--ease-cinema) 320ms forwards;
+    animation: intro-draw 620ms var(--ease-cinema) 300ms forwards;
 }
 
 @keyframes intro-draw { to { stroke-dashoffset: 0; } }
 
 .intro-mark .fill {
     opacity: 0;
-    animation: intro-appear 600ms var(--ease-out) 620ms forwards;
+    animation: intro-appear 420ms var(--ease-out) 420ms forwards;
 }
 
 @keyframes intro-appear { to { opacity: 1; } }
 
+/* Charco de contacto: una elipse de luz bajo el símbolo. Es el detalle que
+   convierte una figura flotando en el vacío en un objeto apoyado. */
+.intro-pool {
+    position: absolute;
+    left: -70%;
+    right: -70%;
+    bottom: -26%;
+    height: 44%;
+    background: radial-gradient(closest-side,
+        color-mix(in srgb, var(--brand-300) 46%, transparent),
+        transparent 78%);
+    opacity: 0;
+    pointer-events: none;
+    animation: intro-appear 700ms var(--ease-out) 560ms forwards;
+}
+
 /* --------------------------------------------------------------------------
    Acto 2 · El barrido de la lupa
    -------------------------------------------------------------------------- */
+/* La banda se redondea con una máscara. Sin ella es un rectángulo con dos
+   cantos rectos que, al mezclarse en `overlay`, aparece en pantalla como una
+   barra blanca cruzando la escena —no como un reflejo. La máscara la convierte
+   en un destello de lente: intenso en el centro, disuelto en los extremos. */
 .intro-mark-sweep {
     position: absolute;
     inset: -20%;
     background: linear-gradient(
         102deg,
-        transparent 40%,
-        rgba(255, 255, 255, 0.7) 50%,
-        transparent 60%
-    );
+        transparent 38%,
+        color-mix(in srgb, var(--on-navy) 62%, transparent) 50%,
+        transparent 62%);
+    mask-image: radial-gradient(62% 62% at 50% 50%, var(--on-navy), transparent 82%);
+    -webkit-mask-image: radial-gradient(62% 62% at 50% 50%, var(--on-navy), transparent 82%);
     mix-blend-mode: overlay;
     opacity: 0;
     transform: translateX(-130%);
-    animation: intro-sweep 1200ms var(--ease-cinema) 1000ms forwards;
+    animation: intro-sweep 640ms var(--ease-cinema) 560ms forwards;
     pointer-events: none;
 }
 
@@ -201,15 +441,20 @@
    Acto 3 · El nombre
    -------------------------------------------------------------------------- */
 .intro-name {
+    position: relative;
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
     gap: 0 0.28em;
+    max-width: 100%;
+    font-family: var(--font-display);
     font-size: clamp(2.25rem, 9vmin, 5.25rem);
     font-weight: 800;
-    letter-spacing: -0.035em;
+    letter-spacing: var(--tracking-display);
     line-height: 0.98;
     color: var(--on-navy);
+    /* Un paso por detrás del símbolo y por delante del lema */
+    transform: translate3d(0, 0, 50px);
 }
 
 /* Cada palabra vive en una ventana que recorta lo que aún no ha subido */
@@ -224,18 +469,48 @@
 .intro-word span {
     display: inline-block;
     transform: translateY(108%);
-    animation: intro-rise 1000ms var(--ease-cinema) forwards;
-    animation-delay: calc(1400ms + var(--w, 0) * 190ms);
+    animation: intro-rise 760ms var(--ease-cinema) forwards;
+    animation-delay: calc(660ms + var(--w, 0) * 130ms);
 }
 
 @keyframes intro-rise { to { transform: translateY(0); } }
 
-/* La segunda palabra toma el cian del acento */
+/* La segunda palabra se pinta en la escala clara de la marca. No lleva
+   `--accent` a propósito: ese token se oscurece en el tema claro para cumplir
+   contraste sobre blanco, y aquí el fondo es siempre azul profundo —la
+   palabra se apagaría justo en el tema donde más se la espera. La chispa la
+   pone la luz.
+
+   Y esa luz va DENTRO del degradado de la palabra, no en una capa encima.
+
+   La primera versión puso una banda blanca en un pseudoelemento con
+   `mix-blend-mode: overlay`. Sobre un fondo oscuro, el modo `overlay` aclara
+   todo lo que toca, también el vacío: en pantalla no se veía un reflejo sobre
+   las letras, se veía un rectángulo claro flotando al lado de la palabra. Un
+   brillo especular solo existe sobre la superficie que lo refleja, y aquí esa
+   superficie es el texto. Metiendo el blanco como una parada más del
+   degradado —que ya va recortado al texto— y desplazando el fondo, la luz no
+   puede salirse de las letras porque fuera de ellas no hay nada que pintar. */
 .intro-word.is-accent span {
-    background: linear-gradient(100deg, var(--brand-200), var(--accent));
+    background-image: linear-gradient(104deg,
+        var(--brand-50) 0%,
+        var(--brand-200) 34%,
+        var(--on-navy) 50%,
+        var(--brand-200) 66%,
+        var(--brand-100) 100%);
+    background-size: 280% 100%;
+    background-position: 100% 0;
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
+    animation: intro-rise 760ms var(--ease-cinema) forwards,
+               intro-sheen 900ms var(--ease-cinema) forwards;
+    animation-delay: calc(660ms + var(--w, 0) * 130ms), 1020ms;
+}
+
+@keyframes intro-sheen {
+    from { background-position: 100% 0; }
+    to { background-position: 0% 0; }
 }
 
 /* Si el navegador no recorta el fondo al texto, el color plano lo sustituye:
@@ -243,7 +518,7 @@
 @supports not ((background-clip: text) or (-webkit-background-clip: text)) {
     .intro-word.is-accent span {
         background: none;
-        color: var(--accent);
+        color: var(--brand-100);
     }
 }
 
@@ -253,17 +528,19 @@
 .intro-sub {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: var(--space-4);
+    max-width: 100%;
     opacity: 0;
-    animation: intro-appear 700ms var(--ease-out) 2400ms forwards;
+    animation: intro-appear 520ms var(--ease-out) 1020ms forwards;
 }
 
 .intro-sub-rule {
-    width: clamp(26px, 7vmin, 56px);
+    flex: 0 1 clamp(26px, 7vmin, 56px);
     height: 1px;
     background: linear-gradient(90deg, transparent, var(--brand-300));
     transform: scaleX(0);
-    animation: intro-rule 900ms var(--ease-cinema) 2450ms forwards;
+    animation: intro-rule 620ms var(--ease-cinema) 1060ms forwards;
 }
 
 .intro-sub-rule:last-of-type { background: linear-gradient(90deg, var(--brand-300), transparent); }
@@ -283,9 +560,9 @@
     max-width: 32ch;
     font-size: clamp(0.8125rem, 2.3vmin, 1rem);
     line-height: var(--leading-snug);
-    color: rgba(198, 221, 245, 0.78);
+    color: var(--on-navy-soft);
     opacity: 0;
-    animation: intro-tagline-in 900ms var(--ease-cinema) 2800ms forwards;
+    animation: intro-tagline-in 600ms var(--ease-cinema) 1180ms forwards;
 }
 
 @keyframes intro-tagline-in {
@@ -297,37 +574,28 @@
    Acto final · El destello
 
    Justo antes de que suba el telón, un pulso de luz se abre desde el centro
-   y la composición avanza un paso hacia quien mira. Es el remate: cierra la
-   secuencia con un golpe de brillo en lugar de dejarla apagarse.
+   mientras la cámara avanza. Es el remate: cierra la secuencia con un golpe
+   de brillo en lugar de dejarla apagarse.
    -------------------------------------------------------------------------- */
 .intro-stage::after {
     content: "";
     position: absolute;
     left: 50%;
-    top: 38%;
+    top: 34%;
     width: 1px;
     height: 1px;
     border-radius: 50%;
     transform: translate(-50%, -50%);
-    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.85);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--on-navy) 85%, transparent);
     opacity: 0;
     pointer-events: none;
-    animation: intro-bloom 900ms var(--ease-cinema) 3900ms forwards;
+    animation: intro-bloom 620ms var(--ease-cinema) 1540ms forwards;
 }
 
 @keyframes intro-bloom {
-    0% { opacity: 0; box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.85); }
-    35% { opacity: 1; box-shadow: 0 0 90px 30px rgba(255, 255, 255, 0.6); }
-    100% { opacity: 0; box-shadow: 0 0 260px 130px rgba(120, 200, 255, 0); }
-}
-
-/* La composición se adelanta mientras estalla el destello */
-.intro-stage {
-    animation: intro-forward 900ms var(--ease-cinema) 3900ms forwards;
-}
-
-@keyframes intro-forward {
-    to { transform: scale(1.06); }
+    0% { opacity: 0; box-shadow: 0 0 0 0 color-mix(in srgb, var(--on-navy) 85%, transparent); }
+    35% { opacity: 1; box-shadow: 0 0 90px 30px color-mix(in srgb, var(--on-navy) 58%, transparent); }
+    100% { opacity: 0; box-shadow: 0 0 260px 130px color-mix(in srgb, var(--brand-200) 0%, transparent); }
 }
 
 /* --------------------------------------------------------------------------
@@ -335,11 +603,16 @@
    -------------------------------------------------------------------------- */
 .intro-count {
     position: absolute;
-    left: var(--space-8);
-    bottom: var(--space-8);
+    /* Dentro de la aplicación, native.js publica en <html> el alto de las
+       barras del sistema. Sumarlas aquí es lo que impide que la cifra y —lo
+       que importa de verdad— el botón de saltar queden debajo de la barra de
+       gestos del teléfono. En el navegador valen 0 y no cambia nada. */
+    left: calc(var(--ds-inset-left, 0px) + var(--space-8));
+    bottom: calc(var(--ds-inset-bottom, 0px) + var(--space-8));
     z-index: 2;
     display: flex;
     align-items: baseline;
+    font-family: var(--font-display);
     font-size: clamp(2.5rem, 9vmin, 5.5rem);
     font-weight: 800;
     letter-spacing: -0.04em;
@@ -350,11 +623,24 @@
     animation: intro-appear 400ms var(--ease-out) 150ms forwards;
 }
 
+/* La ranura de tres dígitos.
+
+   Sin ella el «%» se desplaza dos veces durante la cuenta —al pasar de 9 a 10
+   y de 99 a 100—, que es el tipo de detalle que delata una maqueta. Con
+   `3ch` y cifras tabulares, el hueco es siempre el mismo y encima sirve de
+   carril para el relevo del último acto. */
+.intro-count-slot {
+    position: relative;
+    display: inline-block;
+    min-width: 3ch;
+    text-align: right;
+}
+
 /* El número se pinta desde la variable animada, no desde el texto */
 .intro-count-value::after {
     content: counter(intro-n);
     counter-reset: intro-n var(--intro-count);
-    animation: intro-tick 4100ms var(--ease-out) 150ms forwards;
+    animation: intro-tick 1290ms var(--ease-out) 150ms forwards;
 }
 
 @keyframes intro-tick { to { --intro-count: 100; } }
@@ -362,6 +648,39 @@
 /* Cuando el script lleva la cuenta, escribe el número como texto y el
    pseudoelemento se aparta para no duplicarlo. */
 .intro-count.is-scripted .intro-count-value::after { content: none; }
+
+/* El relevo.
+
+   La cifra viva sale hacia arriba mientras se apaga y la final entra desde
+   abajo encendiéndose, como un cuentakilómetros que encaja. El recorrido es
+   corto y el cruce de opacidades lo cierra, así que no hace falta recortar la
+   ranura —y recortarla habría movido la base de las cifras, porque una caja
+   con `overflow` oculto alinea por su borde inferior y el «%» de al lado
+   habría quedado descolgado. Existe porque el ritmo de la cuenta lo marca
+   `intro.js`, que vive fuera de esta hoja y no sabe cuánto dura la secuencia:
+   sin este relevo, acortar la entrada dejaría el número parado en una cifra
+   cualquiera. Así cierra en 100 exacto venga de donde venga. */
+.intro-count-value {
+    display: inline-block;
+    animation: intro-count-out 280ms var(--ease-cinema) 1440ms forwards;
+}
+
+.intro-count-final {
+    position: absolute;
+    inset: 0;
+    display: block;
+    opacity: 0;
+    animation: intro-count-in 280ms var(--ease-cinema) 1440ms forwards;
+}
+
+@keyframes intro-count-out {
+    to { opacity: 0; transform: translateY(-38%); }
+}
+
+@keyframes intro-count-in {
+    from { opacity: 0; transform: translateY(38%); }
+    to { opacity: 1; transform: translateY(0); }
+}
 
 .intro-count-unit {
     margin-left: 0.08em;
@@ -371,16 +690,22 @@
 }
 
 /* Barra de avance a lo ancho del pie */
+/* Sube por encima de la viñeta. Sin `z-index` la barra queda por debajo de
+   ella —el pseudoelemento va el último del marcado— y la esquina inferior,
+   que es justo donde la viñeta más oscurece, se comía el final del recorrido. */
 .intro-progress {
     position: absolute;
     left: 0;
-    bottom: 0;
+    bottom: var(--ds-inset-bottom, 0px);
+    z-index: 2;
     height: 3px;
     width: 100%;
     transform-origin: left;
     transform: scaleX(0);
-    background: linear-gradient(90deg, var(--brand-600), var(--brand-300), var(--accent));
-    animation: intro-progress 4250ms var(--ease-out) forwards;
+    background: linear-gradient(90deg,
+        var(--brand-600), var(--brand-300) 62%, var(--brand-50));
+    box-shadow: 0 0 18px color-mix(in srgb, var(--brand-300) 50%, transparent);
+    animation: intro-progress 1820ms var(--ease-out) forwards;
 }
 
 @keyframes intro-progress { to { transform: scaleX(1); } }
@@ -390,29 +715,31 @@
    -------------------------------------------------------------------------- */
 .intro-skip {
     position: absolute;
-    right: var(--space-6);
-    bottom: var(--space-8);
+    right: calc(var(--ds-inset-right, 0px) + var(--space-6));
+    bottom: calc(var(--ds-inset-bottom, 0px) + var(--space-8));
     z-index: 2;
     display: inline-flex;
     align-items: center;
     gap: var(--space-2);
     min-height: 44px;
     padding: var(--space-2) var(--space-5);
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: color-mix(in srgb, var(--on-navy) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--on-navy) 18%, transparent);
     border-radius: var(--radius-full);
-    color: rgba(255, 255, 255, 0.82);
+    color: var(--on-navy-soft);
     font-size: var(--text-xs);
     font-weight: 600;
     letter-spacing: var(--tracking-wide);
+    backdrop-filter: blur(var(--blur-md));
+    -webkit-backdrop-filter: blur(var(--blur-md));
     opacity: 0;
-    animation: intro-appear 400ms var(--ease-out) 600ms forwards;
+    animation: intro-appear 320ms var(--ease-out) 160ms forwards;
     transition: background-color var(--duration-fast) var(--ease-out),
                 color var(--duration-fast) var(--ease-out);
 }
 
 .intro-skip:hover {
-    background: rgba(255, 255, 255, 0.16);
+    background: color-mix(in srgb, var(--on-navy) 16%, transparent);
     color: var(--on-navy);
 }
 
@@ -434,7 +761,7 @@
    desaparecía para gente que jamás la pidió.
 
    Aquí se representa la misma secuencia, con los mismos actos, los mismos
-   retrasos y la misma duración —4400 ms más el telón—, pero cada pieza entra
+   retrasos y la misma duración —1860 ms más el telón—, pero cada pieza entra
    fundiéndose en vez de desplazándose. El resultado se ve igual que en un
    escritorio; lo único que falta es lo que esta preferencia existe para
    evitar: recorridos largos, giros, zoom y el latido continuo del símbolo.
@@ -449,18 +776,62 @@
     .intro-progress { display: none; }
 
 
+    /* --- Acto 0 · El espacio --------------------------------------------- */
+
+    /* Las tres retículas llegaban desde el fondo y seguían avanzando. Aquí se
+       quedan donde les toca —cada una a su profundidad, que es lo que da el
+       relieve— y solo se encienden. La escena conserva su volumen; lo que se
+       retira es el viaje. */
+    .intro-plane {
+        transform: translate3d(0, 0, var(--plane-z)) scale(var(--plane-scale));
+        animation: intro-plane-fade 2300ms var(--ease-cinema) var(--plane-delay, 0ms) forwards;
+    }
+
+    @keyframes intro-plane-fade {
+        0% { opacity: 0; }
+        38%, 100% { opacity: var(--plane-alpha); }
+    }
+
+    /* Las motas caían hacia el espectador. Ahora están suspendidas. */
+    .intro-motes {
+        transform: translate3d(0, 0, -320px);
+        animation: intro-motes-fade 2600ms var(--ease-cinema) 80ms forwards;
+    }
+
+    @keyframes intro-motes-fade {
+        0% { opacity: 0; }
+        30%, 100% { opacity: 0.75; }
+    }
+
+    /* El horizonte se desplegaba a lo ancho; ahora se descubre entero. */
+    .intro-horizon {
+        transform: translate3d(0, 0, -420px);
+        animation: intro-horizon-fade 1100ms var(--ease-cinema) 140ms forwards;
+    }
+
+    @keyframes intro-horizon-fade {
+        0% { opacity: 0; }
+        45%, 100% { opacity: 0.72; }
+    }
+
+    /* El empujón de cámara del final: es el movimiento más grande de todos. */
+    .intro-space { animation: none; }
+
+
     /* --- Acto 1 · El símbolo --------------------------------------------- */
 
-    /* Sin escala, sin giro, sin desenfoque de entrada. Y sin la respiración
-       lenta de después: un movimiento que no para es justo lo que sobra. */
+    /* Sin viaje en Z, sin giro y sin desenfoque de entrada. Y sin la
+       respiración lenta de después: un movimiento que no para es justo lo que
+       sobra. Conserva su profundidad, que no se mueve. */
     .intro-mark {
-        animation: intro-appear 1100ms var(--ease-cinema) 120ms forwards;
+        transform: translate3d(0, 0, 110px);
+        animation: intro-appear 860ms var(--ease-cinema) 120ms forwards;
     }
 
     /* El aro se abría creciendo. Ahora late en sitio, con el mismo compás. */
     .intro-mark::before {
         transform: scale(1.12);
-        animation: intro-ring-fade 2200ms var(--ease-cinema) 700ms forwards;
+        animation: intro-ring-fade 1000ms var(--ease-cinema) 640ms forwards;
     }
 
     @keyframes intro-ring-fade {
@@ -476,8 +847,9 @@
     .intro-mark-sweep {
         inset: -10%;
         transform: none;
-        background: radial-gradient(60% 60% at 50% 45%, rgba(255, 255, 255, 0.55), transparent 70%);
-        animation: intro-sweep-fade 1200ms var(--ease-cinema) 1000ms forwards;
+        background: radial-gradient(60% 60% at 50% 45%,
+            color-mix(in srgb, var(--on-navy) 55%, transparent), transparent 70%);
+        animation: intro-sweep-fade 640ms var(--ease-cinema) 560ms forwards;
     }
 
     @keyframes intro-sweep-fade {
@@ -492,8 +864,19 @@
     .intro-word span {
         transform: none;
         opacity: 0;
-        animation: intro-appear 1000ms var(--ease-cinema) forwards;
-        animation-delay: calc(1400ms + var(--w, 0) * 190ms);
+        animation: intro-appear 760ms var(--ease-cinema) forwards;
+        animation-delay: calc(660ms + var(--w, 0) * 130ms);
+    }
+
+    /* La segunda palabra sube igual que la primera y, además, el brillo la
+       recorría de lado a lado. Aquí no recorre: la palabra se queda con el
+       degradado ya encendido —que es color, no movimiento— y sin el barrido. */
+    .intro-word.is-accent span {
+        transform: none;
+        opacity: 0;
+        background-position: 42% 0;
+        animation: intro-appear 760ms var(--ease-cinema) forwards;
+        animation-delay: calc(660ms + var(--w, 0) * 130ms);
     }
 
     /* --- Acto 4 · Lugar y lema ------------------------------------------- */
@@ -502,25 +885,41 @@
     .intro-sub-rule {
         transform: scaleX(1);
         opacity: 0;
-        animation: intro-appear 900ms var(--ease-cinema) 2450ms forwards;
+        animation: intro-appear 620ms var(--ease-cinema) 1060ms forwards;
     }
 
     /* El lema llegaba subiendo y desenfocado. */
     .intro-tagline {
-        animation: intro-appear 900ms var(--ease-cinema) 2800ms forwards;
+        animation: intro-appear 600ms var(--ease-cinema) 1180ms forwards;
     }
+
+    /* --- El contador ------------------------------------------------------ */
+
+    /* Las cifras giraban una sobre otra. Ahora se funden en el sitio: el
+       relevo sigue existiendo, porque cerrar en 100 no es movimiento, es
+       información. */
+    .intro-count-value {
+        animation: intro-count-hide 280ms var(--ease-cinema) 1440ms forwards;
+    }
+
+    .intro-count-final {
+        animation: intro-appear 280ms var(--ease-cinema) 1440ms forwards;
+    }
+
+    @keyframes intro-count-hide { to { opacity: 0; } }
 
     /* --- Acto final · El destello ---------------------------------------- */
 
-    /* El resplandor se abría hacia fuera y la composición avanzaba un paso.
+    /* El resplandor se abría hacia fuera y la cámara avanzaba un paso.
        Ahora es solo un golpe de luz, sin crecimiento y sin avance. */
     .intro-stage::after {
         width: 60%;
         height: 40%;
         border-radius: 50%;
         box-shadow: none;
-        background: radial-gradient(closest-side, rgba(255, 255, 255, 0.5), transparent);
-        animation: intro-bloom-fade 900ms var(--ease-cinema) 3900ms forwards;
+        background: radial-gradient(closest-side,
+            color-mix(in srgb, var(--on-navy) 50%, transparent), transparent);
+        animation: intro-bloom-fade 620ms var(--ease-cinema) 1540ms forwards;
     }
 
     @keyframes intro-bloom-fade {
@@ -534,7 +933,7 @@
 
     /* Se iba recortando de abajo arriba. Ahora se funde, en el mismo momento
        y durante el mismo tiempo, para que la salida dure lo mismo. */
-    .intro { animation: intro-exit-fade 800ms var(--ease-cinema) 4400ms forwards; }
+    .intro { animation: intro-exit-fade 340ms var(--ease-cinema) 1860ms forwards; }
     .intro.is-done { animation: intro-exit-fade 320ms var(--ease-cinema) forwards; }
 
     @keyframes intro-exit-fade {
@@ -543,35 +942,42 @@
 
     /* --- Fondo ------------------------------------------------------------ */
 
-    /* Los halos derivan sin parar y la rejilla se abre desde el centro: las
-       dos son movimiento de fondo, que es el que peor se lleva. Se quedan
-       donde están, pintadas. */
-    .intro::before { animation: none; }
-
-    .intro::after {
-        --grid: 32%;
-        animation: none;
-    }
+    /* Las nebulosas derivan sin parar: es movimiento de fondo, que es el que
+       peor se lleva. Se quedan donde están, pintadas. */
+    .intro::before { animation: intro-appear 900ms var(--ease-out) forwards; }
 }
 
 /* --------------------------------------------------------------------------
    Pantallas pequeñas
+
+   Este bloque va DESPUÉS del de movimiento reducido a propósito, y por eso no
+   toca ninguna animación: lo que se escriba aquí gana en la cascada y
+   desharía lo de arriba. Solo medidas.
    -------------------------------------------------------------------------- */
 @media (max-width: 560px) {
     .intro-stage { gap: var(--space-4); padding: var(--space-5); }
 
     .intro-count {
-        left: var(--space-5);
-        bottom: var(--space-6);
+        left: calc(var(--ds-inset-left, 0px) + var(--space-5));
+        bottom: calc(var(--ds-inset-bottom, 0px) + var(--space-6));
     }
 
     .intro-skip {
-        right: var(--space-5);
-        bottom: var(--space-6);
-        padding-inline: var(--space-4);
+        right: calc(var(--ds-inset-right, 0px) + var(--space-5));
+        bottom: calc(var(--ds-inset-bottom, 0px) + var(--space-6));
+        padding-inline: var(--space-5);
     }
 
-    .intro::after { background-size: 48px 48px; }
+    /* Menos trama y menos polvo: en un teléfono la escena se ve de cerca y la
+       retícula fina se convierte en ruido. Y son menos píxeles que componer
+       en cada fotograma, que es lo que cuenta dentro del WebView. */
+    .intro-plane-far { --plane-cell: 34px; --plane-alpha: 0.38; }
+    .intro-plane-mid { --plane-cell: 56px; --plane-alpha: 0.32; }
+    .intro-plane-near { --plane-cell: 88px; --plane-alpha: 0.22; }
+
+    .intro-motes { background-size: 92px 92px, 61px 61px; }
+
+    .intro-horizon { bottom: 18%; }
 }
 
 .intro[hidden] { display: none !important; }

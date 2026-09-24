@@ -1,19 +1,39 @@
 /* ==========================================================================
    DiscoveryShop · Perfil de usuario (perfil.html)
 
-   Todas las clases van prefijadas con `profile-` para no chocar con otras
-   páginas, y solo se usan variables de tokens.css: ni un hexadecimal suelto.
+   La página tiene tres alturas:
+
+     1. La cabecera, que es una ficha de identidad: franja de marca, avatar
+        recortado sobre ella, nombre, estado de la cuenta, reputación y
+        cuatro cifras. Se lee entera de un vistazo y no pide desplazarse.
+     2. El trabajo —pestañas, formulario y lista de pedidos—, en la columna
+        ancha.
+     3. El estado de la cuenta —vendedor y sesión—, en la columna lateral.
+        En móvil el lateral se adelanta: quien entra a su perfil desde el
+        aviso de «solicitud aprobada» viene a mirar eso, no el formulario.
+
+   Reglas de la casa que este archivo respeta:
+   · ni un color literal — todo sale de tokens.css o se compone con color-mix
+   · nada más ancho que la pantalla, desde 320 px
+   · quien pidió menos movimiento no ve ninguno
+   · las ilustraciones de los estados vacíos son SVG en línea recortando un
+     color de marca, nunca emojis: un emoji se dibuja distinto en cada
+     sistema y rompe la familia de iconos del resto del sitio
    ========================================================================== */
 
 .profile-page {
     width: 100%;
-    max-width: 1100px;
+    /* El mismo tope que la cabecera y el pie del sitio, con sus mismos
+       márgenes laterales: antes eran 1100 px sueltos y el perfil quedaba
+       descuadrado respecto a la barra superior. */
+    max-width: var(--container-max);
     margin-inline: auto;
     padding: var(--space-6) var(--space-5) var(--space-16);
 }
 
 /* --------------------------------------------------------------------------
    Carga inicial
+   La silueta imita la forma final: franja ancha arriba y dos columnas debajo.
    -------------------------------------------------------------------------- */
 .profile-boot {
     display: flex;
@@ -21,10 +41,24 @@
     gap: var(--space-5);
 }
 
-.profile-boot-hero { height: 220px; border-radius: var(--radius-xl); }
-.profile-boot-seller { height: 108px; border-radius: var(--radius-lg); }
-.profile-boot-tabs { height: 52px; border-radius: var(--radius-lg); }
-.profile-boot-body { height: 320px; border-radius: var(--radius-lg); }
+.profile-boot-hero { height: 300px; border-radius: var(--radius-xl); }
+
+.profile-boot-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: var(--space-5);
+    align-items: start;
+}
+
+.profile-boot-side {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+}
+
+.profile-boot-seller { height: 208px; border-radius: var(--radius-xl); }
+.profile-boot-tabs { height: 132px; border-radius: var(--radius-xl); }
+.profile-boot-body { height: 420px; border-radius: var(--radius-xl); }
 
 /* --------------------------------------------------------------------------
    Sin sesión
@@ -43,36 +77,152 @@
     background-image: var(--gradient-glow);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-lg);
+    box-shadow: var(--shadow-lg), var(--edge-light);
 }
 
-/* --------------------------------------------------------------------------
-   Cabecera de perfil
-   -------------------------------------------------------------------------- */
+/* ==========================================================================
+   1. Cabecera de perfil
+   ========================================================================== */
 .profile-hero {
     position: relative;
     overflow: hidden;
-    padding: var(--space-8) var(--space-6) var(--space-6);
+    /* El relleno superior deja sitio a la franja: 176 px de aire bajo una
+       franja de 148, de modo que solo el avatar la invade. */
+    padding: 176px var(--space-6) var(--space-6);
     background: var(--bg-surface);
-    background-image: var(--gradient-glow);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-md);
-    animation: fade-in-up var(--duration-slow) var(--ease-out) backwards;
+    box-shadow: var(--shadow-lg), var(--edge-light);
+    animation: fade-in-up var(--duration-slow) var(--ease-cinema) backwards;
 }
 
+/* --- La franja ---
+   Azul marino en los dos temas, así que el blanco de `--on-navy` sirve de
+   base para todas sus capas sin invertirse. Ningún texto se apoya encima:
+   solo el avatar, que lleva su propio disco opaco. */
+.profile-hero-cover {
+    --glass-soft: color-mix(in srgb, var(--on-navy) 10%, transparent);
+    --glass-strong: color-mix(in srgb, var(--on-navy) 18%, transparent);
+    --glass-line: color-mix(in srgb, var(--on-navy) 22%, transparent);
+    --veil: color-mix(in srgb, var(--brand-950) 34%, transparent);
+
+    position: absolute;
+    inset: 0 0 auto;
+    height: 148px;
+    overflow: hidden;
+    background: var(--gradient-brand);
+    pointer-events: none;
+}
+
+/* Aurora: dos manchas de luz que respiran muy despacio. */
+.profile-hero-mesh {
+    position: absolute;
+    inset: -30%;
+    background:
+        radial-gradient(38% 46% at 24% 38%, var(--glass-strong), transparent 70%),
+        radial-gradient(42% 44% at 78% 22%, var(--glass-soft), transparent 72%);
+    animation: profile-aurora 26s var(--ease-in-out) infinite;
+}
+
+/* Retícula fina, desvanecida hacia los bordes: un suelo, no papel milimetrado. */
+.profile-hero-grid {
+    position: absolute;
+    inset: 0;
+    background:
+        repeating-linear-gradient(90deg, var(--glass-line) 0 1px, transparent 1px 64px),
+        repeating-linear-gradient(0deg, var(--glass-line) 0 1px, transparent 1px 64px);
+    -webkit-mask-image: radial-gradient(78% 120% at 30% 0%, var(--on-navy) 8%, transparent 76%);
+    mask-image: radial-gradient(78% 120% at 30% 0%, var(--on-navy) 8%, transparent 76%);
+}
+
+/* Velo y viñeteado: sin ellos el degradado se percibe como una lámina plana. */
+.profile-hero-sheen {
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(90% 90% at 4% 0%, var(--veil), transparent 64%),
+        radial-gradient(80% 90% at 100% 100%, var(--veil), transparent 66%),
+        linear-gradient(180deg, transparent 52%, color-mix(in srgb, var(--bg-surface) 55%, transparent) 100%);
+}
+
+@keyframes profile-aurora {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    50% { transform: translate3d(-3%, 3%, 0) scale(1.08); }
+}
+
+/* --- Identidad --- */
 .profile-hero-main {
+    position: relative;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: var(--space-5);
 }
 
-.profile-avatar {
+/*
+   El avatar sube y se recorta sobre la franja: es lo único que la invade.
+
+   El aro toma el color del estado de la cuenta (ver `:has` más abajo), y su
+   color por defecto tiene que ser CLARO en los dos temas: se dibuja contra un
+   disco azul profundo, y con `--brand` el tema claro lo resolvía en
+   `--brand-700` —azul marino sobre azul marino—, así que el aro desaparecía.
+   `--brand-400` es un paso de la escala y no se redefine por tema.
+
+   Ese valor va como respaldo del `var()` y no como declaración propia:
+   declarado aquí ganaría al que hereda de `.profile-hero:has(…)`, y el color
+   del estado no llegaría nunca.
+*/
+.profile-avatar-wrap {
+    position: relative;
     flex-shrink: 0;
-    background: var(--gradient-brand);
-    color: var(--brand-contrast);
-    box-shadow: var(--shadow-glow);
+    display: grid;
+    place-items: center;
+    margin-top: -84px;
+    padding: 6px;
+    border-radius: 50%;
+    /* El tono del estado manda y el cian solo lo recorre: con el acento a
+       partes iguales, todos los aros salían cian y la señal se perdía. */
+    background:
+        conic-gradient(
+            from 200deg,
+            var(--avatar-tone, var(--brand-400)),
+            var(--avatar-tone, var(--brand-400)) 26%,
+            var(--accent) 44%,
+            var(--avatar-tone, var(--brand-400)) 62%,
+            var(--avatar-tone, var(--brand-400)) 88%,
+            var(--accent)
+        );
+    box-shadow:
+        0 0 0 6px var(--bg-surface),
+        0 18px 40px color-mix(in srgb, var(--avatar-tone, var(--brand-400)) 34%, transparent);
 }
+
+/*
+   Las iniciales van sobre un disco azul profundo, no sobre el degradado de
+   marca. Con el degradado, el extremo cian dejaba el blanco en 1,9:1; los dos
+   azules de `--brand-800`/`--brand-950` no se redefinen por tema y dan más de
+   11:1 contra `--on-navy` en claro y en oscuro.
+*/
+.profile-avatar {
+    position: relative;
+    width: 104px;
+    height: 104px;
+    font-family: var(--font-display);
+    font-size: var(--text-3xl);
+    font-weight: 650;
+    letter-spacing: var(--tracking-tight);
+    background: linear-gradient(155deg, var(--brand-800), var(--brand-950));
+    color: var(--on-navy);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--on-navy) 16%, transparent);
+}
+
+/* El color del aro sale del estado que ya pinta el guion en la pastilla de
+   rol: verde si está verificada, ámbar si está en revisión, rojo si la
+   rechazaron, cian si es administración. Si el navegador no entiende `:has`,
+   el aro se queda en el azul de marca y no se pierde nada. */
+.profile-hero:has(.profile-role.badge-success) { --avatar-tone: var(--success); }
+.profile-hero:has(.profile-role.badge-warning) { --avatar-tone: var(--warning); }
+.profile-hero:has(.profile-role.badge-danger) { --avatar-tone: var(--danger); }
+.profile-hero:has(.profile-role.badge-brand) { --avatar-tone: var(--accent); }
 
 /* `min-width: 0` permite que un nombre largo se trunque en lugar de desbordar */
 .profile-identity {
@@ -89,14 +239,36 @@
 }
 
 .profile-name {
-    font-size: var(--text-2xl);
+    font-family: var(--font-display);
+    font-size: var(--text-3xl);
     font-weight: 700;
-    letter-spacing: var(--tracking-tight);
+    letter-spacing: var(--tracking-display);
     line-height: var(--leading-tight);
     color: var(--text-primary);
 }
 
-.profile-role { flex-shrink: 0; }
+.profile-role {
+    flex-shrink: 0;
+    padding-block: 5px;
+}
+
+/* Un visto delante de la pastilla cuando la cuenta está verificada. El
+   recorte es una silueta: el color lo pone `currentColor` de la pastilla. */
+.profile-role.badge-success::before {
+    content: '';
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+    background: currentColor;
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 12.6 5 5L20 6.6'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 12.6 5 5L20 6.6'/%3E%3C/svg%3E");
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+}
 
 .profile-email {
     margin-top: var(--space-2);
@@ -113,15 +285,19 @@
 }
 
 /* Distrito y antigüedad como fichas: los separa entre sí sin recurrir a un
-   punto medio, que con los emojis que los encabezan se leería como ruido. */
+   punto medio, que con los iconos que los encabezan se leería como ruido. */
 .profile-fact {
     display: inline-flex;
     align-items: center;
+    /* Separa el icono del texto: antes iba pegado al emoji por el espacio
+       que llevaba la cadena, y al pasar a SVG ese espacio ya no existe. */
+    gap: var(--space-1);
     max-width: 100%;
     padding: var(--space-1) var(--space-3);
     border-radius: var(--radius-full);
     background: var(--bg-raised);
     border: 1px solid var(--border-subtle);
+    box-shadow: var(--edge-light);
     font-size: var(--text-2xs);
     line-height: var(--leading-snug);
     color: var(--text-secondary);
@@ -137,41 +313,147 @@
     gap: var(--space-2);
 }
 
-/* --- Métricas ---
+/* --------------------------------------------------------------------------
+   Reputación
+
+   Las estrellas son las mismas que en las ofertas (`.rating-stars` recorta
+   una capa dorada al porcentaje exacto de la nota), así que una nota se lee
+   igual en los dos sitios.
+
+   Nace vacía a propósito: la reputación solo se calcula sobre tratos
+   confirmados y nunca se siembra. Sin calificaciones, la interfaz lo dice.
+   -------------------------------------------------------------------------- */
+.profile-reputation {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    margin-top: var(--space-6);
+    padding: var(--space-4) var(--space-5);
+    background: var(--bg-raised);
+    background-image: var(--gradient-surface);
+    border: 1px solid var(--border-subtle);
+    border-left: 3px solid var(--warning);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm), var(--edge-light);
+}
+
+/* Sin nota, el filo ámbar sobra: no hay nada dorado que anunciar. */
+.profile-reputation.is-unrated {
+    border-left-color: var(--border-default);
+}
+
+.profile-reputation-stars {
+    flex-shrink: 0;
+    /* Las estrellas apagadas del núcleo se quedan casi invisibles sobre esta
+       superficie; un punto de ámbar las convierte en un marcador legible. */
+    color: color-mix(in srgb, var(--warning) 30%, var(--border-strong));
+    font-size: var(--text-xl);
+    letter-spacing: 2px;
+}
+
+.profile-reputation-text {
+    min-width: 0;
+}
+
+.profile-reputation-value {
+    display: block;
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+    font-weight: 650;
+    letter-spacing: var(--tracking-tight);
+    line-height: var(--leading-tight);
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+.profile-reputation.is-unrated .profile-reputation-value {
+    font-size: var(--text-base);
+    color: var(--text-secondary);
+}
+
+.profile-reputation-note {
+    display: block;
+    margin-top: var(--space-1);
+    max-width: var(--measure);
+    font-size: var(--text-2xs);
+    line-height: var(--leading-snug);
+    color: var(--text-muted);
+    overflow-wrap: anywhere;
+}
+
+/* --------------------------------------------------------------------------
+   Métricas
    La cifra manda y la etiqueta se retira: lo que se lee de un vistazo es el
-   número, y el rótulo solo hace falta cuando ya lo estás mirando. */
+   número, y el rótulo solo hace falta cuando ya lo estás mirando. El icono
+   da el tono, y el tono distingue una cifra de otra sin leer nada.
+   -------------------------------------------------------------------------- */
 .profile-metrics {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: var(--space-3);
-    margin-top: var(--space-6);
-    padding-top: var(--space-6);
-    border-top: 1px solid var(--border-subtle);
+    margin-top: var(--space-4);
 }
 
 .profile-metric {
-    /* `column-reverse`: el número se ve arriba aunque en el marcado el `dt`
-       vaya primero, que es lo que exige una lista de definición válida. */
+    --metric-tone: var(--brand);
+
+    position: relative;
     display: flex;
-    flex-direction: column-reverse;
-    justify-content: center;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-1);
     min-width: 0;
-    padding: var(--space-5) var(--space-3);
-    text-align: center;
+    overflow: hidden;
+    padding: var(--space-4) var(--space-4) var(--space-5);
     background: var(--bg-raised);
     background-image: var(--gradient-surface);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm), var(--edge-light);
     transition: border-color var(--duration-base) var(--ease-out),
+                box-shadow var(--duration-base) var(--ease-out),
                 transform var(--duration-base) var(--ease-out);
 }
 
+/* Filo de color en el canto superior: identifica la cifra antes de leerla. */
+.profile-metric::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto;
+    height: 2px;
+    background: linear-gradient(90deg,
+        var(--metric-tone),
+        color-mix(in srgb, var(--metric-tone) 10%, transparent));
+    opacity: 0.7;
+}
+
+.profile-metric.is-brand { --metric-tone: var(--brand); }
+.profile-metric.is-warning { --metric-tone: var(--warning); }
+.profile-metric.is-accent { --metric-tone: var(--accent); }
+.profile-metric.is-neutral { --metric-tone: var(--text-secondary); }
+
 .profile-metric:hover {
-    border-color: var(--border-strong);
-    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--metric-tone) 46%, transparent);
+    box-shadow: var(--shadow-md), var(--edge-light-strong);
+    transform: translateY(var(--depth-lift));
+}
+
+.profile-metric-icon {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    margin-bottom: var(--space-2);
+    color: var(--metric-tone);
+    background: color-mix(in srgb, var(--metric-tone) 13%, transparent);
+    border: 1px solid color-mix(in srgb, var(--metric-tone) 26%, transparent);
+    border-radius: var(--radius-md);
 }
 
 .profile-metric-value {
+    order: 1;
+    font-family: var(--font-display);
     font-size: var(--text-2xl);
     font-weight: 700;
     line-height: var(--leading-tight);
@@ -181,23 +463,62 @@
     overflow-wrap: anywhere;
 }
 
+/*
+   La cifra de guardados es un enlace, y como enlace medía 16×35: un objetivo
+   de dedo imposible. En lugar de engordar el número, el enlace se estira
+   sobre toda la ficha —que es lo que la gente intenta pulsar de todas formas—
+   con un pseudoelemento transparente.
+*/
 .profile-metric-link {
     color: inherit;
     text-decoration: none;
     transition: color var(--duration-fast) var(--ease-out);
 }
 
+.profile-metric-link::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+}
+
+.profile-metric:has(.profile-metric-link) { cursor: pointer; }
+
 .profile-metric-link:hover,
-.profile-metric-link:focus-visible { color: var(--brand); }
+.profile-metric-link:focus-visible { color: var(--metric-tone); }
 
 .profile-metric-label {
-    margin-top: var(--space-2);
+    order: 2;
     font-size: var(--text-3xs);
-    font-weight: 600;
+    font-weight: 650;
     letter-spacing: var(--tracking-wide);
     text-transform: uppercase;
     color: var(--text-secondary);
     line-height: var(--leading-snug);
+}
+
+/* ==========================================================================
+   2. Estructura de dos columnas
+   ========================================================================== */
+.profile-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: var(--space-5);
+    align-items: start;
+    margin-top: var(--space-5);
+}
+
+.profile-main { min-width: 0; }
+
+.profile-aside {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+    min-width: 0;
+    /* Acompaña al desplazamiento: en una lista larga de pedidos, el estado de
+       la cuenta sigue a la vista. */
+    position: sticky;
+    top: calc(var(--header-height) + var(--space-5));
 }
 
 /* --------------------------------------------------------------------------
@@ -211,15 +532,16 @@
     --seller-tone: var(--text-muted);
     --seller-wash: var(--bg-raised);
 
+    position: relative;
     display: flex;
-    align-items: flex-start;
-    gap: var(--space-5);
-    margin-top: var(--space-5);
-    padding: var(--space-5) var(--space-6);
+    flex-direction: column;
+    gap: var(--space-4);
+    overflow: hidden;
+    padding: var(--space-5);
     background: var(--seller-wash);
-    border: 1px solid var(--border-subtle);
-    border-left: 4px solid var(--seller-tone);
-    border-radius: var(--radius-lg);
+    border: 1px solid color-mix(in srgb, var(--seller-tone) 28%, var(--border-subtle));
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md), var(--edge-light);
     animation: fade-in var(--duration-base) var(--ease-out);
 }
 
@@ -228,9 +550,34 @@
     display: none;
 }
 
+/* Resplandor del color del estado en la esquina superior: la tarjeta se
+   reconoce por el tono antes de leer el titular. */
+.profile-seller::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto;
+    height: 3px;
+    background: linear-gradient(90deg, var(--seller-tone),
+        color-mix(in srgb, var(--seller-tone) 8%, transparent));
+}
+
+.profile-seller::after {
+    content: '';
+    position: absolute;
+    top: -60px;
+    right: -50px;
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: radial-gradient(circle,
+        color-mix(in srgb, var(--seller-tone) 22%, transparent),
+        transparent 68%);
+    pointer-events: none;
+}
+
 .profile-seller.is-invite {
     --seller-tone: var(--brand);
-    --seller-wash: var(--brand-soft);
+    --seller-wash: var(--bg-surface);
 }
 
 .profile-seller.is-pending {
@@ -255,21 +602,70 @@
     --seller-wash: var(--accent-soft);
 }
 
+/*
+   El guion manda un emoji distinto por estado (🏪 ⏳ ✅ ⚠️ 🛡️). Aquí se apaga
+   y en su lugar se recorta el icono que le corresponde, tomado del mismo
+   juego de trazos que el resto del sitio. El estado ya viaja en la clase del
+   bloque, así que cada variante puede elegir su dibujo sin tocar el guion.
+*/
 .profile-seller-icon {
+    position: relative;
     flex-shrink: 0;
     display: grid;
     place-items: center;
-    width: 52px;
-    height: 52px;
-    font-size: var(--text-2xl);
-    line-height: 1;
+    width: 54px;
+    height: 54px;
+    font-size: 0;
+    line-height: 0;
+    color: var(--seller-tone);
     background: var(--bg-surface);
-    border: 1px solid var(--seller-tone);
+    border: 1px solid color-mix(in srgb, var(--seller-tone) 55%, transparent);
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow-sm), var(--edge-light);
+}
+
+.profile-seller-icon::before {
+    content: '';
+    width: 27px;
+    height: 27px;
+    background: currentColor;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    /* Por defecto, un puesto con su toldo: «¿tienes algo que ofrecer?» */
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.4 8.6h17.2l-1.5-4.2a1.6 1.6 0 0 0-1.5-1.1H6.4a1.6 1.6 0 0 0-1.5 1.1L3.4 8.6Z'/%3E%3Cpath d='M5.1 8.6v11.9h13.8V8.6'/%3E%3Cpath d='M9.6 20.5v-5.8h4.8v5.8'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.4 8.6h17.2l-1.5-4.2a1.6 1.6 0 0 0-1.5-1.1H6.4a1.6 1.6 0 0 0-1.5 1.1L3.4 8.6Z'/%3E%3Cpath d='M5.1 8.6v11.9h13.8V8.6'/%3E%3Cpath d='M9.6 20.5v-5.8h4.8v5.8'/%3E%3C/svg%3E");
+}
+
+/* En revisión: un reloj. */
+.profile-seller.is-pending .profile-seller-icon::before {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='8.8'/%3E%3Cpath d='M12 6.8V12l3.4 2.1'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='8.8'/%3E%3Cpath d='M12 6.8V12l3.4 2.1'/%3E%3C/svg%3E");
+}
+
+/* Aprobada: un visto dentro de su círculo. */
+.profile-seller.is-approved .profile-seller-icon::before {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='8.8'/%3E%3Cpath d='m7.9 12.3 2.8 2.8 5.4-5.9'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='8.8'/%3E%3Cpath d='m7.9 12.3 2.8 2.8 5.4-5.9'/%3E%3C/svg%3E");
+}
+
+/* Rechazada: el triángulo de aviso. */
+.profile-seller.is-rejected .profile-seller-icon::before {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3.4 2.6 19.8h18.8L12 3.4Z'/%3E%3Cpath d='M12 9.6v4.3'/%3E%3Cpath d='M12 16.9h.02'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3.4 2.6 19.8h18.8L12 3.4Z'/%3E%3Cpath d='M12 9.6v4.3'/%3E%3Cpath d='M12 16.9h.02'/%3E%3C/svg%3E");
+}
+
+/* Administración: un escudo. */
+.profile-seller.is-admin .profile-seller-icon::before {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3 4.4 6v5.8c0 4.4 3.1 7.8 7.6 9.3 4.5-1.5 7.6-4.9 7.6-9.3V6L12 3Z'/%3E%3Cpath d='m9.2 12 2.1 2.1 3.9-4.2'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3 4.4 6v5.8c0 4.4 3.1 7.8 7.6 9.3 4.5-1.5 7.6-4.9 7.6-9.3V6L12 3Z'/%3E%3Cpath d='m9.2 12 2.1 2.1 3.9-4.2'/%3E%3C/svg%3E");
 }
 
 .profile-seller-text {
+    position: relative;
     flex: 1;
     min-width: 0;
 }
@@ -282,6 +678,7 @@
 }
 
 .profile-seller-title {
+    font-family: var(--font-display);
     font-size: var(--text-lg);
     font-weight: 650;
     letter-spacing: var(--tracking-tight);
@@ -291,10 +688,11 @@
 
 .profile-seller-message {
     margin-top: var(--space-2);
-    max-width: 68ch;
+    max-width: var(--measure);
     font-size: var(--text-sm);
     line-height: var(--leading-normal);
     color: var(--text-secondary);
+    overflow-wrap: anywhere;
 }
 
 .profile-seller-list {
@@ -302,10 +700,14 @@
     padding-left: var(--space-5);
     display: flex;
     flex-direction: column;
-    gap: var(--space-1);
+    gap: var(--space-2);
     font-size: var(--text-sm);
     line-height: var(--leading-snug);
     color: var(--text-secondary);
+}
+
+.profile-seller-list li::marker {
+    color: var(--seller-tone);
 }
 
 .profile-seller-quote {
@@ -331,27 +733,46 @@
     color: var(--text-secondary);
 }
 
-/* La acción se alinea con el titular, no con el final del texto: así se ve
-   a la misma altura que el estado al que responde. */
 .profile-seller-actions {
+    position: relative;
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
     gap: var(--space-2);
-    margin-top: var(--space-1);
 }
 
+.profile-seller-actions .btn { width: 100%; }
+
 /* --------------------------------------------------------------------------
-   Pestañas
+   Zona de sesión
    -------------------------------------------------------------------------- */
+.profile-session {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-4);
+    padding: var(--space-5);
+    background: var(--bg-surface);
+    background-image: var(--gradient-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm), var(--edge-light);
+}
+
+.profile-session .btn { width: 100%; }
+
+/* ==========================================================================
+   3. Pestañas
+   ========================================================================== */
 .profile-tabs {
     display: flex;
-    gap: var(--space-2);
-    margin-top: var(--space-6);
+    gap: var(--space-1);
     padding: var(--space-1);
     background: var(--bg-raised);
+    background-image: var(--gradient-surface);
     border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm), var(--edge-light);
     overflow-x: auto;
     scrollbar-width: none;
 }
@@ -364,39 +785,56 @@
     justify-content: center;
     gap: var(--space-2);
     flex: 1 0 auto;
-    min-height: 44px;
-    padding: var(--space-2) var(--space-4);
+    min-height: 46px;
+    padding: var(--space-2) var(--space-5);
     white-space: nowrap;
     font-size: var(--text-sm);
-    font-weight: 600;
+    font-weight: 650;
     color: var(--text-secondary);
     background: transparent;
     border: none;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
     cursor: pointer;
     transition: background-color var(--duration-fast) var(--ease-out),
-                color var(--duration-fast) var(--ease-out);
+                color var(--duration-fast) var(--ease-out),
+                box-shadow var(--duration-base) var(--ease-out),
+                transform var(--duration-fast) var(--ease-out);
 }
 
-.profile-tab:hover { background: var(--bg-hover); color: var(--text-primary); }
+.profile-tab-icon {
+    display: grid;
+    place-items: center;
+    opacity: 0.8;
+}
+
+.profile-tab:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.profile-tab:active { transform: scale(var(--depth-press)); }
 
 .profile-tab:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px var(--brand-soft);
+    box-shadow: var(--focus-ring);
 }
 
 .profile-tab.is-active {
     background: var(--brand);
     color: var(--brand-contrast);
-    box-shadow: var(--shadow-sm);
+    box-shadow:
+        var(--edge-light-strong),
+        0 6px 18px color-mix(in srgb, var(--brand) 34%, transparent);
 }
 
-/* --------------------------------------------------------------------------
-   Paneles y bloques
-   -------------------------------------------------------------------------- */
+.profile-tab.is-active .profile-tab-icon { opacity: 1; }
+
+/* ==========================================================================
+   4. Paneles y bloques
+   ========================================================================== */
 .profile-panel {
     margin-top: var(--space-5);
-    animation: fade-in var(--duration-base) var(--ease-out);
+    animation: fade-in-up var(--duration-base) var(--ease-out);
 }
 
 .profile-panel:focus-visible { outline: none; }
@@ -404,8 +842,10 @@
 .profile-block {
     padding: var(--space-6);
     background: var(--bg-surface);
+    background-image: var(--gradient-surface);
     border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm), var(--edge-light);
 }
 
 .profile-block + .profile-block { margin-top: var(--space-5); }
@@ -421,17 +861,32 @@
 .profile-section-text { min-width: 0; }
 
 .profile-block-title {
+    font-family: var(--font-display);
     font-size: var(--text-lg);
     font-weight: 650;
     letter-spacing: var(--tracking-tight);
     color: var(--text-primary);
 }
 
+/* Un trazo de marca sobre el titular: separa las secciones sin una línea que
+   atraviese el bloque entero. */
+.profile-block-title::before {
+    content: '';
+    display: block;
+    width: 30px;
+    height: 3px;
+    margin-bottom: var(--space-3);
+    border-radius: var(--radius-full);
+    background: var(--gradient-brand);
+}
+
 .profile-block-hint {
     margin-top: var(--space-1);
+    max-width: var(--measure);
     font-size: var(--text-xs);
     color: var(--text-secondary);
     line-height: var(--leading-snug);
+    overflow-wrap: anywhere;
 }
 
 /* --------------------------------------------------------------------------
@@ -475,11 +930,15 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--space-4);
-    padding: var(--space-4);
+    padding: var(--space-4) var(--space-5);
     background: var(--bg-raised);
     border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--edge-light);
+    transition: border-color var(--duration-base) var(--ease-out);
 }
+
+.profile-pref:hover { border-color: var(--border-default); }
 
 .profile-pref-text {
     display: flex;
@@ -490,7 +949,7 @@
 
 .profile-pref-label {
     font-size: var(--text-sm);
-    font-weight: 600;
+    font-weight: 650;
     color: var(--text-primary);
 }
 
@@ -517,7 +976,7 @@
     min-height: 44px;
     padding: var(--space-2) var(--space-4);
     font-size: var(--text-xs);
-    font-weight: 600;
+    font-weight: 650;
     color: var(--text-secondary);
     background: var(--bg-raised);
     border: 1px solid var(--border-subtle);
@@ -525,7 +984,8 @@
     cursor: pointer;
     transition: color var(--duration-fast) var(--ease-out),
                 background-color var(--duration-fast) var(--ease-out),
-                border-color var(--duration-fast) var(--ease-out);
+                border-color var(--duration-fast) var(--ease-out),
+                transform var(--duration-fast) var(--ease-out);
 }
 
 .profile-subfilter:hover {
@@ -533,9 +993,11 @@
     border-color: var(--border-strong);
 }
 
+.profile-subfilter:active { transform: scale(var(--depth-press)); }
+
 .profile-subfilter:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px var(--brand-soft);
+    box-shadow: var(--focus-ring);
 }
 
 .profile-subfilter.is-active {
@@ -591,7 +1053,7 @@
     gap: var(--space-4);
     padding: var(--space-4);
     border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
 }
 
 .profile-skeleton-thumb {
@@ -632,38 +1094,118 @@
     color: var(--text-secondary);
 }
 
-/* --------------------------------------------------------------------------
-   Zona de sesión
-   -------------------------------------------------------------------------- */
-.profile-session {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-4);
-    margin-top: var(--space-6);
-    padding: var(--space-5) var(--space-6);
-    background: var(--bg-surface);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-lg);
+/* ==========================================================================
+   5. Ilustraciones de los estados vacíos
+
+   `UI.emptyState` recibe un emoji desde el guion, que cada sistema dibuja a
+   su manera y que no pega con la familia de iconos del resto del sitio. Aquí
+   ese glifo se apaga (`font-size: 0`) y en su sitio se recorta un SVG en
+   línea sobre un color de marca: el dibujo es una silueta, el color lo pone
+   el token, y por eso sigue el tema sin declarar un solo literal.
+   ========================================================================== */
+.profile-page .empty-icon {
+    position: relative;
+    width: 96px;
+    height: 96px;
+    font-size: 0;
+    line-height: 0;
+    background: var(--bg-raised);
+    background-image: var(--gradient-glow);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md), var(--edge-light);
 }
 
-/* --------------------------------------------------------------------------
-   Responsive
-   -------------------------------------------------------------------------- */
+/* Halo exterior: da aire al dibujo y lo separa del fondo del bloque. */
+.profile-page .empty-icon::after {
+    content: '';
+    position: absolute;
+    inset: -9px;
+    border: 1px solid color-mix(in srgb, var(--brand) 20%, transparent);
+    border-radius: var(--radius-xl);
+    pointer-events: none;
+}
+
+.profile-page .empty-icon::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--brand);
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: 44px 44px;
+    mask-size: 44px 44px;
+    /* Lupa: «publica tu primer pedido», «nada con ese estado» y el error de
+       carga viven todos dentro de la lista de pedidos. */
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.6'/%3E%3Cpath d='m15.4 15.4 4.4 4.4'/%3E%3Cpath d='M10.5 7.6a2.9 2.9 0 0 0-2.9 2.9'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.6'/%3E%3Cpath d='m15.4 15.4 4.4 4.4'/%3E%3Cpath d='M10.5 7.6a2.9 2.9 0 0 0-2.9 2.9'/%3E%3C/svg%3E");
+}
+
+/* Sin sesión: un candado, no una lupa. */
+#profile-gate .empty-icon::before {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4.4' y='10' width='15.2' height='10.4' rx='2.6'/%3E%3Cpath d='M8.1 10V7.6a3.9 3.9 0 0 1 7.8 0V10'/%3E%3Cpath d='M12 14.1v2.6'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4.4' y='10' width='15.2' height='10.4' rx='2.6'/%3E%3Cpath d='M8.1 10V7.6a3.9 3.9 0 0 1 7.8 0V10'/%3E%3Cpath d='M12 14.1v2.6'/%3E%3C/svg%3E");
+}
+
+/* ==========================================================================
+   6. Responsive
+   ========================================================================== */
+@media (max-width: 1080px) {
+    /* El lateral pasa debajo… y por encima: el estado de la cuenta es lo
+       primero que se viene a mirar, así que se adelanta al formulario. */
+    .profile-layout { grid-template-columns: minmax(0, 1fr); }
+
+    .profile-aside {
+        position: static;
+        order: -1;
+    }
+
+    .profile-boot-split { grid-template-columns: minmax(0, 1fr); }
+    .profile-boot-seller { height: 150px; }
+    .profile-boot-tabs { height: 60px; }
+    .profile-boot-body { height: 320px; }
+
+    .profile-session {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .profile-session .btn { width: auto; }
+
+    /* A todo lo ancho, un botón de 1000 px no es un botón: vuelve a su tamaño */
+    .profile-seller-actions { flex-direction: row; flex-wrap: wrap; }
+    .profile-seller-actions .btn { width: auto; }
+}
+
 @media (max-width: 960px) {
     .profile-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .profile-edit-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .profile-name { font-size: var(--text-2xl); }
 }
 
 @media (max-width: 720px) {
     .profile-page { padding: var(--space-5) var(--space-4) var(--space-12); }
 
-    /* La cabecera se centra para ganar aire en pantallas estrechas */
+    /* La franja se acorta y la cabecera se centra para ganar aire */
+    .profile-hero {
+        padding: 138px var(--space-5) var(--space-5);
+        border-radius: var(--radius-lg);
+    }
+
+    .profile-hero-cover { height: 118px; }
+
     .profile-hero-main {
         flex-direction: column;
         align-items: center;
         text-align: center;
     }
+
+    .profile-avatar-wrap { margin-top: -74px; }
+
+    .profile-avatar { width: 92px; height: 92px; font-size: var(--text-2xl); }
 
     .profile-identity { width: 100%; }
     .profile-identity-head { justify-content: center; }
@@ -672,12 +1214,13 @@
     .profile-hero-actions { width: 100%; }
     .profile-hero-actions .btn { width: 100%; }
 
-    /* El bloque de vendedor se apila: icono, texto y botón a lo ancho */
-    .profile-seller { flex-direction: column; gap: var(--space-4); padding: var(--space-5); }
-    .profile-seller-actions { width: 100%; margin-top: 0; }
-    .profile-seller-actions .btn { width: 100%; }
+    .profile-reputation {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-2);
+    }
 
-    .profile-tab { flex: 0 0 auto; }
+    .profile-tab { flex: 0 0 auto; padding-inline: var(--space-4); }
 
     .profile-block { padding: var(--space-5) var(--space-4); }
 
@@ -689,20 +1232,33 @@
 
     .profile-subfilter { flex: 1 1 auto; justify-content: center; }
 
+    .profile-seller-actions { flex-direction: column; }
+    .profile-seller-actions .btn { width: 100%; }
+
     .profile-post-reason { margin-left: 0; }
 
     .profile-session { flex-direction: column; align-items: stretch; }
     .profile-session .btn { width: 100%; }
+
+    .profile-page .empty-icon { width: 84px; height: 84px; }
+    .profile-page .empty-icon::before {
+        -webkit-mask-size: 38px 38px;
+        mask-size: 38px 38px;
+    }
 }
 
 @media (max-width: 480px) {
     .profile-page { padding-inline: var(--space-3); }
 
     .profile-name { font-size: var(--text-xl); }
+    .profile-hero { padding-inline: var(--space-4); }
 
     .profile-metrics { gap: var(--space-2); }
-    .profile-metric { padding: var(--space-4) var(--space-2); }
+    .profile-metric { padding: var(--space-3) var(--space-3) var(--space-4); }
     .profile-metric-value { font-size: var(--text-xl); }
+    .profile-metric-icon { width: 32px; height: 32px; margin-bottom: var(--space-1); }
+
+    .profile-reputation { padding: var(--space-4); }
 
     .profile-seller { padding: var(--space-4); }
     .profile-seller-title { font-size: var(--text-base); }
@@ -713,12 +1269,34 @@
     .profile-skeleton-thumb { width: 56px; height: 56px; }
 }
 
-/* Respeta la preferencia de movimiento reducido del sistema */
+/* --------------------------------------------------------------------------
+   Área táctil
+   `.btn-sm` mide 39 px de alto: con ratón sobra y con el dedo se queda corto.
+   Solo donde hay dedos se le devuelven los 44 px, para no engordar las filas
+   de «Editar / Eliminar» en escritorio.
+   -------------------------------------------------------------------------- */
+@media (pointer: coarse) {
+    .profile-posts .btn { min-height: 44px; }
+}
+
+/* Respeta la preferencia de movimiento reducido del sistema.
+   base.css ya acorta toda duración; aquí se retiran además los desplazamientos
+   que quedarían congelados a mitad de camino. */
 @media (prefers-reduced-motion: reduce) {
     .profile-hero,
     .profile-panel,
     .profile-post,
     .profile-seller { animation: none; }
 
+    .profile-hero-mesh { animation: none; }
+
     .profile-metric:hover { transform: none; }
+    .profile-tab:active,
+    .profile-subfilter:active { transform: none; }
+}
+
+/* El icono de las fichas no se estira ni se encoge con el texto de al lado */
+.profile-fact-icon {
+    flex-shrink: 0;
+    color: var(--text-muted);
 }

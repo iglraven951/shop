@@ -15,8 +15,19 @@
     const SESSION_KEY = 'discoveryshop:intro-seen';
     /* Debe cubrir el retraso más la duración de la salida en intro.css:
        4400 ms de secuencia + 800 ms de telón, con holgura. */
-    const TOTAL_MS = 5600;
-    const COUNT_MS = 4100;
+    /* Estas tres cifras son la coreografía de `intro.css`, escrita arriba del
+       todo de esa hoja. Tienen que ir en hora con ella: cuando la entrada se
+       acortó de 5200 a 2200 ms y esto se quedó en 5600, el telón seguía en el
+       documento tres segundos y medio después de haberse desvanecido —
+       invisible, pero encima de todo— y la portada nunca llegaba a entrar.
+
+         EXIT_MS   cuándo empieza a subir el telón
+         TOTAL_MS  cuándo ha terminado y se puede retirar del documento
+         COUNT_MS  cuánto tarda el contador en llegar a 100, que debe ser
+                   ANTES de que el telón empiece a irse o se quedaría a medias */
+    const EXIT_MS = 1860;
+    const TOTAL_MS = 2260;
+    const COUNT_MS = 1440;
 
     /** El almacenamiento falla en ventana privada: nunca debe romper la página. */
     function alreadySeen() {
@@ -50,6 +61,29 @@
     }
 
     /** Retira la capa y deja la página libre. */
+    /**
+     * Avisa a la página de que el telón se va.
+     *
+     * La portada tiene su propia entrada escalonada, y sin esta señal solo se
+     * veía en la segunda visita: en la primera, la intro la tapa dos segundos
+     * y para cuando se retira ya está compuesta y quieta. El trabajo estaba
+     * hecho y no lo veía nadie.
+     *
+     * Se marca `<html>` y no `<body>` porque la hoja de la portada se
+     * evalúa antes de que exista el cuerpo, y porque una clase en la raíz es
+     * lo que el CSS puede consultar desde cualquier altura del documento.
+     */
+    function curtainUp() {
+        document.documentElement.classList.add('intro-done');
+    }
+
+    /* La señal se da cuando el telón EMPIEZA a subir, no cuando acaba: las dos
+       animaciones tienen que solaparse o queda un hueco en el que no se mueve
+       nada, y el corte se nota más que la transición. */
+    function scheduleCurtain() {
+        setTimeout(curtainUp, EXIT_MS);
+    }
+
     function dismiss(intro, immediate) {
         if (!intro || intro.dataset.dismissed === 'true') return;
         intro.dataset.dismissed = 'true';
@@ -58,10 +92,17 @@
 
         if (immediate) {
             intro.remove();
+            curtainUp();
             return;
         }
 
         intro.classList.add('is-done');
+
+        /* La señal se da al EMPEZAR la salida, no al terminarla: las dos
+           animaciones tienen que solaparse, o queda un hueco en el que no se
+           mueve nada y el corte se nota. */
+        curtainUp();
+
         intro.addEventListener('animationend', () => intro.remove(), { once: true });
         setTimeout(() => intro.remove(), 500);
     }
@@ -138,7 +179,12 @@
 
     function init() {
         const intro = document.getElementById('intro');
-        if (!intro) return;
+
+        // Sin intro que esperar, el telón ya está arriba
+        if (!intro) {
+            curtainUp();
+            return;
+        }
 
         if (alreadySeen() && !replayRequested()) {
             dismiss(intro, true);
@@ -153,6 +199,7 @@
         prepareStrokes(intro);
         splitWords(intro.querySelector('.intro-name'));
         runCounter(intro);
+        scheduleCurtain();
 
         const skip = intro.querySelector('.intro-skip');
         if (skip) skip.addEventListener('click', () => dismiss(intro));

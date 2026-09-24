@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mensajes · DiscoveryShop</title>
-    <meta name="description" content="Centro de mensajes de DiscoveryShop: conversa con quien publica, resuelve tus dudas sobre el artículo y acuerda dónde verse dentro de Arequipa.">
+    <meta name="description" content="Centro de mensajes de DiscoveryShop: conversa con el vendedor cuya oferta aceptaste, resuelve tus dudas sobre lo que buscabas y acuerda dónde verse dentro de Arequipa.">
     <meta name="theme-color" content="#070c14">
     <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
     <link rel="apple-touch-icon" href="assets/img/logo.png">
     <link rel="manifest" href="site.webmanifest">
+    <link rel="stylesheet" href="assets/css/fonts.css">
     <link rel="stylesheet" href="assets/css/tokens.css">
     <link rel="stylesheet" href="assets/css/base.css">
     <link rel="stylesheet" href="assets/css/components.css">
@@ -35,7 +36,20 @@
                      ========================================================= -->
                 <aside class="chat-sidebar" aria-label="Lista de conversaciones">
                     <header class="chat-sidebar-head">
-                        <h1 class="chat-sidebar-title">Mensajes</h1>
+                        <div class="chat-sidebar-brand">
+                            <span class="chat-sidebar-mark" aria-hidden="true">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                     stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                                    <rect x="3.2" y="4.4" width="17.6" height="12.4" rx="3.2"/>
+                                    <path d="M8.4 16.8v3.4l4.4-3.4"/>
+                                    <path d="M7.6 9.4h8.8M7.6 12.6h5.4"/>
+                                </svg>
+                            </span>
+                            <div class="chat-sidebar-heading">
+                                <h1 class="chat-sidebar-title">Mensajes</h1>
+                                <p class="chat-sidebar-lead">Un hilo por cada oferta que aceptas</p>
+                            </div>
+                        </div>
 
                         <div class="chat-search">
                             <span class="chat-search-icon" aria-hidden="true">
@@ -43,9 +57,9 @@
                                     <circle cx="9" cy="9" r="6"/><path d="m13.5 13.5 3.5 3.5"/>
                                 </svg>
                             </span>
-                            <label class="sr-only" for="chat-search-input">Buscar conversación por tienda o pedido</label>
+                            <label class="sr-only" for="chat-search-input">Buscar conversación por vendedor o pedido</label>
                             <input class="input chat-search-input" id="chat-search-input" type="search"
-                                   placeholder="Buscar tienda o pedido…" autocomplete="off">
+                                   placeholder="Buscar vendedor o pedido…" autocomplete="off">
                         </div>
                     </header>
 
@@ -61,7 +75,7 @@
                     <div class="chat-welcome" id="thread-welcome">
                         <div class="chat-welcome-art" aria-hidden="true">
                             <svg width="112" height="112" viewBox="0 0 112 112" fill="none" stroke="currentColor"
-                                 stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                 stroke-width="3" stroke-linecap="round" stroke-linejoin="round" focusable="false">
                                 <rect x="13" y="22" width="62" height="45" rx="13"/>
                                 <path d="M29 40h30M29 51h18"/>
                                 <path d="M37 67v13l15-13"/>
@@ -69,11 +83,28 @@
                                 <path d="M67 66h18" opacity="0.4"/>
                             </svg>
                         </div>
-                        <h2 class="chat-welcome-title">Selecciona una conversación para empezar</h2>
+                        <h2 class="chat-welcome-title">Elige una conversación para empezar</h2>
                         <p class="chat-welcome-text">
-                            Aquí verás todo el historial con cada persona: el estado del artículo,
-                            el precio y en qué distrito de Arequipa pueden verse.
+                            Aquí verás todo el historial con cada persona: el estado de lo que
+                            buscabas, el precio acordado y en qué distrito de Arequipa pueden verse.
                         </p>
+
+                        <!-- Contenido fijo: explica por qué la lista de la izquierda
+                             puede estar vacía sin que nada vaya mal. -->
+                        <ol class="chat-welcome-steps">
+                            <li class="chat-welcome-step">
+                                <span class="chat-welcome-step-num" aria-hidden="true">1</span>
+                                <span>Publicas <strong>lo que buscas</strong> con tu presupuesto.</span>
+                            </li>
+                            <li class="chat-welcome-step">
+                                <span class="chat-welcome-step-num" aria-hidden="true">2</span>
+                                <span>Los vendedores te responden <strong>con su oferta y su precio</strong>.</span>
+                            </li>
+                            <li class="chat-welcome-step">
+                                <span class="chat-welcome-step-num" aria-hidden="true">3</span>
+                                <span>Aceptas una y <strong>se abre este chat</strong> para quedar.</span>
+                            </li>
+                        </ol>
                     </div>
 
                     <!-- Hilo activo -->
@@ -91,14 +122,36 @@
                                     <span class="chat-typing-dot"></span>
                                     <span class="chat-typing-dot"></span>
                                 </span>
-                                <span class="sr-only">La tienda está escribiendo un mensaje</span>
+                                <span class="sr-only">El vendedor está escribiendo un mensaje</span>
                             </div>
                         </div>
 
                         <div class="chat-thread-foot">
                             <div class="chat-quick" id="thread-quick" role="group" aria-label="Respuestas rápidas"></div>
 
+                            <!-- Las fotos por enviar, antes del campo: se ven
+                                 mientras se escribe el mensaje que las acompaña -->
+                            <div class="chat-tray" id="chat-tray" hidden
+                                 aria-label="Fotos por enviar"></div>
+
                             <form class="chat-composer" id="thread-composer" novalidate>
+                                <!-- El selector nativo no se puede estilar, así que
+                                     lo abre el botón de al lado -->
+                                <input class="sr-only" id="chat-file" type="file"
+                                       accept="image/*" multiple tabindex="-1">
+
+                                <button class="chat-attach" id="chat-attach" type="button"
+                                        aria-label="Adjuntar fotos">
+                                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
+                                         stroke="currentColor" stroke-width="1.7"
+                                         stroke-linecap="round" stroke-linejoin="round"
+                                         aria-hidden="true">
+                                        <rect x="2.5" y="3.5" width="15" height="13" rx="2.5"/>
+                                        <circle cx="7" cy="8" r="1.5"/>
+                                        <path d="M2.5 13.5 7 9.5l3.5 3 2.5-2 4.5 4"/>
+                                    </svg>
+                                </button>
+
                                 <div class="chat-composer-field">
                                     <label class="sr-only" for="chat-input">Escribe un mensaje</label>
                                     <textarea class="textarea chat-input" id="chat-input" rows="1" maxlength="1000"
@@ -131,6 +184,7 @@
     <script src="assets/js/core/native.js"></script>
     <script src="assets/js/core/seed.js"></script>
     <script src="assets/js/core/moderator.js"></script>
+    <script src="assets/js/core/seller-bot.js"></script>
     <script src="assets/js/core/mock-api.js"></script>
     <script src="assets/js/core/store.js"></script>
     <script src="assets/js/core/api.js"></script>

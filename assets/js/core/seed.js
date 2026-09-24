@@ -134,7 +134,7 @@
        quién es y dónde está («Hola, soy del local Vintage AQP»). */
     const USERS = [
         ['Juan Pérez', 'juan@discoveryshop.pe', 'seller', 'approved', 'Cayma', 4.8, 142, 'Tecno Cayma'],
-        ['María García', 'maria@discoveryshop.pe', 'seller', 'approved', 'Yanahuara', 4.9, 286, 'Tienda Vintage AQP'],
+        ['María García', 'maria@discoveryshop.pe', 'seller', 'approved', 'Yanahuara', 4.9, 286, 'Vintage AQP'],
         ['Carlos Quispe', 'carlos@discoveryshop.pe', 'seller', 'approved', 'Cerro Colorado', 4.6, 74, 'Importaciones Quispe'],
         ['Ana Martínez', 'ana@discoveryshop.pe', 'seller', 'approved', 'Paucarpata', 4.7, 198, 'Bazar Martínez'],
         ['Roberto Sánchez', 'roberto@discoveryshop.pe', 'seller', 'approved', 'Socabaya', 5.0, 63, 'El Rincón de Roberto'],
@@ -175,7 +175,7 @@
        ---------------------------------------------------------------------- */
 
     const RAW_REQUESTS = [
-        ['Lámpara vintage de mesa', 'cat-hogar', 80, 150, '💡', 3, 'Busco una lámpara vintage de mesa, color dorado, estilo antiguo. La quiero para el escritorio del estudio. He recorrido tiendas del centro y online, pero todo lo que encuentro es muy moderno o no se parece a lo que tengo en mente.'],
+        ['Lámpara vintage de mesa', 'cat-hogar', 80, 150, '💡', 3, 'Busco una lámpara vintage de mesa, color dorado, estilo antiguo. La quiero para el escritorio del estudio. He recorrido vendedores del centro y online, pero todo lo que encuentro es muy moderno o no se parece a lo que tengo en mente.'],
         ['iPhone 13 Pro 128 GB', 'cat-celulares', 2000, 2500, '📱', 4, 'Busco un iPhone 13 Pro de 128 GB en buen estado, con batería por encima del 85 %. Prefiero que tenga caja y que se pueda revisar antes de cerrar el trato.'],
         ['Samsung Galaxy A54', 'cat-celulares', 800, 1000, '📱', 5, 'Necesito un Galaxy A54 liberado para cualquier operador. No me molesta que tenga marcas de uso mientras la pantalla esté sin rayones y funcione todo.'],
         ['Celular básico para mi mamá', 'cat-celulares', 200, 400, '📱', 6, 'Busco un celular sencillo, con letras grandes y batería que aguante el día. Es para mi mamá, que no usa nada más que llamadas y WhatsApp.'],
@@ -220,10 +220,10 @@
     /* Cómo responde un vendedor al abrir la conversación. El primer mensaje
        dice quién es, dónde está y cuánto cuesta — igual que en el storyboard. */
     const OFFER_TEMPLATES = [
-        'Hola, soy de {tienda}. Lo que buscas está disponible. Estamos en {distrito} y el precio es de S/ {precio}. Te adjunto fotos.',
-        'Buenas, te escribo de {tienda}. Tengo justo lo que pides, en {distrito}. Lo dejo en S/ {precio} y puedes venir a verlo cuando quieras.',
-        'Hola, en {tienda} tenemos uno en buen estado. Precio S/ {precio}. Estamos en {distrito}, puedes pasar a revisarlo sin compromiso.',
-        'Qué tal, soy de {tienda}. Me llegó tu pedido y sí lo tengo. S/ {precio}, y si lo recoges esta semana lo conversamos.',
+        'Hola, soy de {vendedor}. Lo que buscas está disponible. Estamos en {distrito} y el precio es de S/ {precio}. Te adjunto fotos.',
+        'Buenas, te escribo de {vendedor}. Tengo justo lo que pides, en {distrito}. Lo dejo en S/ {precio} y puedes venir a verlo cuando quieras.',
+        'Hola, en {vendedor} tenemos uno en buen estado. Precio S/ {precio}. Estamos en {distrito}, puedes pasar a revisarlo sin compromiso.',
+        'Qué tal, soy de {vendedor}. Me llegó tu pedido y sí lo tengo. S/ {precio}, y si lo recoges esta semana lo conversamos.',
     ];
 
     /** Comentarios verosímiles para poblar las conversaciones del foro. */
@@ -339,6 +339,23 @@
         const now = Date.now();
         const hour = 3600000;
 
+        /**
+         * Cómo se presenta cada cuenta, según lo que puede hacer aquí.
+         *
+         * @param {string|null} sellerStatus
+         * @param {string|null} shopName
+         * @param {string} district
+         */
+        function bioFor(sellerStatus, shopName, district) {
+            if (sellerStatus === 'approved') {
+                return `Atendemos pedidos desde ${shopName}. Respondemos el mismo día.`;
+            }
+            if (sellerStatus === 'pending') {
+                return `Quiero vender en ${district} y estoy esperando la aprobación para responder pedidos.`;
+            }
+            return `Vivo por ${district}. Publico lo que necesito y coordino la entrega en el distrito.`;
+        }
+
         const users = USERS.map(([username, email, role, sellerStatus, district, rating, sales, shopName], index) => {
             const d = districtByName(district);
             // Dispersión determinista dentro del distrito: evita que todos los
@@ -360,9 +377,10 @@
                 district,
                 location: { lat: d.lat + jitter, lng: d.lng - jitter2, district, city: 'Arequipa', country: 'Perú' },
                 phone: `+51 9${String(10000000 + (hashString(email) % 89999999)).slice(0, 8)}`,
-                bio: sellerStatus === 'approved'
-                    ? `Atendemos pedidos desde ${shopName}. Respondemos el mismo día.`
-                    : '',
+                /* Una biografía por papel. Los compradores la tenían vacía, y
+                   como dos de las cuatro cuentas de demostración lo son, su
+                   pestaña «Mis datos» se veía a medio rellenar. */
+                bio: bioFor(sellerStatus, shopName, district),
                 rating,
                 rating_count: 0,
                 // Pedidos publicados como comprador y ofertas enviadas como vendedor
@@ -371,6 +389,14 @@
                 total_sales: sales,
                 verified: sellerStatus === 'approved',
                 created_at: new Date(now - (index * 9 + 40) * 24 * hour).toISOString(),
+                /* Cuándo pidió ser vendedor, que no es cuándo abrió la cuenta.
+                   Sin este campo la bandeja del administrador caía en
+                   `created_at` y anunciaba solicitudes «de hace cinco meses»
+                   recién sembradas. Se fecha unos días atrás: una cola de
+                   revisión creíble, no una que lleva medio año parada. */
+                applied_at: sellerStatus === 'pending' || sellerStatus === 'approved'
+                    ? new Date(now - ((index % 5) + 2) * 24 * hour).toISOString()
+                    : null,
             };
         });
 
@@ -504,7 +530,7 @@
                     verified: seller.verified,
                 },
                 message: template
-                    .replace('{tienda}', seller.shop_name)
+                    .replace('{vendedor}', seller.shop_name)
                     .replace('{distrito}', seller.district)
                     .replace('{precio}', price.toFixed(2)),
                 price,
@@ -539,11 +565,11 @@
             });
 
         /* El pedido del storyboard: la lámpara de Patricia, con la oferta de la
-           Tienda Vintage AQP a S/ 120 esperando respuesta. Así, al entrar con su
+           Vintage AQP a S/ 120 esperando respuesta. Así, al entrar con su
            cuenta, el recorrido completo — aviso, aceptar, chat, compra,
            calificación — se puede caminar de principio a fin. */
         const lamp = requests[0];
-        const vintage = users.find((u) => u.shop_name === 'Tienda Vintage AQP');
+        const vintage = users.find((u) => u.shop_name === 'Vintage AQP');
 
         if (lamp && vintage && lamp.status === 'approved') {
             const existing = offers.findIndex((o) => o.request_id === lamp.id);
@@ -580,7 +606,7 @@
         ];
 
         /* Cómo suena el final de un trato. Quien pidió confirma la cita y
-           la tienda cierra: son las dos frases que faltan para que la compra
+           el vendedor cierra: son las dos frases que faltan para que la compra
            tenga principio y fin, no solo una estrella. */
         const CLOSING = [
             ['Perfecto, ¿te va bien mañana por la tarde?', 'Claro, te espero. Pregunta por mí al entrar.'],

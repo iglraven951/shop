@@ -267,6 +267,69 @@ async function run() {
     const mine = await api.request('/api/requests/mine', { token: buyerToken });
     check('aparece en sus pedidos', mine.data.requests.some((x) => x.id === newRequestId));
 
+    /* ================= LAS DOS REGLAS DEL TABLÓN =================
+       Cinco pedidos abiertos por persona y quince días hábiles de vida. Las
+       aplica el servidor; la pantalla solo las repite, así que lo que se
+       comprueba aquí es la fuente. */
+    check('el servidor dice cuál es el tope', mine.data.limits.max_open === 5);
+    check('y cuánta vida tiene un pedido', mine.data.limits.life_working_days === 15);
+    check('cuenta los abiertos', mine.data.limits.open === 1, `open=${mine.data.limits.open}`);
+    check('y lo que queda', mine.data.limits.left === 4, `left=${mine.data.limits.left}`);
+
+    const fresh = created.data.request;
+    check('un pedido nace con fecha de caducidad', typeof fresh.expires_at === 'string');
+    check('que cae quince días hábiles después', (() => {
+        const days = (new Date(fresh.expires_at) - new Date(fresh.created_at)) / 86400000;
+        // Quince hábiles son 21 naturales salvo que empiecen en fin de semana
+        return days >= 19 && days <= 23;
+    })(), `${((new Date(fresh.expires_at) - new Date(fresh.created_at)) / 86400000).toFixed(1)} días`);
+    check('y sabe cuántos días hábiles le quedan',
+        fresh.days_left > 0 && fresh.days_left <= 15, `days_left=${fresh.days_left}`);
+
+    /* El tope cuenta lo vivo, no el historial. Se llena el cupo… */
+    const quotaBody = (n) => ({
+        method: 'POST', token: buyerToken,
+        body: {
+            title: `Pedido de prueba número ${n}`,
+            description: 'Un pedido de prueba para comprobar que el tope del tablón se aplica.',
+            category_id: 'cat-hogar',
+            district: 'Miraflores',
+            condition: 'Como nuevo o mejor',
+        },
+    });
+
+    const filler = [];
+    for (let n = 2; n <= 5; n += 1) {
+        const extra = await api.request('/api/requests', quotaBody(n));
+        filler.push(extra.data.request.id);
+    }
+
+    const atCap = await api.request('/api/requests/mine', { token: buyerToken });
+    check('el cupo se llena con cinco', atCap.data.limits.open === 5 && atCap.data.limits.left === 0,
+        `open=${atCap.data.limits.open}`);
+
+    const sixth = await expectFail(api, '/api/requests', quotaBody(6));
+    check('y el sexto pedido se rechaza', !!sixth);
+    check('diciendo por qué y qué hacer',
+        !!sixth && /5 pedidos abiertos/.test(sixth.message) && /elimina/i.test(sixth.message),
+        sixth ? sixth.message : 'sin error');
+
+    /* …y se libera al retirar uno. Se retiran los de prueba, no el primero:
+       el resto de la suite lo sigue usando para moderar, ofertar y cerrar. */
+    for (const id of filler) {
+        await api.request(`/api/requests/${id}`, { method: 'DELETE', token: buyerToken });
+    }
+
+    const freed = await api.request('/api/requests/mine', { token: buyerToken });
+    check('eliminar un pedido devuelve el sitio', freed.data.limits.left === 4,
+        `left=${freed.data.limits.left}`);
+
+    const reborn = await api.request('/api/requests', quotaBody(7));
+    check('y entonces se puede volver a pedir', !!reborn.data.request.id);
+    await api.request(`/api/requests/${reborn.data.request.id}`, {
+        method: 'DELETE', token: buyerToken,
+    });
+
     const stillPending = created.data.request.status === 'pending';
     const hidden = await expectFail(api, `/api/requests/${newRequestId}`, { token: sellerToken });
     check('un pedido sin aprobar no lo ve otro', stillPending ? !!hidden : true);
@@ -403,6 +466,38 @@ async function run() {
     check('con el mensaje de la oferta dentro',
         accepted.data.conversation.messages[0].text === lampOffer.message);
     check('y crea el trato', !!accepted.data.deal && accepted.data.deal.confirmed_at === null);
+
+    /* Los DOS lados tienen que poder llegar a esa conversación. El comprador
+       la recibe al aceptar; el vendedor ve su oferta a través de `my_offer`,
+       que no pasaba por el mismo sitio y llegaba sin hilo: su ficha ofrecía un
+       «Ir a Mensajes» a secas mientras el comprador tenía el botón directo. */
+    const convId = accepted.data.conversation.id;
+
+    // Quien respondió esa oferta es un vendedor cualquiera de la semilla
+    const offerOwner = api.state.users.find((u) => u.id === lampOffer.seller.id);
+    const ownerLogin = await api.request('/api/auth/login', {
+        method: 'POST', body: { email: offerOwner.email, password: 'demo1234' },
+    });
+    const ownerToken = ownerLogin.data.access_token;
+
+    const threadForSeller = await api.request(`/api/requests/${lampOffer.request_id}`, {
+        method: 'GET', token: ownerToken,
+    });
+    check('la tienda ve su oferta aceptada',
+        threadForSeller.data.request.my_offer && threadForSeller.data.request.my_offer.status === 'accepted');
+    check('y con el hilo donde seguir hablando',
+        threadForSeller.data.request.my_offer.conversation_id === convId,
+        `my_offer.conversation_id=${threadForSeller.data.request.my_offer.conversation_id}`);
+
+    const threadForBuyer = await api.request(`/api/requests/${lampOffer.request_id}/offers`, {
+        token: patriciaToken,
+    });
+    check('y quien pidió llega al mismo hilo',
+        threadForBuyer.data.offers.find((o) => o.id === lampOffer.id).conversation_id === convId);
+
+    const sellerInbox = await api.request("/api/chat/conversations", { token: ownerToken });
+    check('la conversación está en la bandeja de la tienda',
+        sellerInbox.data.conversations.some((c) => c.id === convId));
 
     const dealId = accepted.data.deal.id;
 

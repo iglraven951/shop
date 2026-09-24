@@ -55,29 +55,36 @@
 
     const ICON = {
         close: '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m5 5 8 8M13 5l-8 8"/></svg>',
-        broom: '<svg width="17" height="17" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 15.5h11"/><path d="M7 12.5h7l-.8 3H7.8Z"/><path d="M10.5 12.5V7.2a2.7 2.7 0 0 1 2.7-2.7h1.3"/></svg>',
+        /* Antes aquí había una escoba: la cabeza del cepillo se apoyaba justo
+           sobre la línea del suelo y a 17 px las dos formas se fundían en un
+           borrón. Una papelera se lee entera a ese tamaño y dice lo mismo. */
+        broom: '<svg width="17" height="17" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.4 5.2h11.2"/><path d="M7.2 5.2V4a1.1 1.1 0 0 1 1.1-1.1h1.4A1.1 1.1 0 0 1 10.8 4v1.2"/><path d="m5.3 5.2.62 8.05A1.4 1.4 0 0 0 7.32 14.6h3.36a1.4 1.4 0 0 0 1.4-1.35l.62-8.05"/><path d="M7.7 7.9v3.9M10.3 7.9v3.9"/></svg>',
         send: '<svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 2.5 9 11"/><path d="M17.5 2.5 12 17.5l-3-6.5-6.5-3Z"/></svg>',
+        /* Lápiz: encabeza la respuesta que redacta un pedido. */
+        pencil: '<svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.6 1.9 12.1 4.4 4.9 11.6 1.9 12.1l.5-3Z"/><path d="M8.3 3.2l2.5 2.5"/></svg>',
+        /* Tablón: encabeza los pedidos que el motor encontró. */
+        board: '<svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.8" y="2.4" width="10.4" height="9.2" rx="1.6"/><path d="M4.4 5.4h5.2M4.4 8.2h3.2"/></svg>',
     };
 
     /**
-     * Símbolo de la marca: la bolsa con la lupa recortada, igual que en la
-     * cabecera. La máscara necesita un identificador propio en cada copia:
-     * dos elementos con el mismo `id` en la misma página son HTML inválido y
-     * algunos navegadores aplican la primera máscara a todas.
+     * Sello del asistente: el destello de cuatro puntas, grande y pequeño.
+     *
+     * Antes aquí iba la bolsa de la marca, la misma que preside la cabecera.
+     * Copiarla le quitaba identidad a las dos cosas: el asistente no era nadie
+     * —solo el logo otra vez, más pequeño— y el logo dejaba de significar «la
+     * casa» para significar también «pregúntame». El destello es el sello que
+     * comparten las dos IA de la casa, el asistente y el revisor de pedidos,
+     * y a 24 px se sigue leyendo, que es donde un símbolo con recortes se
+     * convierte en una mancha.
      */
-    function brandMark(maskId) {
-        const id = escapeAttr(maskId);
+    function sigil() {
         return [
             '<svg viewBox="0 0 40 40" fill="none" aria-hidden="true" focusable="false">',
-            '<path d="M13.4 10.6 9.1 29.4a1.1 1.1 0 0 0 1.07 1.35h3.23Z" fill="currentColor" opacity="0.5"/>',
-            '<path d="M16.6 11.2V9.4a4.6 4.6 0 0 1 9.2 0v1.8" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>',
-            `<mask id="${id}">`,
-            '<rect width="40" height="40" fill="#fff"/>',
-            '<circle cx="21.3" cy="19.4" r="5.2" fill="none" stroke="#000" stroke-width="2.3"/>',
-            '<path d="m25.2 23.3 4.6 4.6" stroke="#000" stroke-width="2.5" stroke-linecap="round"/>',
-            '</mask>',
-            '<path d="M13.4 10.6h15.9a1.6 1.6 0 0 1 1.6 1.45l1.62 17.1a1.6 1.6 0 0 1-1.6 1.75H10.9a1.1 1.1 0 0 1-1.07-1.35Z"',
-            ` fill="currentColor" mask="url(#${id})"/>`,
+            '<path d="M17 6.5C17.86 14.44 20.56 17.14 28.5 18C20.56 18.86 17.86 21.56 17 29.5',
+            'C16.14 21.56 13.44 18.86 5.5 18C13.44 17.14 16.14 14.44 17 6.5Z" fill="currentColor"/>',
+            '<path d="M29.5 24.5C29.86 27.62 30.88 28.64 34 29C30.88 29.36 29.86 30.38 29.5 33.5',
+            'C29.14 30.38 28.12 29.36 25 29C28.12 28.64 29.14 27.62 29.5 24.5Z"',
+            ' fill="currentColor" opacity="0.6"/>',
             '</svg>',
         ].join('');
     }
@@ -187,10 +194,10 @@
         return {
             role: 'assistant',
             at: nowIso(),
-            text: 'Hola, soy el asistente de DiscoveryShop. Dime con tus palabras qué estás buscando —marca, precio o distrito— y lo rastreo en el foro por ti.',
+            text: 'Hola, soy el asistente de DiscoveryShop. Dime con tus palabras qué estás buscando —marca, presupuesto o distrito— y lo rastreo en el tablón por ti. Si nadie lo está pidiendo todavía, te ayudo a redactar tu pedido.',
             posts: [],
             link: null,
-            suggestions: ['Busco un celular', '¿Qué hay en Cayma?', '¿Cómo publico un artículo?'],
+            suggestions: ['Busco un celular', '¿Qué hay en Cayma?', '¿Cómo publico un pedido?'],
         };
     }
 
@@ -200,7 +207,7 @@
             at: nowIso(),
             error: true,
             retry: true,
-            text: 'No pude consultar el catálogo en este momento. Puede ser algo pasajero: inténtalo otra vez.',
+            text: 'No pude consultar el tablón en este momento. Puede ser algo pasajero: inténtalo otra vez.',
             posts: [],
             link: null,
             suggestions: [],
@@ -216,20 +223,27 @@
         <button class="asst-fab" type="button" id="asst-fab"
                 aria-label="Abrir el asistente de DiscoveryShop"
                 aria-expanded="false" aria-controls="asst-panel">
-            ${brandMark('asst-mark-fab')}
+            <span class="asst-fab-halo" aria-hidden="true"></span>
+            <span class="asst-fab-mark" aria-hidden="true">${sigil()}</span>
             <span class="asst-ping" id="asst-ping" aria-hidden="true"></span>
         </button>
 
         <section class="asst-panel" id="asst-panel" role="dialog" aria-modal="true"
                  aria-labelledby="asst-title" hidden>
             <header class="asst-head">
-                <span class="asst-avatar" aria-hidden="true">${brandMark('asst-mark-head')}</span>
+                <span class="asst-avatar" aria-hidden="true">
+                    <span class="asst-avatar-orbit"></span>
+                    ${sigil()}
+                </span>
 
                 <span class="asst-id">
-                    <span class="asst-name" id="asst-title">Asistente DiscoveryShop</span>
+                    <span class="asst-name" id="asst-title">
+                        <span class="asst-name-text">Asistente<span class="asst-name-suffix"> DiscoveryShop</span></span>
+                        <span class="asst-badge">IA</span>
+                    </span>
                     <span class="asst-status">
                         <span class="asst-status-dot" aria-hidden="true"></span>
-                        En línea · responde al instante
+                        En línea<span class="asst-status-more"> · busca y redacta por ti</span>
                     </span>
                 </span>
 
@@ -243,12 +257,13 @@
             <div class="asst-thread" id="asst-thread">
                 <div class="asst-log" id="asst-log" role="log" aria-live="polite"
                      aria-relevant="additions" aria-label="Conversación con el asistente"></div>
-                <div class="asst-suggest" id="asst-suggest" hidden></div>
             </div>
+
+            <div class="asst-suggest" id="asst-suggest" hidden></div>
 
             <form class="asst-composer" id="asst-composer">
                 <textarea class="asst-input" id="asst-input" rows="1"
-                          placeholder="Escribe qué estás buscando…"
+                          placeholder="Dime qué estás buscando…"
                           aria-label="Mensaje para el asistente"
                           autocomplete="off" maxlength="400"></textarea>
 
@@ -279,20 +294,48 @@
     }
 
     /**
+     * ¿Esta respuesta está redactando un pedido, o solo contestando?
+     *
+     * Es la distinción que más importa de cara a quien mira: buscar en el
+     * tablón es un servicio, pero convertir «una lámpara vintage dorada» en un
+     * pedido publicable es LO que hace esta plataforma. El motor ya la marca
+     * sin saberlo —cuando lleva a `publicar.html` es porque nadie está pidiendo
+     * eso y toca escribirlo—, así que se lee de ahí en lugar de inventar un
+     * campo nuevo en el contrato. Se compara solo el nombre del archivo: el
+     * enlace puede traer parámetros detrás.
+     */
+    function isComposing(message) {
+        return message.role !== 'user'
+            && typeof message.link === 'string'
+            && /^publicar\.html(?:[?#]|$)/.test(message.link);
+    }
+
+    /** Rótulo que encabeza un bloque dentro de la burbuja. */
+    function kickerMarkup(icon, label) {
+        return `<span class="asst-kicker">${icon}<span>${escapeHtml(label)}</span></span>`;
+    }
+
+    /**
      * Contenido de una burbuja.
-     * Todo lo que llega aquí es texto de la persona o del catálogo: se escapa
+     * Todo lo que llega aquí es texto de la persona o del tablón: se escapa
      * sin excepciones antes de tocar `innerHTML`.
      */
     function bubbleMarkup(message) {
         const own = message.role === 'user';
-        const parts = [`<span class="asst-text">${escapeHtml(message.text)}</span>`];
+        const composing = isComposing(message);
+        const parts = [];
+
+        if (composing) parts.push(kickerMarkup(ICON.pencil, 'Redactar tu pedido'));
+
+        parts.push(`<span class="asst-text">${escapeHtml(message.text)}</span>`);
 
         if (!own && Array.isArray(message.requests) && message.requests.length) {
+            parts.push(kickerMarkup(ICON.board, 'En el tablón'));
             parts.push(resultsMarkup(message.requests));
         }
 
         if (!own && message.link) {
-            parts.push(`<a class="asst-more" href="${escapeAttr(message.link)}">${escapeHtml(message.linkLabel || 'Ver en el foro')}</a>`);
+            parts.push(`<a class="asst-more" href="${escapeAttr(message.link)}">${escapeHtml(message.linkLabel || 'Ver en el tablón')}</a>`);
         }
 
         if (!own && message.retry) {
@@ -308,11 +351,17 @@
         const own = message.role === 'user';
         const classes = ['asst-msg', own ? 'asst-msg-mine' : 'asst-msg-bot'];
         if (message.error) classes.push('is-error');
+        if (isComposing(message)) classes.push('is-composing');
         if (animate) classes.push('is-new');
 
         const node = document.createElement('div');
         node.className = classes.join(' ');
-        node.innerHTML = bubbleMarkup(message);
+
+        // El sello solo acompaña a lo que dice el asistente; quien escribe ya
+        // sabe quién es. En una ráfaga seguida lo esconde el CSS, no el JS.
+        node.innerHTML = (own ? '' : `<span class="asst-msg-mark" aria-hidden="true">${sigil()}</span>`)
+            + bubbleMarkup(message);
+
         return node;
     }
 
@@ -370,13 +419,17 @@
         if (typingNode) return;
 
         typingNode = document.createElement('div');
-        typingNode.className = 'asst-msg asst-msg-bot';
+        typingNode.className = 'asst-msg asst-msg-bot is-thinking';
         typingNode.innerHTML = [
+            `<span class="asst-msg-mark" aria-hidden="true">${sigil()}</span>`,
             '<span class="asst-typing">',
-            '<span class="sr-only">El asistente está escribiendo…</span>',
-            '<span class="asst-typing-dot" aria-hidden="true"></span>',
-            '<span class="asst-typing-dot" aria-hidden="true"></span>',
-            '<span class="asst-typing-dot" aria-hidden="true"></span>',
+            '<span class="sr-only">El asistente está pensando…</span>',
+            '<span class="asst-typing-dots" aria-hidden="true">',
+            '<span class="asst-typing-dot"></span>',
+            '<span class="asst-typing-dot"></span>',
+            '<span class="asst-typing-dot"></span>',
+            '</span>',
+            '<span class="asst-typing-label" aria-hidden="true">Pensando…</span>',
             '</span>',
         ].join('');
 

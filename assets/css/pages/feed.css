@@ -50,20 +50,150 @@
 }
 
 /* La misma rejilla de la intro, desvanecida hacia los bordes. Sin ella el
-   degradado se ve plano en pantallas grandes. */
+   degradado se ve plano en pantallas grandes.
+
+   Va más tenue que antes porque ya no trabaja sola: el suelo en perspectiva de
+   `.hero-aura-floor` es ahora quien lleva la profundidad, y dos retículas a la
+   misma intensidad se pelean. Esta se queda como textura del cielo. */
 .feed-hero::after {
     content: "";
     position: absolute;
     inset: 0;
     z-index: -1;
     background-image:
-        linear-gradient(color-mix(in srgb, var(--brand) 13%, transparent) 1px, transparent 1px),
-        linear-gradient(90deg, color-mix(in srgb, var(--brand) 13%, transparent) 1px, transparent 1px);
+        linear-gradient(color-mix(in srgb, var(--brand) 10%, transparent) 1px, transparent 1px),
+        linear-gradient(90deg, color-mix(in srgb, var(--brand) 10%, transparent) 1px, transparent 1px);
     background-size: 64px 64px;
-    mask-image: radial-gradient(56% 72% at 50% 16%, var(--bg-base) 0%, transparent 74%);
-    -webkit-mask-image: radial-gradient(56% 72% at 50% 16%, var(--bg-base) 0%, transparent 74%);
-    opacity: 0.65;
+    mask-image: radial-gradient(56% 58% at 50% 12%, var(--bg-base) 0%, transparent 74%);
+    -webkit-mask-image: radial-gradient(56% 58% at 50% 12%, var(--bg-base) 0%, transparent 74%);
+    opacity: 0.5;
     pointer-events: none;
+}
+
+/* ==========================================================================
+   1a. Atmósfera de la portada
+
+   Tres capas decorativas entre el muro de fotos y el texto. Dos de ellas
+   consumen `--scroll`, que `assets/js/ui/depth.js` escribe en la sección
+   mientras la página rueda: cada una se desplaza una distancia distinta, y de
+   esa diferencia sale el paralaje. La tercera consume `--px`/`--py`, la
+   posición del puntero, para que la luz siga a la mano.
+
+   Todas las variables llevan valor por defecto. Sin el módulo —o con el
+   movimiento reducido, donde ni siquiera arranca— la escena queda quieta y
+   bien compuesta, que es distinto de quedar rota.
+
+   Lo único que se anima es `transform` y `opacity`: nada de aquí obliga al
+   navegador a recalcular una sola caja por fotograma. Es la diferencia entre
+   una portada con fondo y un teléfono modesto que se calienta.
+   ========================================================================== */
+.hero-aura {
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+/* La malla: cuatro resplandores en sitios distintos, que es lo que convierte
+   un degradado en una atmósfera. Se mantienen por debajo de la intensidad que
+   ya tenía el halo del token, porque encima de este fondo va el texto de la
+   portada y cada punto de luz que se añade le resta contraste. */
+.hero-aura-mesh {
+    position: absolute;
+    inset: -20% -12%;
+    background:
+        radial-gradient(26% 32% at 14% 20%,
+            color-mix(in srgb, var(--brand) 22%, transparent), transparent 70%),
+        radial-gradient(30% 38% at 86% 12%,
+            color-mix(in srgb, var(--accent) 14%, transparent), transparent 72%),
+        radial-gradient(34% 30% at 62% 78%,
+            color-mix(in srgb, var(--brand-500) 18%, transparent), transparent 74%),
+        radial-gradient(22% 26% at 30% 92%,
+            color-mix(in srgb, var(--accent) 10%, transparent), transparent 76%);
+    transform: translate3d(0, calc(var(--scroll, 0) * 62px), 0);
+    will-change: transform;
+}
+
+/* El suelo.
+
+   Una retícula tumbada con su propia perspectiva. Es el recurso que más
+   profundidad da por menos trabajo: el ojo reconoce un plano que se aleja al
+   instante, y a partir de ahí lee el resto de la portada como un espacio y no
+   como una lámina.
+
+   Las medidas de aquí no son de ojo, son de trigonometría, y conviene decir
+   por qué antes de que alguien las «redondee».
+
+   Al tumbar un plano con `rotateX(θ)` sobre su borde inferior, un punto que
+   está a `d` de ese borde acaba proyectado a `d·cosθ · P/(P + d·senθ)` píxeles
+   de alto en pantalla. Esa expresión tiene un techo: por muy largo que sea el
+   plano, nunca pasa de `P·cotθ` —esa es la línea del horizonte—. Con
+   P = 1200 px y θ = 64° el techo son 585 px, y un plano de 900 px de fondo
+   llega a unos 236 px de banda visible, que es justo lo que ocupa el tercio
+   inferior de la portada.
+
+   La primera versión usaba un plano del 42 % de la portada con P = 820 px y
+   71°: daba 103 px de banda, medio tapados por la máscara y por las cifras.
+   El suelo estaba ahí y no se veía —que en la práctica es no estar. */
+.hero-aura-floor {
+    position: absolute;
+    left: -34%;
+    right: -34%;
+    /* El borde cercano queda POR ENCIMA de las cifras: la retícula pasa por
+       detrás de las tarjetas, que son opacas, y deja limpia la franja donde
+       van los números. Cruzarlos con líneas los ensucia. */
+    bottom: 11%;
+    height: 900px;
+    background-image:
+        linear-gradient(color-mix(in srgb, var(--brand) 38%, transparent) 1px, transparent 1px),
+        linear-gradient(90deg, color-mix(in srgb, var(--brand) 38%, transparent) 1px, transparent 1px);
+    background-size: 90px 90px;
+    transform-origin: 50% 100%;
+    transform:
+        perspective(1200px)
+        rotateX(64deg)
+        translate3d(0, calc(var(--scroll, 0) * -80px), 0);
+    /* La máscara va en el espacio del plano, no en el de la pantalla: el
+       degradado se comprime igual que la retícula al alejarse. Entra rápido
+       sobre el borde cercano y muere antes del horizonte. */
+    mask-image: linear-gradient(to top,
+        transparent 0%, var(--bg-base) 14%, var(--bg-base) 40%, transparent 84%);
+    -webkit-mask-image: linear-gradient(to top,
+        transparent 0%, var(--bg-base) 14%, var(--bg-base) 40%, transparent 84%);
+    opacity: 0.5;
+    will-change: transform;
+}
+
+/* La luz que sigue al puntero.
+
+   Va en un elemento de tamaño fijo que se mueve con `translate3d` en vez de
+   en un degradado cuya posición cambia: lo primero lo resuelve el compositor
+   con la capa ya dibujada, lo segundo obliga a repintar media portada en cada
+   fotograma. La posición llega en píxeles desde depth.js; los márgenes
+   negativos la centran en el puntero. */
+.hero-aura-light {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 44rem;
+    height: 44rem;
+    margin: -22rem 0 0 -22rem;
+    background: radial-gradient(closest-side,
+        color-mix(in srgb, var(--brand) 17%, transparent),
+        color-mix(in srgb, var(--brand) 5%, transparent) 48%,
+        transparent 72%);
+    transform: translate3d(var(--px, 50vw), var(--py, 15rem), 0);
+    opacity: 0;
+}
+
+/* Solo con ratón: en un táctil no hay puntero al que seguir, y la capa se
+   quedaría encendida en una esquina cualquiera. */
+@media (hover: hover) and (pointer: fine) {
+    .hero-aura-light {
+        opacity: 1;
+        will-change: transform;
+    }
 }
 
 .feed-hero-inner {
@@ -106,34 +236,85 @@
     background: linear-gradient(90deg, var(--brand-ring), transparent);
 }
 
+/* El punto vivo, con su onda.
+
+   Antes era un círculo con un aro fijo que latía cambiando de opacidad. Ahora
+   el círculo se queda quieto —así la línea no vibra— y lo que late es una
+   onda que sale de él y se desvanece, como el indicador de «en directo» de
+   una emisión. Cuesta un pseudoelemento y se lee desde el otro lado de la
+   habitación. */
 .feed-hero-dot {
+    position: relative;
     flex-shrink: 0;
     width: 7px;
     height: 7px;
     background: var(--success);
     border-radius: 50%;
-    box-shadow: 0 0 0 3px var(--success-soft);
-    animation: pulse-soft 2.4s var(--ease-in-out) infinite;
+    box-shadow: 0 0 0 3px var(--success-soft),
+                0 0 12px color-mix(in srgb, var(--success) 60%, transparent);
+}
+
+.feed-hero-dot::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1px solid var(--success);
+    animation: feed-hero-ping 2.4s var(--ease-out) infinite;
+}
+
+@keyframes feed-hero-ping {
+    0% { opacity: 0.8; transform: scale(1); }
+    70%, 100% { opacity: 0; transform: scale(3.4); }
 }
 
 /* --------------------------------------------------------------------------
    Titular y subtítulo
    -------------------------------------------------------------------------- */
+/* El titular es lo primero que mide alguien que llega: si no se impone, la
+   portada entera se lee como una plantilla. Aquí crece por encima de lo que
+   pide el sistema y, sobre todo, se parte en dos pesos.
+
+   El contraste de grosor hace el trabajo que el tamaño solo no puede: una
+   frase entera en el mismo peso es un rótulo; en fina y negra es una voz que
+   sube.
+
+   El tamaño es un `clamp` cuyo suelo es `--text-hero`, el token que existe
+   justo para esta frase. Así el sistema sigue mandando —ningún titular de
+   portada puede quedar por debajo de lo que él llama tamaño de portada— y la
+   pendiente propia se encarga de que en una pantalla ancha la frase ocupe lo
+   que tiene que ocupar, que es donde el token se quedaba corto. El techo de
+   4,75 rem está medido para que «lo encuentras» quepa en una sola línea, y el
+   suelo del token (2 rem) la deja entrar en 320 px con sus 16 px de margen. */
 .feed-hero-title {
-    /* clamp evita que el titular desborde en pantallas estrechas */
-    font-size: clamp(var(--text-2xl), 6.2vw, var(--text-4xl));
-    line-height: var(--leading-tight);
-    letter-spacing: var(--tracking-tight);
+    font-family: var(--font-display);
+    /* El tamaño crece con la ventana en vez de saltar en el punto de ruptura */
+    font-size: clamp(var(--text-hero), 1.05rem + 5.2vw, 4.75rem);
+    font-weight: 750;
+    line-height: var(--leading-display);
+    letter-spacing: var(--tracking-display);
     text-wrap: balance;
-    margin-bottom: var(--space-4);
+    margin-bottom: var(--space-5);
+}
+
+.feed-hero-lede {
+    display: block;
+    font-weight: 300;
+    /* Un punto por debajo del primario: cede el brillo a la segunda línea sin
+       bajar de lo que exige AA —los dos extremos de la mezcla lo cumplen. */
+    color: color-mix(in srgb, var(--text-primary) 84%, var(--text-secondary));
 }
 
 /* El degradado se construye con los tokens del tema, no con los colores fijos
    del logo: sobre fondo oscuro el azul profundo del logo no llega a AA, y la
    mitad de la frase quedaría ilegible. Con `--brand-hover → --brand-active`
    los tres pasos alcanzan contraste suficiente en ambos temas. */
+/* Sigue siendo `inline-block` y no `block`: el degradado se recorta al texto,
+   y en un bloque a todo lo ancho la frase solo probaría los tonos del centro.
+   El salto de línea ya lo da `.feed-hero-lede`, que sí es de bloque. */
 .feed-hero-highlight {
     display: inline-block;
+    font-weight: 800;
     color: var(--brand);
     background-image: linear-gradient(
         100deg,
@@ -162,12 +343,524 @@
     text-wrap: pretty;
 }
 
+/* --------------------------------------------------------------------------
+   Buscador principal
+
+   El de la cabecera sirve para saltar de una página a otra; este es la primera
+   cosa que se ve, y por eso tiene el cuerpo de un control principal: alto de
+   botón grande, borde propio y un anillo de marca al enfocarlo.
+   -------------------------------------------------------------------------- */
+.hero-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    width: min(640px, 100%);
+    margin: 0 auto clamp(var(--space-4), 2.5vw, var(--space-5));
+    padding: var(--space-2) var(--space-2) var(--space-2) var(--space-5);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-full);
+    box-shadow: var(--shadow-md), var(--edge-light);
+    transition: border-color var(--duration-base) var(--ease-out),
+                box-shadow var(--duration-base) var(--ease-out),
+                transform var(--duration-base) var(--ease-out);
+}
+
+.hero-search:focus-within {
+    border-color: var(--brand);
+    box-shadow: var(--shadow-lg), 0 0 0 4px var(--brand-soft);
+    /* Un píxel hacia arriba al enfocarlo: el control se despega de la página
+       en vez de solo cambiar de color. Es el gesto más barato que existe para
+       decir «ahora escribes aquí». */
+    transform: translateY(-2px);
+}
+
+/* Aro de degradado sobre el borde.
+
+   Un marco de un píxel pintado con el degradado de la marca, recortado con
+   dos máscaras que se restan: la exterior deja pasar todo, la interior tapa
+   el relleno, y queda solo el filo. Va tras `@supports` porque sin
+   `mask-composite` la resta no ocurre y el degradado cubriría el buscador
+   entero —que es exactamente el fallo que hace que un efecto bonito acabe
+   pareciendo un error. */
+@supports (mask-composite: exclude) or (-webkit-mask-composite: xor) {
+    .hero-search::before {
+        content: "";
+        position: absolute;
+        inset: -1px;
+        border-radius: inherit;
+        padding: 1px;
+        background: linear-gradient(115deg,
+            var(--brand) 0%,
+            var(--accent) 42%,
+            var(--brand) 82%);
+        -webkit-mask:
+            linear-gradient(var(--bg-base) 0 0) content-box,
+            linear-gradient(var(--bg-base) 0 0);
+        mask:
+            linear-gradient(var(--bg-base) 0 0) content-box,
+            linear-gradient(var(--bg-base) 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity var(--duration-base) var(--ease-out);
+    }
+
+    .hero-search:focus-within::before { opacity: 1; }
+}
+
+.hero-search-icon {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    color: var(--text-muted);
+    transition: color var(--duration-base) var(--ease-out),
+                transform var(--duration-base) var(--ease-spring);
+}
+
+.hero-search:focus-within .hero-search-icon {
+    color: var(--brand);
+    transform: scale(1.12) rotate(-8deg);
+}
+
+.hero-search-input {
+    flex: 1;
+    min-width: 0;
+    /* Alto propio en vez del de `.input`: aquí manda el contenedor */
+    height: 44px;
+    padding: 0;
+    background: none;
+    border: 0;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: var(--text-base);
+    font-weight: 500;
+}
+
+.hero-search-input::placeholder { color: var(--text-muted); }
+.hero-search-input:focus { outline: none; }
+
+/* La ✕ nativa de WebKit desentona con el resto; la búsqueda se limpia
+   borrando, como en cualquier campo. */
+.hero-search-input::-webkit-search-cancel-button { display: none; }
+
+.hero-search-submit { flex-shrink: 0; border-radius: var(--radius-full); }
+
+/* --------------------------------------------------------------------------
+   Categorías de la portada
+
+   Doce atajos para quien llega sin una idea concreta. Se desplazan en
+   horizontal cuando no caben, con los bordes desvanecidos para que se note
+   que hay más.
+   -------------------------------------------------------------------------- */
+.hero-categories {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-2);
+    width: min(760px, 100%);
+    margin: 0 auto clamp(var(--space-5), 3vw, var(--space-6));
+}
+
+/* En el teléfono, doce categorías envueltas ocupan cinco filas y empujan los
+   botones fuera de la pantalla: la portada deja de caber antes de decir qué
+   se puede hacer aquí. En una sola fila que se desliza caben igual, y el
+   corte a la derecha invita a moverla. */
+@media (max-width: 720px) {
+    .hero-categories {
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        overflow-x: auto;
+        scrollbar-width: none;
+        /* Sangra hasta los bordes para que el corte se vea como continuación */
+        margin-inline: calc(var(--space-5) * -1);
+        padding-inline: var(--space-5);
+        scroll-padding-inline: var(--space-5);
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .hero-categories::-webkit-scrollbar { display: none; }
+    .hero-category { flex: 0 0 auto; }
+}
+
+.hero-category {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: 38px;
+    padding: var(--space-2) var(--space-4);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-full);
+    color: var(--text-secondary);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    /* El barrido de luz se recorta dentro de la pastilla */
+    overflow: hidden;
+    box-shadow: var(--edge-light);
+    transition: background-color var(--duration-fast) var(--ease-out),
+                border-color var(--duration-fast) var(--ease-out),
+                color var(--duration-fast) var(--ease-out),
+                box-shadow var(--duration-base) var(--ease-out),
+                transform var(--duration-fast) var(--ease-out);
+}
+
+/* Una lámina de luz cruza la pastilla al pasar por encima. Es el mismo
+   recurso que remata el nombre en la entrada, en pequeño: el brillo de algo
+   pulido al girarlo. Solo con ratón, porque en un táctil el `hover` se queda
+   pegado tras el toque y la luz se congelaría a medio camino. */
+.hero-category::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(104deg,
+        transparent 38%,
+        color-mix(in srgb, var(--brand) 26%, transparent) 50%,
+        transparent 62%);
+    transform: translateX(-120%);
+    opacity: 0;
+    pointer-events: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .hero-category:hover {
+        background: var(--bg-hover);
+        border-color: var(--border-strong);
+        color: var(--text-primary);
+        box-shadow: var(--shadow-md), var(--edge-light);
+        transform: translateY(var(--depth-lift));
+    }
+
+    .hero-category:hover::after {
+        opacity: 1;
+        animation: hero-category-sheen 620ms var(--ease-out) forwards;
+    }
+}
+
+@keyframes hero-category-sheen {
+    from { transform: translateX(-120%); }
+    to { transform: translateX(120%); }
+}
+
+.hero-category:active { transform: scale(var(--depth-press)); }
+
+.hero-category.is-active {
+    background: var(--brand-soft);
+    border-color: var(--brand);
+    color: var(--brand);
+    box-shadow: inset 0 0 0 1px var(--brand-ring),
+                0 6px 18px color-mix(in srgb, var(--brand) 22%, transparent);
+}
+
+.hero-category-icon { font-size: var(--text-sm); line-height: 1; }
+
+.hero-category-count {
+    color: var(--text-muted);
+    font-size: var(--text-3xs);
+    font-variant-numeric: tabular-nums;
+}
+
+.hero-category.is-active .hero-category-count { color: var(--brand); }
+
 .feed-hero-actions {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
     gap: var(--space-3);
-    margin-bottom: clamp(var(--space-8), 5vw, var(--space-12));
+    margin-bottom: clamp(var(--space-8), 5vw, var(--space-10));
+}
+
+/* El botón principal de la portada no es un botón más: es la acción por la
+   que existe el sitio. Recibe un halo de su propio color —no una sombra
+   neutra— para que se despegue del fondo azul en vez de fundirse con él. */
+.feed-hero-actions .btn-primary {
+    box-shadow: var(--shadow-lg),
+                0 10px 34px color-mix(in srgb, var(--brand) 34%, transparent),
+                var(--edge-light-strong);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .feed-hero-actions .btn {
+        transition: transform var(--duration-base) var(--ease-out),
+                    box-shadow var(--duration-base) var(--ease-out);
+    }
+
+    .feed-hero-actions .btn:hover { transform: translateY(var(--depth-lift)); }
+
+    .feed-hero-actions .btn-primary:hover {
+        box-shadow: var(--shadow-xl),
+                    0 16px 46px color-mix(in srgb, var(--brand) 46%, transparent),
+                    var(--edge-light-strong);
+    }
+}
+
+/* --------------------------------------------------------------------------
+   El modelo, en tres tarjetas
+
+   El comercio inverso se explica en una frase, pero se entiende viéndolo.
+   Estas tres tarjetas lo ponen delante: el pedido en el centro y adelantado
+   hacia quien mira, las dos respuestas detrás y giradas hacia él.
+
+   La profundidad es geometría, no dibujo: `.hero-flow-cards` declara una
+   perspectiva y conserva el espacio 3D (`preserve-3d`), así que cada tarjeta
+   se coloca con su propio `translateZ` y el navegador las ordena por distancia
+   real. Sin `preserve-3d`, el aplanado las pintaría por orden de marcado y el
+   pedido —que va primero para que en un móvil quede arriba— acabaría detrás
+   de las respuestas.
+   -------------------------------------------------------------------------- */
+.hero-flow {
+    max-width: 100%;
+    margin: 0 auto clamp(var(--space-8), 5vw, var(--space-12));
+    /* Se despega del texto al rodar la página: sube un poco menos que él */
+    transform: translate3d(0, calc(var(--scroll, 0) * -24px), 0);
+}
+
+.hero-flow-label {
+    margin-bottom: var(--space-5);
+    color: var(--text-muted);
+    font-size: var(--text-3xs);
+    font-weight: 600;
+    letter-spacing: var(--tracking-widest);
+    text-transform: uppercase;
+}
+
+.hero-flow-cards {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-4);
+    perspective: var(--depth-perspective);
+    transform-style: preserve-3d;
+}
+
+/* Un haz tendido detrás de las tres, al fondo del espacio. Las cose en una
+   sola escena: sin él se leen como tres piezas sueltas puestas en fila. */
+.hero-flow-cards::before {
+    content: "";
+    position: absolute;
+    left: -10%;
+    right: -10%;
+    top: 50%;
+    height: 40%;
+    transform: translate3d(0, -50%, -140px);
+    background: radial-gradient(50% 50% at 50% 50%,
+        color-mix(in srgb, var(--brand) 34%, transparent), transparent 74%);
+    pointer-events: none;
+}
+
+.hero-card {
+    /* Sitio en el espacio. Cada tarjeta los redefine; el `is-tilting` de más
+       abajo compone sobre ellos para no pelearse por `transform`. */
+    --card-rot: 0deg;
+    --card-z: 0px;
+    --card-y: 0px;
+    --card-lift: 24px;
+
+    position: relative;
+    z-index: 1;
+    flex: 0 1 auto;
+    width: min(270px, 100%);
+    min-width: 0;
+    padding: var(--space-4);
+    text-align: left;
+    background:
+        linear-gradient(160deg,
+            color-mix(in srgb, var(--brand) 9%, var(--bg-raised)),
+            var(--bg-raised) 62%);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg), var(--edge-light);
+    transform:
+        translate3d(0, var(--card-y), 0)
+        rotateY(var(--card-rot))
+        translateZ(var(--card-z));
+    transition: transform var(--duration-base) var(--ease-out),
+                box-shadow var(--duration-base) var(--ease-out),
+                border-color var(--duration-base) var(--ease-out);
+    animation: feed-hero-rise 760ms var(--ease-cinema) backwards;
+}
+
+/* El brillo especular.
+
+   `depth.js` escribe en `--glow-x`/`--glow-y` el punto exacto donde está el
+   puntero dentro de la tarjeta; aquí se pinta ahí una mancha de luz. Es lo
+   que convierte una superficie de color en una superficie iluminada: la
+   inclinación sola parece un cartón que gira. */
+.hero-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(42% 64% at var(--glow-x, 50%) var(--glow-y, 0%),
+        color-mix(in srgb, var(--brand) 34%, transparent), transparent 74%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--duration-base) var(--ease-out);
+}
+
+/* El pedido: adelantado, de frente y un punto más ancho. Manda. */
+.hero-card-ask {
+    --card-z: 46px;
+    z-index: 2;
+    width: min(300px, 100%);
+    border-color: var(--brand-ring);
+    box-shadow: var(--shadow-xl),
+                0 0 0 1px var(--brand-ring),
+                var(--edge-light-strong);
+    animation-delay: 550ms;
+}
+
+/* Las respuestas: detrás, más bajas y giradas hacia el centro. El giro hacia
+   dentro es lo que las convierte en respuestas a algo en lugar de en dos
+   tarjetas más de la fila. */
+.hero-card-offer {
+    --card-z: -58px;
+    --card-y: 16px;
+}
+
+.hero-card-left { --card-rot: 20deg; order: -1; animation-delay: 610ms; }
+.hero-card-right { --card-rot: -20deg; animation-delay: 670ms; }
+
+/* --- Contenido de las tarjetas --- */
+.hero-card-badge {
+    display: inline-block;
+    margin-bottom: var(--space-3);
+    padding: var(--space-05) var(--space-3);
+    background: var(--brand-soft);
+    border-radius: var(--radius-full);
+    color: var(--brand);
+    font-size: var(--text-3xs);
+    font-weight: 700;
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+}
+
+.hero-card-title {
+    margin-bottom: var(--space-2);
+    color: var(--text-primary);
+    font-family: var(--font-display);
+    font-size: var(--text-base);
+    font-weight: 650;
+    line-height: var(--leading-snug);
+    overflow-wrap: break-word;
+}
+
+.hero-card-meta {
+    margin-bottom: var(--space-4);
+    color: var(--text-secondary);
+    font-size: var(--text-2xs);
+    line-height: var(--leading-snug);
+    overflow-wrap: break-word;
+}
+
+.hero-card-answers {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--border-subtle);
+    color: var(--text-muted);
+    font-size: var(--text-3xs);
+    font-weight: 600;
+}
+
+.hero-card-pulse {
+    position: relative;
+    flex-shrink: 0;
+    width: 6px;
+    height: 6px;
+    background: var(--success);
+    border-radius: 50%;
+}
+
+.hero-card-pulse::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1px solid var(--success);
+    animation: feed-hero-ping 2.4s var(--ease-out) infinite;
+}
+
+.hero-card-shop {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+    min-width: 0;
+    color: var(--text-secondary);
+    font-size: var(--text-3xs);
+    font-weight: 600;
+    overflow-wrap: break-word;
+}
+
+.hero-card-avatar {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    background: var(--gradient-brand);
+    border-radius: 50%;
+    color: var(--on-navy);
+    font-size: var(--text-3xs);
+    font-weight: 700;
+}
+
+.hero-card-text {
+    margin-bottom: var(--space-3);
+    color: var(--text-primary);
+    font-size: var(--text-2xs);
+    line-height: var(--leading-snug);
+    overflow-wrap: break-word;
+}
+
+/* El precio de una oferta: una cifra sola, en verde, como en el tablón. El
+   pedido de al lado lleva un rango de presupuesto en texto corrido, y esa
+   diferencia de forma es justo la que hay que aprender. */
+.hero-card-price {
+    color: var(--success);
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+    font-weight: 750;
+    letter-spacing: var(--tracking-tight);
+    font-variant-numeric: tabular-nums;
+}
+
+/* --- Relieve al pasar el puntero --- */
+@media (hover: hover) and (pointer: fine) {
+    /* El cristal solo en escritorio: desenfocar lo que hay detrás de tres
+       tarjetas mientras el muro de fotos se desplaza es de lo más caro que
+       puede pedírsele a un WebView en un teléfono modesto. */
+    .hero-card {
+        background:
+            linear-gradient(160deg,
+                color-mix(in srgb, var(--brand) 12%, transparent),
+                color-mix(in srgb, var(--bg-raised) 55%, transparent) 62%),
+            color-mix(in srgb, var(--bg-raised) 72%, transparent);
+        backdrop-filter: blur(var(--blur-lg));
+        -webkit-backdrop-filter: blur(var(--blur-lg));
+    }
+
+    .hero-card.is-tilting {
+        transform:
+            translate3d(0, var(--card-y), 0)
+            rotateY(var(--card-rot))
+            translateZ(calc(var(--card-z) + var(--card-lift)))
+            rotateX(var(--tilt-x, 0deg))
+            rotateY(var(--tilt-y, 0deg));
+        border-color: var(--brand-ring);
+        box-shadow: var(--shadow-xl), var(--edge-light-strong);
+        will-change: transform;
+    }
+
+    .hero-card.is-tilting::after { opacity: 1; }
 }
 
 /* --------------------------------------------------------------------------
@@ -217,12 +910,28 @@
 .feed-stat-value {
     margin: 0;
     color: var(--text-primary);
+    font-family: var(--font-display);
     font-size: clamp(var(--text-2xl), 4.2vw, var(--text-3xl));
     font-weight: 750;
     /* Cifras de ancho fijo: al actualizarse no dan un salto lateral */
     font-variant-numeric: tabular-nums;
     letter-spacing: var(--tracking-tight);
     line-height: 1;
+}
+
+/* La cifra se apaga hacia abajo, como metal pulido bajo una luz cenital. El
+   color plano de arriba se queda de reserva: si el navegador no sabe recortar
+   el fondo al texto, el número sigue estando. */
+@supports (background-clip: text) or (-webkit-background-clip: text) {
+    .feed-stat-value {
+        background-image: linear-gradient(180deg,
+            var(--text-primary) 0%,
+            color-mix(in srgb, var(--text-primary) 72%, var(--text-secondary)) 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        -webkit-text-fill-color: transparent;
+    }
 }
 
 /* --------------------------------------------------------------------------
@@ -239,14 +948,20 @@
 .feed-hero-eyebrow,
 .feed-hero-title,
 .feed-hero-subtitle,
-.feed-hero-actions {
+.hero-search,
+.hero-categories,
+.feed-hero-actions,
+.hero-flow-label {
     animation: feed-hero-rise 760ms var(--ease-cinema) backwards;
 }
 
 .feed-hero-eyebrow { animation-delay: 60ms; }
-.feed-hero-title { animation-delay: 150ms; }
-.feed-hero-subtitle { animation-delay: 240ms; }
-.feed-hero-actions { animation-delay: 330ms; }
+.feed-hero-title { animation-delay: 140ms; }
+.feed-hero-subtitle { animation-delay: 220ms; }
+.hero-search { animation-delay: 300ms; }
+.hero-categories { animation-delay: 370ms; }
+.feed-hero-actions { animation-delay: 430ms; }
+.hero-flow-label { animation-delay: 490ms; }
 
 /* Las cifras entran una tras otra. El retardo va por posición y no desde el
    JavaScript porque el feed no es dueño de este archivo: con tres hijos fijos,
@@ -255,9 +970,16 @@
     animation: feed-hero-rise 640ms var(--ease-cinema) backwards;
 }
 
-.feed-stat:nth-child(1) { animation-delay: 430ms; }
-.feed-stat:nth-child(2) { animation-delay: 510ms; }
-.feed-stat:nth-child(3) { animation-delay: 590ms; }
+.feed-stat:nth-child(1) { animation-delay: 700ms; }
+.feed-stat:nth-child(2) { animation-delay: 760ms; }
+.feed-stat:nth-child(3) { animation-delay: 820ms; }
+
+/* Nota sobre el reparto: esta cascada se ve entera en la segunda visita y
+   cuando alguien salta la entrada. En la primera, el telón de `intro.css`
+   cubre la pantalla hasta los 2330 ms y para entonces la portada ya está
+   compuesta —que es lo que se quiere: el remate de la entrada no debe competir
+   con un segundo despliegue justo detrás. Por eso el escalonado cabe en poco
+   más de un segundo en lugar de estirarse. */
 
 /* ==========================================================================
    2. Columna de resultados
@@ -681,6 +1403,13 @@
 @media (max-width: 960px) {
     .feed-hero { padding-block: var(--space-10) var(--space-8); }
 
+    /* Menos giro y menos fondo: a este ancho las tres tarjetas se tocan, y un
+       escorzo de veinte grados se convierte en recorte. */
+    .hero-card-offer { --card-z: -40px; }
+    .hero-card-left { --card-rot: 14deg; }
+    .hero-card-right { --card-rot: -14deg; }
+    .hero-card-ask { --card-z: 34px; }
+
     /* En el cajón deslizante hace falta una salida visible, no solo la capa */
     .filters-close { display: grid; }
 
@@ -708,6 +1437,38 @@
         justify-content: flex-start;
         margin-bottom: var(--space-8);
     }
+
+    /* El trío se reordena en vez de encogerse: el pedido arriba, a todo lo
+       ancho, y las dos respuestas debajo repartiéndose la fila. Se lee igual
+       de bien —uno pide, varios contestan— y cabe en 320 px. */
+    .hero-flow { margin-bottom: var(--space-8); }
+
+    .hero-flow-cards {
+        flex-wrap: wrap;
+        gap: var(--space-3);
+    }
+
+    .hero-card-ask {
+        --card-z: 0px;
+        flex: 1 1 100%;
+        width: 100%;
+    }
+
+    .hero-card-offer {
+        --card-z: 0px;
+        --card-y: 0px;
+        --card-rot: 0deg;
+        flex: 1 1 0;
+        width: auto;
+    }
+
+    /* El adelantamiento de la respuesta izquierda solo vale en la fila de
+       escritorio; apilados manda el orden del marcado, que pone el pedido
+       primero justamente para esto. */
+    .hero-card-left { order: 0; }
+
+    /* Sin perspectiva no hay a quién girarse; el escalón lo da el tamaño */
+    .hero-card-offer .hero-card-price { font-size: var(--text-base); }
 
     .feed-stats { margin-inline: 0; }
 
@@ -745,6 +1506,14 @@
     }
 
     .feed-hero-actions .btn { width: 100%; }
+
+    /* A este ancho cada respuesta ocupa unos 140 px. La frase del vendedor
+       sobra: lo que hay que ver es de quién viene y por cuánto. */
+    .hero-card { padding: var(--space-3); }
+
+    .hero-card-offer .hero-card-text { display: none; }
+
+    .hero-card-shop { flex-wrap: wrap; }
 }
 
 /* Móvil pequeño: tres cifras no caben en fila a 360 px */
@@ -785,9 +1554,16 @@
     .feed-hero-eyebrow,
     .feed-hero-title,
     .feed-hero-subtitle,
+    .hero-search,
+    .hero-categories,
     .feed-hero-actions,
+    .hero-flow-label,
+    .hero-card,
     .feed-stat,
     .feed-hero-dot,
+    .feed-hero-dot::after,
+    .hero-card-pulse::after,
+    .hero-category::after,
     .feed-author-note,
     .filter-group[open] > .filter-body {
         animation: none;
@@ -800,4 +1576,89 @@
     }
 
     .feed-section .post-card:hover { transform: none; }
+
+    /* La onda del punto vivo y el barrido de las categorías son adorno puro:
+       se retiran del todo en lugar de quedarse encendidos a medio camino. */
+    .feed-hero-dot::after,
+    .hero-card-pulse::after,
+    .hero-category::after {
+        display: none;
+    }
+
+    /* Las tarjetas conservan su sitio en el espacio —la profundidad es
+       composición, no movimiento— pero dejan de responder al puntero y de
+       saltar al pasar por encima. */
+    .hero-card,
+    .hero-card.is-tilting {
+        transition: none;
+    }
+
+    .hero-card.is-tilting {
+        transform:
+            translate3d(0, var(--card-y), 0)
+            rotateY(var(--card-rot))
+            translateZ(var(--card-z));
+    }
+
+    .feed-hero-actions .btn:hover,
+    .hero-category:hover,
+    .hero-search:focus-within {
+        transform: none;
+    }
+
+    .hero-search-icon,
+    .hero-search:focus-within .hero-search-icon {
+        transform: none;
+        transition: none;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   La portada espera a que suba el telón
+
+   La entrada escalonada de arriba arranca al cargar la página, con retardos de
+   60 a 820 ms. La intro dura 2200. Resultado: en la primera visita todo se
+   componía detrás del telón y, al retirarse este, la portada ya estaba quieta
+   — el trabajo hecho y nadie lo veía. Solo se apreciaba en la segunda visita,
+   cuando la intro no vuelve a salir.
+
+   Se resuelve RETRASANDO, no pausando. Pausar exige una señal que alguien
+   tiene que dar, y si ese alguien falla la portada se queda invisible para
+   siempre. Un retardo se cumple solo: en el peor caso —que `intro.js` no
+   llegue a cargar— la portada entra dos segundos más tarde, que es un defecto
+   que se aguanta.
+
+   `intro.js` marca la raíz cuando el telón empieza a subir, a los 1860 ms, y
+   a partir de ahí rigen los retardos cortos de arriba. Como para entonces ya
+   han vencido, no hay salto: la animación continúa donde iba.
+   -------------------------------------------------------------------------- */
+:root:not(.intro-done) .feed-hero-eyebrow { animation-delay: 1900ms; }
+:root:not(.intro-done) .feed-hero-title { animation-delay: 1980ms; }
+:root:not(.intro-done) .feed-hero-subtitle { animation-delay: 2060ms; }
+:root:not(.intro-done) .hero-search { animation-delay: 2140ms; }
+:root:not(.intro-done) .hero-categories { animation-delay: 2210ms; }
+:root:not(.intro-done) .feed-hero-actions { animation-delay: 2270ms; }
+:root:not(.intro-done) .hero-flow-label { animation-delay: 2330ms; }
+:root:not(.intro-done) .hero-card { animation-delay: 2390ms; }
+:root:not(.intro-done) .hero-card-left { animation-delay: 2450ms; }
+:root:not(.intro-done) .hero-card-right { animation-delay: 2510ms; }
+:root:not(.intro-done) .feed-stat:nth-child(1) { animation-delay: 2540ms; }
+:root:not(.intro-done) .feed-stat:nth-child(2) { animation-delay: 2600ms; }
+:root:not(.intro-done) .feed-stat:nth-child(3) { animation-delay: 2660ms; }
+
+/* Sin intro —el resto del sitio, y esta misma página en la segunda visita—
+   `intro.js` marca la raíz nada más arrancar y nada de esto se aplica. */
+
+/* --------------------------------------------------------------------------
+   Zonas de toque de la portada
+
+   Las categorías miden 38 px de alto, y con el dedo eso se falla. En
+   escritorio la pastilla de 38 está bien proporcionada con su texto de 12 px
+   —agrandarla la convertiría en un botón— así que solo crece donde importa.
+   -------------------------------------------------------------------------- */
+@media (pointer: coarse) {
+    .hero-category {
+        min-height: 44px;
+        padding-inline: var(--space-5);
+    }
 }

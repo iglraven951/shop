@@ -41,7 +41,7 @@
     --brand-200: #96c1ed;
     --brand-300: #67a4e5;
     --brand-400: #3888dd;
-    --brand-500: #377bb2;
+    --brand-500: #2f83c4;
     --brand-600: #115da4;
     --brand-700: #004080;
     --brand-800: #00396f;
@@ -103,15 +103,43 @@
     --info: var(--brand-300);
     --info-soft: rgba(103, 164, 229, 0.16);
 
+    /* --- Avatares ---
+
+       Ocho fondos para las iniciales de quien no tiene foto. Antes todos
+       eran el mismo degradado de marca, así que en una lista de ofertas o de
+       conversaciones todas las caras eran idénticas y no ayudaban a
+       reconocer a nadie — que es justo lo único que un avatar de iniciales
+       puede hacer.
+
+       Los ocho están elegidos oscuros a propósito: encima va blanco, y todos
+       pasan de 4,5:1 con margen. El degradado anterior terminaba en el cian
+       del acento, donde blanco cae a 1,9:1 — ilegible justo en la esquina
+       donde suele quedar la inicial. */
+    --avatar-1: #1d4ed8;
+    --avatar-2: #7c3aed;
+    --avatar-3: #be185d;
+    --avatar-4: #b45309;
+    --avatar-5: #047857;
+    --avatar-6: #0e7490;
+    --avatar-7: #4338ca;
+    --avatar-8: #9f1239;
     /* --- Gradientes --- */
     --gradient-brand: linear-gradient(135deg, #004080 0%, #115da4 40%, #3888dd 78%, #22d3ee 100%);
     --gradient-surface: linear-gradient(180deg, rgba(103, 164, 229, 0.06), rgba(103, 164, 229, 0));
     --gradient-glow: radial-gradient(65% 65% at 50% 0%, rgba(56, 136, 221, 0.28), transparent 72%);
 
-    /* --- Tipografía --- */
-    --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    /* --- Tipografía ---
+       Dos familias reales, servidas desde `assets/fonts` (ver fonts.css).
+       Antes aquí decía «Inter» y nadie la descargaba: el sitio entero se
+       dibujaba con la fuente del sistema, y los pesos 550/650/680/750 que
+       este CSS pide en medio centenar de sitios se redondeaban al más
+       cercano. Con dos familias variables esos valores existen de verdad. */
+    --font-sans: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-display: "Outfit", "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
+    /* Escala en tercera menor (×1.2) de 16 px arriba, y pasos más finos
+       abajo, donde la interfaz necesita matices que un salto de 1.2 no da. */
     --text-3xs: 0.6875rem; /* 11px */
     --text-2xs: 0.75rem;   /* 12px */
     --text-xs: 0.8125rem;  /* 13px */
@@ -123,16 +151,33 @@
     --text-3xl: 2.25rem;   /* 36px */
     --text-4xl: 3rem;      /* 48px */
 
+    /* Los títulos grandes crecen con la ventana en vez de saltar en el
+       punto de ruptura: a 360 px un hero de 48 px rompe las palabras, y a
+       1440 px uno de 48 px se queda corto. */
+    --text-hero: clamp(2rem, 1.2rem + 3.6vw, 3.75rem);
+    --text-section: clamp(1.5rem, 1.15rem + 1.5vw, 2.25rem);
+
+    --leading-none: 1;
     --leading-tight: 1.2;
     --leading-snug: 1.4;
     --leading-normal: 1.6;
+    /* Para titulares grandes: por encima de 40 px, 1.2 ya es demasiado aire */
+    --leading-display: 1.06;
 
     --tracking-tight: -0.02em;
     --tracking-normal: 0;
     --tracking-wide: 0.04em;
     --tracking-widest: 0.18em;
+    /* Cuanto más grande el cuerpo, más sobra el espacio entre letras */
+    --tracking-display: -0.035em;
+
+    /* Longitud de línea cómoda: por encima de ~70 caracteres el ojo pierde
+       el renglón al volver. */
+    --measure: 68ch;
+    --measure-narrow: 52ch;
 
     /* --- Espaciado (rejilla de 4px) --- */
+    --space-05: 0.125rem;  /* 2px — separa un icono de su cifra */
     --space-1: 0.25rem;
     --space-2: 0.5rem;
     --space-3: 0.75rem;
@@ -155,15 +200,47 @@
 
     /* --- Sombras ---
        Tintadas de azul marino en lugar de negro puro: una sombra neutra sobre
-       una superficie azulada se percibe gris y apaga el conjunto. */
-    --shadow-sm: 0 1px 2px rgba(3, 8, 18, 0.5);
-    --shadow-md: 0 4px 14px rgba(3, 8, 18, 0.55);
-    --shadow-lg: 0 14px 36px rgba(3, 8, 18, 0.6);
-    --shadow-xl: 0 26px 64px rgba(3, 8, 18, 0.7);
+       una superficie azulada se percibe gris y apaga el conjunto.
+
+       Cada nivel son DOS sombras, no una. Un objeto real proyecta un contacto
+       corto y denso justo bajo su borde, y una penumbra larga y tenue más
+       allá; con una sola capa difusa, la tarjeta parece impresa sobre el
+       fondo en vez de apoyada encima. La oscuridad total se reparte entre las
+       dos capas, así que el conjunto no se oscurece — solo se asienta. */
+    --shadow-sm:
+        0 1px 1px rgba(3, 8, 18, 0.40),
+        0 2px 4px rgba(3, 8, 18, 0.24);
+    --shadow-md:
+        0 2px 4px rgba(3, 8, 18, 0.40),
+        0 8px 20px rgba(3, 8, 18, 0.34);
+    --shadow-lg:
+        0 4px 8px rgba(3, 8, 18, 0.40),
+        0 18px 44px rgba(3, 8, 18, 0.40);
+    --shadow-xl:
+        0 8px 16px rgba(3, 8, 18, 0.44),
+        0 32px 76px rgba(3, 8, 18, 0.48);
     --shadow-glow: 0 0 0 1px var(--brand-ring), 0 10px 40px rgba(56, 136, 221, 0.4);
+
+    /* --- Luz ---
+       El filo superior de una superficie elevada recoge algo de luz. Es un
+       píxel, y es la diferencia entre una caja de color y un objeto con
+       canto. Va como `inset` para no ocupar sitio ni mover nada. */
+    /* El anillo de foco, con nombre propio. */
+    --focus-ring: 0 0 0 3px var(--brand-soft);
+
+    --edge-light: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    --edge-light-strong: inset 0 1px 0 rgba(255, 255, 255, 0.10);
+
+    /* --- Profundidad ---
+       Perspectiva compartida: si cada tarjeta elige la suya, una fila
+       inclinada se ve como piezas sueltas en vez de una superficie común. */
+    --depth-perspective: 1100px;
+    --depth-lift: -2px;      /* cuánto sube algo al pasar por encima */
+    --depth-press: 0.985;    /* cuánto cede al pulsarlo */
 
     /* --- Movimiento --- */
     --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-in: cubic-bezier(0.4, 0, 1, 1);
     --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
     --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
     /* Curva larga y suave, para la entrada cinematográfica */
@@ -171,6 +248,13 @@
     --duration-fast: 140ms;
     --duration-base: 220ms;
     --duration-slow: 400ms;
+
+    /* --- Desenfoque ---
+       Los valores que ya se usaban, puestos en orden y con nombre. */
+    --blur-sm: 3px;
+    --blur-md: 6px;
+    --blur-lg: 12px;
+    --blur-xl: 14px;
 
     /* --- Capas --- */
     --z-base: 1;
@@ -245,9 +329,22 @@
     --gradient-surface: linear-gradient(180deg, rgba(0, 43, 100, 0.03), rgba(0, 43, 100, 0));
     --gradient-glow: radial-gradient(65% 65% at 50% 0%, rgba(0, 64, 128, 0.14), transparent 72%);
 
-    --shadow-sm: 0 1px 2px rgba(0, 43, 100, 0.07);
-    --shadow-md: 0 4px 14px rgba(0, 43, 100, 0.09);
-    --shadow-lg: 0 14px 36px rgba(0, 43, 100, 0.12);
-    --shadow-xl: 0 26px 64px rgba(0, 43, 100, 0.16);
+    --shadow-sm:
+        0 1px 1px rgba(0, 43, 100, 0.06),
+        0 2px 4px rgba(0, 43, 100, 0.05);
+    --shadow-md:
+        0 2px 4px rgba(0, 43, 100, 0.06),
+        0 8px 20px rgba(0, 43, 100, 0.07);
+    --shadow-lg:
+        0 4px 8px rgba(0, 43, 100, 0.07),
+        0 18px 44px rgba(0, 43, 100, 0.09);
+    --shadow-xl:
+        0 8px 16px rgba(0, 43, 100, 0.08),
+        0 32px 76px rgba(0, 43, 100, 0.12);
     --shadow-glow: 0 0 0 1px var(--brand-ring), 0 10px 36px rgba(0, 64, 128, 0.24);
+
+    /* Sobre fondo claro la luz del canto se ve como un halo sucio: aquí el
+       filo se define con una sombra interior finísima, no con blanco. */
+    --edge-light: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    --edge-light-strong: inset 0 1px 0 rgba(255, 255, 255, 1);
 }

@@ -1,12 +1,12 @@
 /**
- * DiscoveryShop · Publicar artículo
+ * DiscoveryShop · Publicar un pedido
  *
- * La página tiene una sola regla dura: únicamente un vendedor aprobado (o el
- * administrador) ve el formulario. Para los demás se pinta la pantalla que
- * explica en qué punto está su cuenta y qué puede hacer ahora mismo.
+ * Pedir no necesita permiso: cualquier cuenta publica un pedido (ADR-019).
+ * Quien no ha iniciado sesión ve la invitación a hacerlo, y nadie más queda
+ * fuera.
  *
  * El formulario no se oculta: no se clona. Vive en un <template> del HTML y
- * solo entra en el documento cuando el servidor confirma el permiso.
+ * solo entra en el documento cuando hay sesión.
  */
 (function (global) {
     'use strict';
@@ -103,6 +103,7 @@
         touched: new Set(),
         dirty: false,
         submitting: false,
+        review: null,
         guarded: false,
     };
 
@@ -143,34 +144,34 @@
         applyUser(user);
     }
 
+    /**
+     * Dos únicas pantallas: el formulario, o la invitación a iniciar sesión.
+     *
+     * Hubo tres más —comprador sin permiso, solicitud en revisión, solicitud
+     * rechazada— que explicaban por qué no podías publicar. Desde ADR-019 no
+     * pueden alcanzarse: lo único que hace falta para pedir es una cuenta. Se
+     * han retirado con el texto que arrastraban, que seguía hablando de
+     * «publicar tus artículos» y de vender lo que ya no usas.
+     */
     function renderStage() {
-        const user = state.user;
-
-        if (canPublish(user)) {
+        if (canPublish(state.user)) {
             mountForm();
             return;
         }
 
-        // Ninguna de las pantallas de bloqueo tiene formulario que proteger.
+        // Sin sesión no hay formulario que proteger del cierre de pestaña.
         disableUnloadGuard();
 
-        if (!user) {
-            stage.innerHTML = UI.loginGate({
-                title: 'Inicia sesión para pedir',
-                message: 'Publicar un pedido requiere una cuenta. Entra con la tuya '
-                    + 'o crea una: solo te toma un minuto.',
-                icon: '🔐',
-            });
-            return;
-        }
-
-        if (user.seller_status === 'pending') { renderPendingGate(user); return; }
-        if (user.seller_status === 'rejected') { renderRejectedGate(user); return; }
-        renderBuyerGate();
+        stage.innerHTML = UI.loginGate({
+            title: 'Inicia sesión para pedir',
+            message: 'Publicar un pedido requiere una cuenta. Entra con la tuya '
+                + 'o crea una: solo te toma un minuto.',
+            icon: '🔐',
+        });
     }
 
     /* ======================================================================
-       Pantallas de bloqueo
+       Pantalla de error
        ====================================================================== */
 
     function gateScreen({ icon, tone, title, message, extra = '', actions = '' }) {
@@ -184,109 +185,6 @@
         </section>`;
     }
 
-    /** Comprador que nunca pidió publicar. */
-    function renderBuyerGate() {
-        const steps = `
-            <ol class="publish-steps">
-                <li class="publish-step">
-                    <span class="publish-step-num" aria-hidden="true">1</span>
-                    <span class="publish-step-text">
-                        <strong>Solicitas.</strong> Nos cuentas en dos líneas qué piensas vender.
-                    </span>
-                </li>
-                <li class="publish-step">
-                    <span class="publish-step-num" aria-hidden="true">2</span>
-                    <span class="publish-step-text">
-                        <strong>Revisamos.</strong> El equipo mira la solicitud a mano.
-                    </span>
-                </li>
-                <li class="publish-step">
-                    <span class="publish-step-num" aria-hidden="true">3</span>
-                    <span class="publish-step-text">
-                        <strong>Publicas.</strong> Esta misma página se convierte en tu formulario.
-                    </span>
-                </li>
-            </ol>`;
-
-        stage.innerHTML = gateScreen({
-            icon: '🪪',
-            tone: 'info',
-            title: 'Publicar requiere una cuenta de vendedor',
-            message: 'Con tu cuenta ya puedes participar en el foro: reaccionar, guardar, '
-                + 'comentar y escribir a quien vende. Para publicar tus propios artículos '
-                + 'necesitamos aprobarte antes como vendedor.',
-            extra: steps,
-            actions: `
-                <button class="btn btn-primary" type="button" id="publish-apply">
-                    Solicitar cuenta de vendedor
-                </button>
-                <a class="btn btn-secondary" href="index.html">Volver al foro</a>`,
-        });
-
-        q('#publish-apply').addEventListener('click', openSellerApplication);
-    }
-
-    /** Solicitud enviada, a la espera del administrador. */
-    function renderPendingGate(user) {
-        const since = user.applied_at || user.created_at;
-
-        stage.innerHTML = gateScreen({
-            icon: '⏳',
-            tone: 'warning',
-            title: 'Tu solicitud está en revisión',
-            message: 'Estamos revisando tu cuenta de vendedor. En cuanto la aprobemos, esta '
-                + 'página se convertirá en tu formulario de publicación.',
-            extra: `
-                <p class="publish-gate-meta">
-                    Solicitud enviada ${escapeHtml(format.relative(since))}
-                    <span aria-hidden="true">·</span>
-                    <time datetime="${escapeAttr(since)}">${escapeHtml(format.date(since))}</time>
-                </p>
-                <div class="alert alert-info publish-gate-note">
-                    <span class="alert-icon" aria-hidden="true">💬</span>
-                    <div class="alert-content">
-                        <p class="alert-title">Mientras tanto, el foro es todo tuyo</p>
-                        <p class="alert-body">
-                            Puedes reaccionar, guardar publicaciones, comentar y escribirle a
-                            cualquier vendedor con total normalidad.
-                        </p>
-                    </div>
-                </div>`,
-            actions: `
-                <a class="btn btn-primary" href="index.html">Ir al foro</a>
-                <a class="btn btn-secondary" href="perfil.html">Ver mi perfil</a>`,
-        });
-    }
-
-    /** Solicitud rechazada: se muestra el motivo tal cual lo dio el equipo. */
-    function renderRejectedGate(user) {
-        const reason = user.rejection_reason
-            || 'El equipo no dejó un motivo por escrito. Cuéntanos con más detalle qué quieres vender y lo revisamos de nuevo.';
-
-        stage.innerHTML = gateScreen({
-            icon: '⚠️',
-            tone: 'danger',
-            title: 'Tu solicitud de vendedor fue rechazada',
-            message: 'Revisamos tu solicitud y no pudimos aprobarla. Puedes corregir lo que '
-                + 'te indicamos y volver a enviarla cuando quieras.',
-            extra: `
-                <div class="alert alert-danger publish-gate-note">
-                    <span class="alert-icon" aria-hidden="true">📝</span>
-                    <div class="alert-content">
-                        <p class="alert-title">Motivo del rechazo</p>
-                        <p class="alert-body">${escapeHtml(reason)}</p>
-                    </div>
-                </div>`,
-            actions: `
-                <button class="btn btn-primary" type="button" id="publish-apply">
-                    Volver a solicitar
-                </button>
-                <a class="btn btn-secondary" href="index.html">Ir al foro</a>`,
-        });
-
-        q('#publish-apply').addEventListener('click', openSellerApplication);
-    }
-
     function renderErrorGate(message) {
         stage.innerHTML = gateScreen({
             icon: '📡',
@@ -295,86 +193,10 @@
             message,
             actions: `
                 <button class="btn btn-primary" type="button" id="publish-retry">Reintentar</button>
-                <a class="btn btn-secondary" href="index.html">Ir al foro</a>`,
+                <a class="btn btn-secondary" href="index.html">Ir al tablón</a>`,
         });
 
         q('#publish-retry').addEventListener('click', () => { global.location.reload(); });
-    }
-
-    /* ======================================================================
-       Solicitud de cuenta de vendedor
-       ====================================================================== */
-
-    function openSellerApplication() {
-        const content = document.createElement('div');
-        content.className = 'publish-apply';
-        content.innerHTML = `
-            <p class="publish-apply-lead">
-                Cuéntanos qué piensas vender. Las solicitudes se revisan a mano, así que
-                unas líneas sinceras ayudan más que un texto largo.
-            </p>
-            <div class="field">
-                <div class="publish-label-row">
-                    <label class="label" for="seller-motivation">
-                        Tu motivación
-                        <span class="required" aria-hidden="true">*</span>
-                        <span class="sr-only">(obligatorio)</span>
-                    </label>
-                    <span class="publish-counter" id="seller-motivation-counter" aria-hidden="true">0 / 400</span>
-                </div>
-                <textarea class="textarea" id="seller-motivation" rows="5" maxlength="400"
-                          placeholder="Quiero vender cosas que ya no uso en casa: consolas, libros y algo de ropa. Entrego en persona en mi distrito."
-                          aria-describedby="seller-motivation-error"></textarea>
-                <p class="field-error" id="seller-motivation-error" aria-live="polite"></p>
-            </div>`;
-
-        const input = content.querySelector('#seller-motivation');
-        const counter = content.querySelector('#seller-motivation-counter');
-
-        input.addEventListener('input', () => {
-            counter.textContent = `${input.value.trim().length} / 400`;
-        });
-
-        modal.open({
-            title: 'Solicitar cuenta de vendedor',
-            size: 'md',
-            content,
-            actions: [
-                { label: 'Ahora no', variant: 'ghost' },
-                {
-                    label: 'Enviar solicitud',
-                    variant: 'primary',
-                    action: () => submitApplication(content),
-                },
-            ],
-        });
-
-        input.focus();
-    }
-
-    async function submitApplication(root) {
-        const input = root.querySelector('#seller-motivation');
-        const error = root.querySelector('#seller-motivation-error');
-        const motivation = input.value.trim();
-
-        if (motivation.length < 20) {
-            error.textContent = 'Cuéntanos al menos 20 caracteres sobre lo que quieres vender.';
-            input.classList.add('is-invalid');
-            input.setAttribute('aria-invalid', 'true');
-            input.focus();
-            return false;
-        }
-
-        try {
-            const result = await api.applyAsSeller(motivation);
-            // El store repinta la pantalla: pasa sola al estado «en revisión».
-            store.set({ user: result.user });
-            toast.success('Solicitud enviada. El equipo la revisará pronto.');
-            return true;
-        } catch (requestError) {
-            toast.error(requestError.message || 'No pudimos enviar tu solicitud.');
-            return false;
-        }
     }
 
     /* ======================================================================
@@ -403,6 +225,42 @@
         syncEmojiFromCategory();
         refreshAll();
         enableUnloadGuard();
+        paintQuota();
+    }
+
+    /**
+     * Cuántos pedidos abiertos le quedan a quien está escribiendo.
+     *
+     * El servidor es el que aplica el tope, así que es el que lo cuenta: la
+     * pantalla no repite el número a mano. Si la consulta falla, el aviso se
+     * queda con su texto general —que ya dice la regla— en vez de mentir con
+     * un cupo inventado.
+     */
+    async function paintQuota() {
+        const slot = q('#publish-rules-quota');
+        if (!slot) return;
+
+        try {
+            const { limits } = await api.getMyRequests();
+            if (!limits) return;
+
+            const { left, max_open: max } = limits;
+
+            slot.innerHTML = left > 0
+                ? `<strong>Te quedan ${left} de ${max} pedidos abiertos.</strong> `
+                    + 'Cuando cierras o eliminas uno, recuperas el sitio para pedir otra cosa.'
+                : `<strong>Ya tienes tus ${max} pedidos abiertos.</strong> `
+                    + 'Cierra o elimina alguno para poder publicar otro.';
+
+            /* Llegado al tope, el aviso deja de ser informativo. */
+            if (left === 0) {
+                const box = q('#publish-rules');
+                if (box) box.classList.replace('alert-info', 'alert-warning');
+            }
+        } catch (error) {
+            /* Silencio deliberado: es un adorno informativo, no una barrera.
+               Quien esté en el tope se enterará igual al enviar. */
+        }
     }
 
     /* ======================================================================
@@ -456,6 +314,23 @@
         if (!node || String(node.value || '').trim()) return;
         node.value = value;
         touched.push(label);
+        markFilled(node);
+    }
+
+    /**
+     * Señala un campo recién rellenado por el asistente.
+     *
+     * Decir «rellené el título y la descripción» en una frase obliga a
+     * desplazarse y a comparar de memoria contra una lista de nombres. Un
+     * destello sobre el propio campo se entiende sin leer, y se apaga solo
+     * para no dejar la pantalla marcada.
+     */
+    function markFilled(node) {
+        node.classList.remove('is-ai-filled');
+        // Reiniciar la animación si el mismo campo se rellena dos veces
+        void node.offsetWidth;
+        node.classList.add('is-ai-filled');
+        setTimeout(() => node.classList.remove('is-ai-filled'), 2000);
     }
 
     async function runAssistant() {
@@ -503,20 +378,41 @@
             touched.push('en qué estado lo aceptas');
         }
 
-        /* El presupuesto no se lo inventa: sale de lo que otras personas han
-           pedido en la misma categoría. Sin muestra suficiente, no sugiere. */
+        /* Lo primero, lo que la propia persona dijo. Si escribió «hasta 1500
+           soles» ya dio su presupuesto, y preguntárselo otra vez —o rellenarlo
+           con la mediana de los demás— es no haber escuchado. */
         let budgetNote = '';
-        if (draft.category_id) {
+        const minField = q('#publish-budget-min');
+        const maxField = q('#publish-budget-max');
+        let budgetFromWords = false;
+
+        if (draft.budget_min && minField && !minField.value) {
+            minField.value = String(draft.budget_min);
+            markFilled(minField);
+            budgetFromWords = true;
+        }
+
+        if (draft.budget_max && maxField && !maxField.value) {
+            maxField.value = String(draft.budget_max);
+            markFilled(maxField);
+            budgetFromWords = true;
+        }
+
+        if (budgetFromWords) {
+            budgetNote = ' El presupuesto lo saqué de lo que escribiste.';
+            touched.push('el presupuesto');
+        }
+
+        /* Si no lo dijo, se sugiere a partir de lo que otras personas han
+           pedido en la misma categoría. Sin muestra suficiente, no sugiere. */
+        if (!budgetFromWords && draft.category_id) {
             try {
                 const similar = await api.getRequests({ category: draft.category_id, per_page: 48 });
                 const suggested = assistant.suggestBudget(similar.requests || []);
 
                 if (suggested) {
-                    const min = q('#publish-budget-min');
-                    const max = q('#publish-budget-max');
-
-                    if (min && !min.value) min.value = String(suggested.min);
-                    if (max && !max.value) max.value = String(suggested.max);
+                    if (minField && !minField.value) minField.value = String(suggested.min);
+                    if (maxField && !maxField.value) maxField.value = String(suggested.max);
 
                     budgetNote = ` El presupuesto sale de lo que han pedido otras `
                         + `${suggested.sample} personas en esa categoría; cámbialo si no te cuadra.`;
@@ -933,7 +829,16 @@
        Eventos del formulario
        ====================================================================== */
 
-    const schedulePreview = debounce(renderPreview, 200);
+    /* La vista previa y el veredicto del revisor se repintan juntos: son las
+       dos caras de lo mismo —cómo se verá y si saldrá— y verlas desincronizadas
+       mientras se escribe desconcierta más que ayudar.
+
+       Esto estaba solo en `refreshAll`, que se llama al montar y al pedirle un
+       borrador al asistente, no al teclear. El panel existía y no se movía. */
+    const schedulePreview = debounce(() => {
+        renderPreview();
+        renderReview();
+    }, 200);
     const scheduleDraftSave = debounce(() => saveDraft(readValues()), 600);
 
     function fieldNameOf(target) {
@@ -965,9 +870,93 @@
     }
 
     /** Repinta todo lo que depende de los valores actuales. */
+    /* ======================================================================
+       El revisor, a la vista
+
+       El mismo criterio que decide si un pedido sale al tablón, pero dicho
+       mientras todavía se puede cambiar. Antes solo existía al final del
+       viaje: publicabas, y horas después te llegaba un aviso diciendo que
+       tu pedido estaba «en revisión» sin explicarte qué había que tocar.
+       ====================================================================== */
+
+    const REVIEW_TONE = {
+        approved: {
+            badge: '✓',
+            title: 'Listo para publicar',
+            sub: 'La revisión automática no encontró nada que corregir.',
+        },
+        pending: {
+            badge: '!',
+            title: 'Sale, pero lo verá una persona',
+            sub: 'Puedes publicarlo así. Corrigiendo lo de abajo saldría al instante.',
+        },
+        rejected: {
+            badge: '×',
+            title: 'Esto no se puede publicar',
+            sub: 'Cambia lo que se indica y vuelve a intentarlo.',
+        },
+    };
+
+    const NOTE_ICON = {
+        block: '⛔',
+        fix: '✂️',
+        tip: '💡',
+        age: '🔞',
+    };
+
+    /** Lo que el revisor opina ahora mismo, o `null` si aún no hay qué juzgar. */
+    function inspectNow(values) {
+        const moderator = global.DiscoveryModerator;
+        if (!moderator || typeof moderator.inspect !== 'function') return null;
+
+        /* Con dos palabras escritas todo pedido parece pobre. Juzgarlo desde
+           la primera tecla sería dar la lata, no ayudar. */
+        const title = String(values.title || '').trim();
+        const description = String(values.description || '').trim();
+        if (title.length < 6 || description.length < 20) return null;
+
+        return moderator.inspect({
+            title,
+            description,
+            category: findCategory(values.category_id),
+        });
+    }
+
+    function renderReview() {
+        const panel = q('#publish-review');
+        if (!panel) return;
+
+        const report = inspectNow(readValues());
+        state.review = report;
+
+        if (!report) {
+            panel.hidden = true;
+            return;
+        }
+
+        const tone = REVIEW_TONE[report.verdict.decision] || REVIEW_TONE.pending;
+
+        panel.hidden = false;
+        panel.dataset.decision = report.verdict.decision;
+        q('#publish-review-badge').textContent = tone.badge;
+        q('#publish-review-title').textContent = tone.title;
+        q('#publish-review-sub').textContent = tone.sub;
+
+        const notes = q('#publish-review-notes');
+        notes.hidden = !report.notes.length;
+        notes.innerHTML = report.notes.map((note) => `
+            <li class="publish-review-note is-${escapeAttr(note.level)}">
+                <span class="publish-review-note-icon" aria-hidden="true">${NOTE_ICON[note.level] || '•'}</span>
+                <span class="publish-review-note-body">
+                    <strong>${escapeHtml(note.title)}</strong>
+                    <span>${escapeHtml(note.hint)}</span>
+                </span>
+            </li>`).join('');
+    }
     function refreshAll() {
         updateCounters(readValues());
         renderPreview();
+        renderReview();
     }
 
     async function handleSubmit(event) {
@@ -983,6 +972,34 @@
             if (first) first.focus();
             toast.error('Revisa los campos marcados antes de publicar.');
             return;
+        }
+
+        /* Último filtro antes de enviar. Lo que está prohibido no sale de
+           aquí; lo que solo está mal escrito sí puede salir, porque la
+           decisión es de quien publica, no del revisor. */
+        const report = inspectNow(values);
+
+        if (report && !report.ready) {
+            renderReview();
+            q('#publish-review').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            toast.error(report.verdict.reason);
+            return;
+        }
+
+        const fixable = report ? report.notes.filter((n) => n.level === 'fix') : [];
+
+        if (fixable.length) {
+            const go = await global.modal.confirm({
+                title: 'Antes de publicarlo',
+                message: `${fixable.map((n) => n.title).join('. ')}. Si lo publicas así, tu pedido pasará por revisión manual y tardará más en salir al tablón.`,
+                confirmLabel: 'Publicar igualmente',
+                cancelLabel: 'Volver y corregir',
+            });
+
+            if (!go) {
+                q('#publish-review').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
         }
 
         await sendPost(values);

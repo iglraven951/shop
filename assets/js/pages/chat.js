@@ -16,6 +16,8 @@
     const store = global.store;
     const toast = global.toast;
     const UI = global.UI;
+    /* El tono del avatar lo decide el nombre: ver `UI.avatarTone`. */
+    const toneAttr = (name) => ` data-tone="${UI.avatarTone(name)}"`;
 
     const MAX_LENGTH = 1000;
     const COUNTER_FROM = 840;       // a partir de aquí mostramos el contador
@@ -24,10 +26,15 @@
     const NEAR_BOTTOM_PX = 90;      // margen para considerar que el hilo está «abajo»
     const MOBILE_QUERY = '(max-width: 860px)';
 
+    /* Las cuatro cosas que de verdad se preguntan al otro lado, en el orden
+       en que salen: si lo tiene, cuánto cede, hasta cuándo lo guarda y dónde
+       quedan. «¿Aceptas una oferta?» estaba de más —el chat solo existe
+       porque ya se aceptó una— y «¿Sigue disponible?» tampoco, porque quien
+       escribió acaba de ofrecerlo. */
     const QUICK_REPLIES = [
-        '¿Sigue disponible?',
-        '¿En qué distrito puedo verlo?',
-        '¿Aceptas una oferta?',
+        '¿Me puedes hacer una rebaja?',
+        '¿Hasta cuándo me lo dejas?',
+        '¿Dónde nos vemos?',
         '¿Me envías más fotos?',
     ];
 
@@ -40,6 +47,7 @@
         query: '',
         sending: false,
         replyTimer: null,
+        attachments: [],
     };
 
     const dom = {};
@@ -67,6 +75,9 @@
         dom.input = $('#chat-input');
         dom.counter = $('#chat-counter');
         dom.send = $('#chat-send');
+        dom.attach = $('#chat-attach');
+        dom.file = $('#chat-file');
+        dom.tray = $('#chat-tray');
     }
 
     /** «Hoy», «Ayer» o la fecha completa, para los separadores del hilo. */
@@ -134,7 +145,7 @@
                  alt="" loading="lazy" decoding="async">
             <span class="chat-item-body">
                 <span class="chat-item-row">
-                    <span class="chat-item-name truncate">${escapeHtml(conversation.seller?.shop_name || conversation.seller?.username || 'Tienda')}</span>
+                    <span class="chat-item-name truncate">${escapeHtml(conversation.seller?.shop_name || conversation.seller?.username || 'Vendedor')}</span>
                     <span class="chat-item-time">${escapeHtml(format.relative(conversation.updated_at))}</span>
                 </span>
                 <span class="chat-item-post truncate">${escapeHtml(conversation.request_title)}</span>
@@ -166,7 +177,7 @@
             : UI.emptyState({
                 icon: '💬',
                 title: 'Aún no tienes conversaciones',
-                message: 'Aquí aparecerá la conversación con cada tienda cuya oferta aceptes. Empieza publicando lo que buscas.',
+                message: 'Aquí aparecerá la conversación con cada vendedor cuya oferta aceptes. Empieza publicando lo que buscas.',
                 action: { label: 'Explorar el foro', href: 'index.html' },
             });
     }
@@ -209,7 +220,7 @@
         const meta = seller.rating_count
             ? `★ ${Number(seller.rating).toFixed(1)} · ${seller.rating_count} `
                 + `${seller.rating_count === 1 ? 'compra' : 'compras'} · ${seller.district || 'Arequipa'}`
-            : `${seller.verified ? 'Tienda verificada' : 'Tienda'} · ${seller.district || 'Arequipa'}`;
+            : `${seller.verified ? 'Vendedor verificado' : 'Vendedor'} · ${seller.district || 'Arequipa'}`;
 
         dom.head.innerHTML = `
             <button class="chat-back" type="button" data-action="back"
@@ -220,10 +231,10 @@
                 </svg>
             </button>
 
-            <span class="avatar chat-peer-avatar" aria-hidden="true">${escapeHtml(format.initials(seller.shop_name || seller.username))}</span>
+            <span class="avatar chat-peer-avatar" aria-hidden="true"${toneAttr(seller.shop_name || seller.username)}>${escapeHtml(format.initials(seller.shop_name || seller.username))}</span>
 
             <span class="chat-peer">
-                <span class="chat-peer-name truncate">${escapeHtml(seller.shop_name || seller.username || 'Tienda')}</span>
+                <span class="chat-peer-name truncate">${escapeHtml(seller.shop_name || seller.username || 'Vendedor')}</span>
                 <span class="chat-peer-meta truncate">${escapeHtml(meta)}</span>
             </span>
 
@@ -259,15 +270,30 @@
 
         const avatar = mine
             ? ''
-            : `<span class="avatar avatar-sm chat-msg-avatar" aria-hidden="true">${escapeHtml(format.initials(message.sender_name))}</span>`;
+            : `<span class="avatar avatar-sm chat-msg-avatar" aria-hidden="true"${toneAttr(message.sender_name)}>${escapeHtml(format.initials(message.sender_name))}</span>`;
 
         /* Las fotos del artículo viajan en el primer mensaje, el de la oferta.
            Es el panel 8 del storyboard: el vendedor dice el precio, dónde está
            y adjunta fotos — y esas fotos son lo primero que se mira. */
-        const photos = Array.isArray(message.photos) && message.photos.length
-            ? `<div class="chat-bubble-photos">${message.photos.slice(0, 4).map((photo) => `
-                <img class="chat-bubble-photo" src="${escapeAttr(photo.url)}"
-                     alt="Foto del artículo ofrecido" loading="lazy" decoding="async">`).join('')}</div>`
+        /* Se muestran cuatro; si vienen más, la última lo dice en vez de
+           tragárselas en silencio. Y todas abren el visor: son lo que hay que
+           mirar de cerca antes de aceptar una oferta, y a 72 px no se ve
+           nada. El visor ya existía y ya estaba cargado en esta página. */
+        const shown = Array.isArray(message.photos) ? message.photos.slice(0, 4) : [];
+        const extra = Array.isArray(message.photos) ? message.photos.length - shown.length : 0;
+
+        const photos = shown.length
+            ? `<div class="chat-bubble-photos">${shown.map((photo, index) => {
+                const last = index === shown.length - 1 && extra > 0;
+                return `
+                <button class="chat-bubble-photo${last ? ' has-more' : ''}" type="button"
+                        data-photo="${escapeAttr(photo.url)}"
+                        ${last ? `data-more="+${extra}"` : ''}
+                        aria-label="Ampliar la foto ${index + 1} de ${shown.length + extra}">
+                    <img src="${escapeAttr(photo.url)}" alt="Foto de lo ofrecido"
+                         loading="lazy" decoding="async">
+                </button>`;
+            }).join('')}</div>`
             : '';
 
         return `
@@ -394,7 +420,10 @@
 
     async function submitMessage(rawText) {
         const text = String(rawText || '').trim();
-        if (!text || state.sending || !state.activeId) return;
+        const photos = state.attachments.map((p) => ({ url: p.url }));
+
+        // Una foto sola ya es un mensaje: no se exige escribir algo al lado.
+        if ((!text && !photos.length) || state.sending || !state.activeId) return;
 
         if (text.length > MAX_LENGTH) {
             toast.error(`El mensaje no puede superar los ${MAX_LENGTH} caracteres.`);
@@ -407,6 +436,7 @@
             sender_id: state.user.id,
             sender_name: state.user.username,
             text,
+            photos,
             created_at: new Date().toISOString(),
             pending: true,
         };
@@ -417,10 +447,11 @@
         renderMessages();
         scrollToBottom(true);
         clearComposer();
+        clearAttachments();
         updateSendState();
 
         try {
-            const data = await api.sendMessage(conversationId, text);
+            const data = await api.sendMessage(conversationId, text, photos);
             const sent = data.message || { ...optimistic, pending: false };
 
             replaceMessage(optimistic.id, sent);
@@ -469,6 +500,117 @@
     }
 
     /* ======================================================================
+       Fotos que se mandan
+
+       Enseñar el producto es media conversación: «¿me mandas una foto?» es de
+       lo primero que se pregunta, y hasta ahora había que contestar que sí de
+       palabra, porque no se podía adjuntar nada.
+
+       Las fotos se escalan y se recomprimen ANTES de guardarlas. No es un
+       refinamiento: aquí no hay servidor, la foto acaba en `localStorage`
+       como data URL, y una foto de teléfono sin tocar son cuatro megas —dos
+       llenarían la cuota del navegador y se perdería la sesión entera—. A
+       1024 px y calidad 0,6 la misma foto pesa unos 120 KB y en pantalla no
+       se distingue.
+       ====================================================================== */
+
+    const MAX_PHOTOS = 4;
+    const MAX_EDGE = 1024;
+    const QUALITY = 0.6;
+
+    /** Escala la imagen al lado mayor permitido y la devuelve como data URL. */
+    function shrink(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+
+            reader.onerror = () => reject(new Error('No se pudo leer la imagen'));
+            reader.onload = () => {
+                const image = new Image();
+
+                image.onerror = () => reject(new Error('El archivo no es una imagen válida'));
+                image.onload = () => {
+                    const scale = Math.min(1, MAX_EDGE / Math.max(image.width, image.height));
+                    const canvas = document.createElement('canvas');
+                    canvas.width = Math.round(image.width * scale);
+                    canvas.height = Math.round(image.height * scale);
+
+                    canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+
+                    try {
+                        resolve(canvas.toDataURL('image/jpeg', QUALITY));
+                    } catch (error) {
+                        // Un canvas «manchado» por una imagen de otro origen
+                        reject(new Error('No se pudo procesar la imagen'));
+                    }
+                };
+
+                image.src = reader.result;
+            };
+
+            reader.readAsDataURL(file);
+        });
+    }
+
+    async function addFiles(fileList) {
+        const files = Array.from(fileList || []).filter((f) => f.type.startsWith('image/'));
+        if (!files.length) return;
+
+        const room = MAX_PHOTOS - state.attachments.length;
+        if (room <= 0) {
+            toast.error(`Puedes enviar hasta ${MAX_PHOTOS} fotos por mensaje.`);
+            return;
+        }
+
+        if (files.length > room) {
+            toast.info(`Se añadieron ${room} de ${files.length} fotos: el máximo por mensaje es ${MAX_PHOTOS}.`);
+        }
+
+        dom.attach.classList.add('is-working');
+
+        for (const file of files.slice(0, room)) {
+            try {
+                const url = await shrink(file);
+                state.attachments.push({ url, name: file.name });
+            } catch (error) {
+                toast.error(error.message || 'No se pudo añadir la imagen');
+            }
+        }
+
+        dom.attach.classList.remove('is-working');
+        renderTray();
+        updateSendState();
+    }
+
+    function renderTray() {
+        const empty = !state.attachments.length;
+        dom.tray.hidden = empty;
+
+        if (empty) {
+            dom.tray.innerHTML = '';
+            return;
+        }
+
+        dom.tray.innerHTML = state.attachments.map((photo, index) => `
+            <span class="chat-tray-item">
+                <img src="${escapeAttr(photo.url)}" alt="${escapeAttr(photo.name || 'Foto por enviar')}"
+                     decoding="async">
+                <button class="chat-tray-drop" type="button" data-drop="${index}"
+                        aria-label="Quitar ${escapeAttr(photo.name || 'la foto')}">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor"
+                         stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                        <path d="M3 3l6 6M9 3l-6 6"/>
+                    </svg>
+                </button>
+            </span>`).join('');
+    }
+
+    function clearAttachments() {
+        state.attachments = [];
+        dom.file.value = '';
+        renderTray();
+    }
+
+    /* ======================================================================
        Compositor
        ====================================================================== */
 
@@ -507,7 +649,9 @@
     }
 
     function updateSendState() {
-        dom.send.disabled = state.sending || !dom.input.value.trim();
+        const empty = !dom.input.value.trim() && !state.attachments.length;
+        dom.send.disabled = state.sending || empty;
+        dom.attach.disabled = state.attachments.length >= MAX_PHOTOS;
     }
 
     function clearComposer() {
@@ -518,6 +662,7 @@
 
     function resetComposer() {
         clearComposer();
+        clearAttachments();
         updateSendState();
     }
 
@@ -539,6 +684,14 @@
             openConversation(item.dataset.id, { reveal: true });
         });
 
+        /* Las fotos de una oferta, a tamaño real. Delegado en el hilo porque
+           los mensajes se repintan enteros con cada envío. */
+        dom.messages.addEventListener('click', (event) => {
+            const photo = event.target.closest('[data-photo]');
+            if (!photo) return;
+            global.modal.lightbox(photo.dataset.photo, 'Foto de lo ofrecido');
+        });
+
         dom.head.addEventListener('click', (event) => {
             if (!event.target.closest('[data-action="back"]')) return;
             dom.page.classList.remove('is-thread-open');
@@ -547,6 +700,33 @@
             // enfocar un campo de texto abriría el teclado del móvil.
             const active = dom.list.querySelector('.chat-item.is-active');
             if (active) active.focus();
+        });
+
+        /* Adjuntar: el botón abre el selector, y el campo queda oculto porque
+           su aspecto nativo no se puede estilar. */
+        dom.attach.addEventListener('click', () => dom.file.click());
+        dom.file.addEventListener('change', () => addFiles(dom.file.files));
+
+        dom.tray.addEventListener('click', (event) => {
+            const drop = event.target.closest('[data-drop]');
+            if (!drop) return;
+            state.attachments.splice(Number(drop.dataset.drop), 1);
+            renderTray();
+            updateSendState();
+        });
+
+        /* Pegar una captura funciona igual que adjuntarla: es como llega la
+           mitad de las fotos en una conversación de compraventa. */
+        dom.input.addEventListener('paste', (event) => {
+            const items = (event.clipboardData && event.clipboardData.items) || [];
+            const files = Array.from(items)
+                .filter((item) => item.kind === 'file' && item.type.startsWith('image/'))
+                .map((item) => item.getAsFile())
+                .filter(Boolean);
+
+            if (!files.length) return;
+            event.preventDefault();
+            addFiles(files);
         });
 
         const applySearch = debounce(() => {

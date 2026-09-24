@@ -54,6 +54,8 @@
             budget_min: Number(post.budget_min) || 0,
             budget_max: Number(post.budget_max) || 0,
             state: post.state || 'open',
+            // La edad se evalúa aparte del contenido: ver `moderator.js`
+            adult: Boolean(post.adult),
             comment_count: Number(post.comment_count) || 0,
             saves_count: Number(post.saves_count) || 0,
             views: Number(post.views) || 0,
@@ -116,6 +118,24 @@
         }
     }
 
+
+    /**
+     * El sello de edad.
+     *
+     * Va aparte de los demás distintivos porque no describe el pedido: avisa
+     * de un requisito de quien responde. La edad es un eje independiente de
+     * aprobar o rechazar (ADR-027), y por eso puede acompañar a cualquier
+     * estado.
+     *
+     * Es un helper y no marcado suelto porque se dibuja en dos sitios —la
+     * tarjeta del tablón y la ficha del pedido— y ya se escribió dos veces:
+     * la segunda se olvidó, y el sello no llegaba a la ficha.
+     */
+    function ageBadge(post) {
+        return post && post.adult
+            ? '<span class="badge badge-age" title="Quien responda debe ser mayor de edad">🔞 +18</span>'
+            : '';
+    }
     /**
      * El presupuesto de quien pide, no el precio de quien vende.
      *
@@ -161,7 +181,7 @@
         return `
         <header class="post-header">
             <a class="post-author" href="index.html?author_id=${escapeAttr(post.buyer.id)}">
-                <span class="avatar">${escapeHtml(format.initials(post.buyer.username))}</span>
+                <span class="avatar"${toneAttr(post.buyer.username)}>${escapeHtml(format.initials(post.buyer.username))}</span>
                 <span class="post-author-info">
                     <span class="post-author-name">
                         ${escapeHtml(post.buyer.username)}${verifiedBadge(post.buyer)}
@@ -278,6 +298,35 @@
      * @param {{index?: number, showStatus?: boolean, showMenu?: boolean,
      *          compact?: boolean, showActions?: boolean}} [options]
      */
+
+    /* ======================================================================
+       El tono de un avatar
+
+       Un número del 1 al 8 estable para cada nombre: la misma persona sale
+       siempre del mismo color, en esta sesión y en la siguiente, en la lista
+       de conversaciones y en la ficha del pedido. Eso es lo que convierte un
+       círculo con dos letras en algo que se reconoce de reojo.
+       ====================================================================== */
+
+    const TONES = 8;
+
+    /**
+     * @param {string} name
+     * @returns {number} del 1 al 8
+     */
+    function avatarTone(name) {
+        const text = String(name || '');
+        let hash = 0;
+
+        for (let i = 0; i < text.length; i += 1) {
+            hash = ((hash << 5) - hash + text.charCodeAt(i)) | 0;
+        }
+
+        return (Math.abs(hash) % TONES) + 1;
+    }
+
+    /** El atributo listo para interpolar: ` data-tone="3"`. */
+    const toneAttr = (name) => ` data-tone="${avatarTone(name)}"`;
     function postCard(raw, options = {}) {
         const post = normalizePost(raw);
         const {
@@ -312,6 +361,7 @@
 
                 <div class="post-tags">
                     ${availabilityBadge(post)}
+                    ${ageBadge(post)}
                     <span class="badge badge-brand">${escapeHtml(post.category.icon)} ${escapeHtml(post.category.name)}</span>
                     ${post.condition ? `<span class="badge">${escapeHtml(post.condition)}</span>` : ''}
                     ${budgetTag(post)}
@@ -413,7 +463,7 @@
 
         return `
         <article class="comment" data-comment-id="${escapeAttr(comment.id)}">
-            <span class="avatar avatar-sm">${escapeHtml(format.initials(author.username))}</span>
+            <span class="avatar avatar-sm"${toneAttr(author.username)}>${escapeHtml(format.initials(author.username))}</span>
             <div class="comment-body">
                 <div class="comment-bubble">
                     <span class="comment-author">
@@ -438,10 +488,82 @@
        Estados y navegación
        ---------------------------------------------------------------------- */
 
+    /* ======================================================================
+       Los iconos de un estado vacío
+
+       Las páginas los piden con un emoji —`icon: '🔎'`— y eso los dibujaba
+       cada sistema operativo a su manera: en Windows unos salen en color y
+       otros en blanco y negro, y ninguno se parece a la librería de trazo
+       que usa el resto del sitio. Un estado vacío es de lo más visible que
+       tiene una pantalla, porque es lo ÚNICO que tiene.
+
+       Se traducen aquí, en el origen, y no en cada hoja de estilo: las
+       llamadas siguen escribiéndose igual y el que no esté en la tabla se
+       dibuja tal cual, que es el comportamiento de antes.
+       ====================================================================== */
+
+    const EMPTY_ICONS = {
+        '🔍': 'buscar', '🔎': 'buscar',
+        '📭': 'bandeja', '📬': 'bandeja',
+        '💬': 'conversacion', '🗨️': 'conversacion',
+        '🔖': 'guardado', '🔗': 'guardado',
+        '🔐': 'candado', '🔒': 'candado',
+        '⚠️': 'aviso', '❗': 'aviso',
+        '✅': 'visto', '✔️': 'visto',
+        '🛡️': 'escudo',
+        '🗺️': 'mapa', '📍': 'mapa',
+        '📦': 'caja',
+        '📡': 'antena',
+        '🙌': 'manos', '🤝': 'manos',
+        '🔞': 'edad',
+
+        /* Los del panel de administración. Una bandeja vacía es lo único que
+           se ve en una cola al día, así que ahí se mira con más atención que
+           en ninguna otra parte. */
+        '🕊️': 'calma', '🤖': 'ia', '👌': 'pulgar', '🧑‍💼': 'persona',
+        '🕑': 'reloj', '⚑': 'bandera', '⚖': 'balanza', '🔁': 'repetir',
+    };
+
+    const EMPTY_PATHS = {
+        buscar: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.2 15.2 4.3 4.3"/>',
+        bandeja: '<path d="M3 13.5h4l1.2 2.2h7.6L17 13.5h4"/><path d="M5.6 4.5h12.8l2.6 9v5a1.5 1.5 0 0 1-1.5 1.5H4.5A1.5 1.5 0 0 1 3 18.5v-5z"/>',
+        conversacion: '<path d="M20.5 14a2 2 0 0 1-2 2H8l-4.5 3.5V5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2z"/>',
+        guardado: '<path d="M6 3h12v18l-6-4.2L6 21z"/>',
+        candado: '<rect x="4" y="10.5" width="16" height="10.5" rx="2.2"/><path d="M8 10.5V7.8a4 4 0 0 1 8 0v2.7"/><circle cx="12" cy="15.4" r="1.2"/>',
+        aviso: '<path d="M12 3.2 21.4 19.4a1 1 0 0 1-.87 1.5H3.47a1 1 0 0 1-.87-1.5z"/><path d="M12 9.4v4.4"/><circle cx="12" cy="17" r=".9" fill="currentColor"/>',
+        visto: '<circle cx="12" cy="12" r="8.6"/><path d="m8.2 12.3 2.6 2.6 5-5.4"/>',
+        escudo: '<path d="M12 2.8 4.4 5.8v5.7c0 4.5 3.2 8.3 7.6 9.2 4.4-.9 7.6-4.7 7.6-9.2V5.8z"/><path d="m8.8 11.9 2.3 2.3 4.2-4.2"/>',
+        mapa: '<path d="M9 3.2 3.2 5.8v15L9 18.2l6 2.6 5.8-2.6v-15L15 5.8z"/><path d="M9 3.2v15M15 5.8v15"/>',
+        caja: '<path d="M3.4 7.6 12 3.4l8.6 4.2v8.8L12 20.6l-8.6-4.2z"/><path d="m3.4 7.6 8.6 4.3 8.6-4.3M12 11.9v8.7"/>',
+        antena: '<path d="M6.3 6.3a8 8 0 0 0 0 11.4M17.7 6.3a8 8 0 0 1 0 11.4"/><path d="M9.2 9.2a4 4 0 0 0 0 5.6M14.8 9.2a4 4 0 0 1 0 5.6"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/>',
+        manos: '<path d="M7.5 11.5 5 9a2 2 0 0 1 2.8-2.8l4.2 4.2 4.2-4.2A2 2 0 0 1 19 9l-2.5 2.5"/><path d="M4.6 13.4h14.8v2.2a5 5 0 0 1-5 5H9.6a5 5 0 0 1-5-5z"/>',
+        edad: '<circle cx="12" cy="12" r="8.6"/><path d="M8.4 9.6v4.8M15.6 9.6v4.8M8.4 12h7.2"/>',
+        calma: '<path d="M4.2 19.8c0-6 3.6-11 9-12.6 3-.9 5.4-.6 6.6.3-.6 7.8-5.4 12-11.4 12.3z"/><path d="M4.2 19.8c2.4-3 5.4-5.1 8.7-6.3"/>',
+        ia: '<rect x="4.2" y="7.4" width="15.6" height="11.4" rx="3"/><path d="M12 3.2v4.2M8.6 12.2v1.8M15.4 12.2v1.8M9.4 16.6h5.2"/><path d="M4.2 11.4H2.6M21.4 11.4h-1.6"/>',
+        pulgar: '<path d="M8 10.4 11.4 3.6a2 2 0 0 1 2.8 2.4l-1 4.4h5a2 2 0 0 1 2 2.4l-1.2 5.6a2.4 2.4 0 0 1-2.4 1.8H8z"/><rect x="3.4" y="10.4" width="4.6" height="9.8" rx="1.4"/>',
+        persona: '<circle cx="12" cy="8" r="3.8"/><path d="M4.8 20.4a7.2 7.2 0 0 1 14.4 0"/><path d="M9.4 20.4v-3.2M14.6 20.4v-3.2"/>',
+        reloj: '<circle cx="12" cy="12" r="8.6"/><path d="M12 6.8V12l3.4 2"/>',
+        bandera: '<path d="M5.4 21V3.6M5.4 4.6h11.8l-2 3.6 2 3.6H5.4"/>',
+        balanza: '<path d="M12 3.6v16.8M6.6 20.4h10.8M4 7.6h16M4 7.6 1.8 13a3.4 3.4 0 0 0 4.4 0zM20 7.6 17.8 13a3.4 3.4 0 0 0 4.4 0z"/>',
+        repetir: '<path d="M3.6 10.2A6.6 6.6 0 0 1 10.2 3.6h4.2M20.4 13.8a6.6 6.6 0 0 1-6.6 6.6H9.6"/><path d="m12.4 1.6 2.4 2-2.4 2M11.6 22.4l-2.4-2 2.4-2"/>',
+    };
+
+    /**
+     * El dibujo de un estado vacío.
+     * @param {string} icon  emoji o nombre; lo que no se reconozca pasa tal cual
+     */
+    function emptyIcon(icon) {
+        const nombre = EMPTY_ICONS[icon] || (EMPTY_PATHS[icon] ? icon : null);
+        if (!nombre) return escapeHtml(String(icon || ''));
+
+        return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"
+             aria-hidden="true">${EMPTY_PATHS[nombre]}</svg>`;
+    }
     function emptyState({ icon = '🔍', title, message = '', action = null }) {
         return `
         <div class="empty-state">
-            <div class="empty-icon" aria-hidden="true">${icon}</div>
+            <div class="empty-icon" aria-hidden="true">${emptyIcon(icon)}</div>
             <h3 class="empty-title">${escapeHtml(title)}</h3>
             ${message ? `<p class="empty-message">${escapeHtml(message)}</p>` : ''}
             ${action ? (action.href
@@ -459,7 +581,7 @@
 
         return `
         <div class="empty-state">
-            <div class="empty-icon" aria-hidden="true">${icon}</div>
+            <div class="empty-icon" aria-hidden="true">${emptyIcon(icon)}</div>
             <h3 class="empty-title">${escapeHtml(title)}</h3>
             <p class="empty-message">${escapeHtml(message)}</p>
             <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; justify-content: center;">
@@ -607,7 +729,7 @@
         try {
             const shared = await global.DSApp.share({
                 title,
-                text: `${title} · en DiscoveryShop, el foro de segunda mano de Arequipa`,
+                text: `${title} · en DiscoveryShop, el comercio inverso de Arequipa`,
                 url: link,
             });
 
@@ -738,6 +860,7 @@
     }
 
     global.UI = {
+        avatarTone,
         postCard,
         postRow,
         postSkeleton,
@@ -746,10 +869,12 @@
         reactionSummary,
         statusBadge,
         availabilityBadge,
+        ageBadge,
         budgetTag,
         budgetText,
         verifiedBadge,
         normalizePost,
+        emptyIcon,
         emptyState,
         loginGate,
         pagination,

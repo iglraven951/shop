@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Iniciar sesión · DiscoveryShop</title>
-    <meta name="description" content="Entra en tu cuenta de DiscoveryShop para seguir el foro de artículos de segunda mano de Arequipa, guardar publicaciones y escribirte con quien vende.">
+    <meta name="description" content="Entra en tu cuenta de DiscoveryShop para seguir el comercio inverso de Arequipa, guardar los pedidos que te interesan y escribirte con los vendedores que respondan.">
     <meta name="theme-color" content="#070c14">
     <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
     <link rel="apple-touch-icon" href="assets/img/logo.png">
     <link rel="manifest" href="site.webmanifest">
+    <link rel="stylesheet" href="assets/css/fonts.css">
     <link rel="stylesheet" href="assets/css/tokens.css">
     <link rel="stylesheet" href="assets/css/base.css">
     <link rel="stylesheet" href="assets/css/components.css">
@@ -33,51 +34,80 @@
                         <span>DiscoveryShop</span>
                     </p>
 
-                    <h2 class="auth-brand-title">Vuelve a lo que te interesa</h2>
+                    <p class="auth-eyebrow">Comercio inverso · Arequipa</p>
+
+                    <h2 class="auth-brand-title">Tus pedidos siguen <em>recibiendo ofertas</em></h2>
                     <p class="auth-brand-text">
-                        Tus publicaciones guardadas y tus conversaciones siguen justo
-                        como las dejaste.
+                        Las respuestas que llegaron mientras no estabas, lo que guardaste
+                        y tus conversaciones siguen justo como los dejaste.
                     </p>
 
-                    <ul class="auth-points">
-                        <li class="auth-point">
-                            <span class="auth-point-icon" aria-hidden="true">
-                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 2.8h9v14.4L10 13.6l-4.5 3.6V2.8Z"/></svg>
+                    <!-- La escena: el modelo del sitio dibujado con tres cajas y una
+                         perspectiva. Es decoración, así que no la anuncia el lector de
+                         pantalla; lo que dice con imágenes lo dice con palabras la
+                         lista numerada de abajo. -->
+                    <div class="auth-scene" aria-hidden="true">
+                        <span class="auth-scene-floor"></span>
+                        <div class="auth-scene-stage">
+                            <div class="auth-scene-ask">
+                                <span class="auth-scene-eyebrow">Pedido publicado</span>
+                                <span class="auth-scene-headline">Busco una bicicleta urbana</span>
+                                <span class="auth-scene-chips">
+                                    <span class="auth-scene-chip">S/ 300 – 450</span>
+                                    <span class="auth-scene-chip">Yanahuara</span>
+                                </span>
+                            </div>
+
+                            <span class="auth-scene-reply is-one">
+                                <span class="auth-scene-avatar">JR</span>
+                                <span class="auth-scene-reply-body">
+                                    <span class="auth-scene-reply-name">Julio R.</span>
+                                    <span class="auth-scene-reply-price">S/ 380</span>
+                                </span>
                             </span>
-                            <span class="auth-point-body">
-                                <span class="auth-point-title">Tus artículos guardados</span>
-                                <span class="auth-point-text">Todo lo que marcaste sigue a un clic de distancia.</span>
+
+                            <span class="auth-scene-reply is-two">
+                                <span class="auth-scene-avatar">MF</span>
+                                <span class="auth-scene-reply-body">
+                                    <span class="auth-scene-reply-name">María F.</span>
+                                    <span class="auth-scene-reply-price">S/ 420</span>
+                                </span>
                             </span>
+
+                            <span class="auth-scene-reply is-three">
+                                <span class="auth-scene-avatar">+4</span>
+                                <span class="auth-scene-reply-body">
+                                    <span class="auth-scene-reply-name">ofertas más</span>
+                                    <span class="auth-scene-reply-price">hoy</span>
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <ol class="auth-flow">
+                        <li class="auth-flow-step">
+                            <span class="auth-flow-num" aria-hidden="true">1</span>
+                            <span class="auth-flow-text"><strong>Publicas</strong> lo que estás buscando</span>
                         </li>
-                        <li class="auth-point">
-                            <span class="auth-point-icon" aria-hidden="true">
-                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 11.5a2.5 2.5 0 0 1-2.5 2.5H7l-4 3V5a2.5 2.5 0 0 1 2.5-2.5h9A2.5 2.5 0 0 1 17 5v6.5Z"/></svg>
-                            </span>
-                            <span class="auth-point-body">
-                                <span class="auth-point-title">Conversaciones abiertas</span>
-                                <span class="auth-point-text">Retoma los mensajes con quien publica sin perder el hilo.</span>
-                            </span>
+                        <li class="auth-flow-step">
+                            <span class="auth-flow-num" aria-hidden="true">2</span>
+                            <span class="auth-flow-text"><strong>Los vendedores</strong> te responden con su precio</span>
                         </li>
-                        <li class="auth-point">
-                            <span class="auth-point-icon" aria-hidden="true">
-                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5 16 5v4.6c0 3.5-2.4 6.6-6 7.9-3.6-1.3-6-4.4-6-7.9V5l6-2.5Z"/><path d="m7.4 10 1.9 1.9 3.4-3.6"/></svg>
-                            </span>
-                            <span class="auth-point-body">
-                                <span class="auth-point-title">Publicaciones revisadas</span>
-                                <span class="auth-point-text">El equipo aprueba cada artículo antes de que aparezca.</span>
-                            </span>
+                        <li class="auth-flow-step">
+                            <span class="auth-flow-num" aria-hidden="true">3</span>
+                            <span class="auth-flow-text"><strong>Eliges</strong> una oferta y se abre el chat</span>
                         </li>
-                    </ul>
+                    </ol>
 
                     <figure class="auth-quote">
                         <blockquote class="auth-quote-text">
-                            «Vendí mi cámara en dos días y el comprador la recogió en el centro de Arequipa. Todo clarísimo.»
+                            «Pedí una cámara un martes y tres vendedores me respondieron el mismo día. La recogí en el centro. Todo clarísimo.»
                         </blockquote>
                         <figcaption class="auth-quote-author">
                             <span class="auth-quote-avatar" aria-hidden="true">MF</span>
                             <span class="auth-quote-name">
                                 <strong>María Fernanda G.</strong>
-                                Vendedora desde 2024 · Arequipa
+                                Compradora desde 2024 · Arequipa
                             </span>
                         </figcaption>
                     </figure>
@@ -86,16 +116,28 @@
 
             <!-- Formulario -->
             <div class="auth-panel">
-                <div class="auth-card">
+
+                <!-- Portada compacta: sustituye al panel lateral cuando no cabe. Es la
+                     primera pantalla que ve mucha gente en el teléfono, y un
+                     formulario a secas no explica de qué va el sitio. -->
+                <div class="auth-hero">
                     <p class="auth-mobile-brand">
                         <span class="auth-brand-mark" aria-hidden="true"><svg class="brand-svg" viewBox="0 0 40 40" fill="none" aria-hidden="true" focusable="false"><path d="M13.4 10.6 9.1 29.4a1.1 1.1 0 0 0 1.07 1.35h3.23Z" fill="currentColor" opacity="0.5"/><path d="M16.6 11.2V9.4a4.6 4.6 0 0 1 9.2 0v1.8" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><mask id="login-mark-2"><rect width="40" height="40" fill="#fff"/><circle cx="21.3" cy="19.4" r="5.2" fill="none" stroke="#000" stroke-width="2.3"/><path d="m25.2 23.3 4.6 4.6" stroke="#000" stroke-width="2.5" stroke-linecap="round"/></mask><path d="M13.4 10.6h15.9a1.6 1.6 0 0 1 1.6 1.45l1.62 17.1a1.6 1.6 0 0 1-1.6 1.75H10.9a1.1 1.1 0 0 1-1.07-1.35Z" fill="currentColor" mask="url(#login-mark-2)"/></svg></span>
                         <span>DiscoveryShop</span>
                     </p>
+                    <p class="auth-hero-claim">Tus pedidos siguen recibiendo ofertas</p>
+                    <ol class="auth-hero-steps">
+                        <li class="auth-hero-step">Pides</li>
+                        <li class="auth-hero-step">Te responden</li>
+                        <li class="auth-hero-step">Eliges</li>
+                    </ol>
+                </div>
 
+                <div class="auth-card">
                     <header class="auth-head">
                         <h1 class="auth-title">Iniciar sesión</h1>
                         <p class="auth-subtitle" id="auth-subtitle">
-                            Entra para reaccionar, guardar artículos y escribirte con quien vende.
+                            Entra para sumarte a un pedido, guardar los que te interesan y escribirte con los vendedores.
                         </p>
                     </header>
 
@@ -111,11 +153,16 @@
                                 <label class="label" for="login-email">Correo electrónico</label>
                                 <div class="input-group">
                                     <span class="input-icon" aria-hidden="true">
-                                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3.5" width="14" height="11" rx="2"/><path d="m2.5 5 6.5 4.5L15.5 5"/></svg>
+                                        <svg class="input-icon-base" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3.5" width="14" height="11" rx="2"/><path d="m2.5 5 6.5 4.5L15.5 5"/></svg>
+                                        <svg class="input-icon-ok" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m3.6 9.4 3.2 3.2 7.6-7.8"/></svg>
                                     </span>
+                                    <!-- `pattern` repite la regla que valida auth.js: el estado de
+                                         conforme del campo tiene que decir la verdad. El formulario
+                                         sigue siendo `novalidate`, así que quien decide es el script. -->
                                     <input class="input" type="email" id="login-email" name="email"
                                            autocomplete="email" inputmode="email" spellcheck="false"
                                            placeholder="tucorreo@ejemplo.com"
+                                           pattern="[^\s@]+@[^\s@]+\.[^\s@]{2,}"
                                            aria-describedby="login-email-error" required>
                                 </div>
                                 <p class="field-error" id="login-email-error" aria-live="polite"></p>
@@ -125,10 +172,12 @@
                                 <label class="label" for="login-password">Contraseña</label>
                                 <div class="input-group">
                                     <span class="input-icon" aria-hidden="true">
-                                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7.5" width="12" height="8" rx="2"/><path d="M5.8 7.5V5.6a3.2 3.2 0 0 1 6.4 0v1.9"/></svg>
+                                        <svg class="input-icon-base" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7.5" width="12" height="8" rx="2"/><path d="M5.8 7.5V5.6a3.2 3.2 0 0 1 6.4 0v1.9"/></svg>
+                                        <svg class="input-icon-ok" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m3.6 9.4 3.2 3.2 7.6-7.8"/></svg>
                                     </span>
                                     <input class="input" type="password" id="login-password" name="password"
                                            autocomplete="current-password" placeholder="Tu contraseña"
+                                           minlength="8"
                                            aria-describedby="login-password-error" required>
                                     <button class="input-action" type="button"
                                             data-toggle-password="login-password"
@@ -155,7 +204,9 @@
                         </form>
 
                         <!-- Cuentas de demostración: el sitio se publica sin backend, así que
-                             cada perfil sirve para probar un permiso distinto del foro. -->
+                             cada perfil sirve para probar un permiso distinto del tablón.
+                             La tarjeta entera es el botón: lo que se elige aquí es el perfil,
+                             no un botoncito al lado del perfil. -->
                         <section class="auth-demo auth-demo-card" id="auth-demo" aria-labelledby="auth-demo-title">
                             <header class="auth-demo-head">
                                 <span class="auth-demo-icon" aria-hidden="true">
@@ -165,65 +216,73 @@
                                     <h2 class="auth-demo-title" id="auth-demo-title">Cuentas de demostración</h2>
                                     <p class="auth-demo-text">
                                         Esto es una demostración: no hay servidor y los datos viven en tu
-                                        navegador. Prueba cada perfil para ver qué permite hacer.
+                                        navegador. Pulsa un perfil para probar qué permite hacer.
                                         Todas usan la contraseña <code class="auth-demo-code">demo1234</code>.
                                     </p>
                                 </div>
                             </header>
 
                             <ul class="auth-demo-list" id="auth-demo-list">
-                                <!-- El rol encabeza cada fila y le da color: es lo que distingue
+                                <!-- El rol encabeza cada tarjeta y le da color: es lo que distingue
                                      a una cuenta de otra, el correo solo la identifica. -->
                                 <li class="auth-demo-row is-admin">
-                                    <span class="auth-demo-avatar" aria-hidden="true">🛡️</span>
-                                    <span class="auth-demo-account">
-                                        <span class="auth-demo-role">Administrador</span>
-                                        <span class="auth-demo-can">Aprueba o rechaza publicaciones y solicitudes.</span>
-                                        <code class="auth-demo-email">admin@discoveryshop.pe</code>
-                                    </span>
-                                    <button class="btn btn-secondary btn-sm auth-demo-use" type="button"
+                                    <button class="auth-demo-use" type="button"
                                             data-demo-email="admin@discoveryshop.pe"
-                                            aria-label="Usar la cuenta admin@discoveryshop.pe">
-                                        Usar esta cuenta
+                                            aria-label="Rellenar el formulario con la cuenta de administrador admin@discoveryshop.pe">
+                                        <span class="auth-demo-avatar" aria-hidden="true">🛡️</span>
+                                        <span class="auth-demo-account">
+                                            <span class="auth-demo-role">Administrador</span>
+                                            <span class="auth-demo-can">Aprueba o rechaza pedidos y solicitudes.</span>
+                                            <code class="auth-demo-email">admin@discoveryshop.pe</code>
+                                        </span>
+                                        <span class="auth-demo-go" aria-hidden="true">
+                                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 7h9M8 3.5 11.5 7 8 10.5"/></svg>
+                                        </span>
                                     </button>
                                 </li>
                                 <li class="auth-demo-row is-seller">
-                                    <span class="auth-demo-avatar" aria-hidden="true">🏷️</span>
-                                    <span class="auth-demo-account">
-                                        <span class="auth-demo-role">Vendedor aprobado</span>
-                                        <span class="auth-demo-can">Puede publicar artículos en el foro.</span>
-                                        <code class="auth-demo-email">juan@discoveryshop.pe</code>
-                                    </span>
-                                    <button class="btn btn-secondary btn-sm auth-demo-use" type="button"
+                                    <button class="auth-demo-use" type="button"
                                             data-demo-email="juan@discoveryshop.pe"
-                                            aria-label="Usar la cuenta juan@discoveryshop.pe">
-                                        Usar esta cuenta
+                                            aria-label="Rellenar el formulario con la cuenta de vendedor aprobado juan@discoveryshop.pe">
+                                        <span class="auth-demo-avatar" aria-hidden="true">🏷️</span>
+                                        <span class="auth-demo-account">
+                                            <span class="auth-demo-role">Vendedor aprobado</span>
+                                            <span class="auth-demo-can">Responde pedidos con sus ofertas.</span>
+                                            <code class="auth-demo-email">juan@discoveryshop.pe</code>
+                                        </span>
+                                        <span class="auth-demo-go" aria-hidden="true">
+                                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 7h9M8 3.5 11.5 7 8 10.5"/></svg>
+                                        </span>
                                     </button>
                                 </li>
                                 <li class="auth-demo-row is-pending">
-                                    <span class="auth-demo-avatar" aria-hidden="true">⏳</span>
-                                    <span class="auth-demo-account">
-                                        <span class="auth-demo-role">Vendedor en revisión</span>
-                                        <span class="auth-demo-can">Usa el foro, pero todavía no puede publicar.</span>
-                                        <code class="auth-demo-email">miguel@discoveryshop.pe</code>
-                                    </span>
-                                    <button class="btn btn-secondary btn-sm auth-demo-use" type="button"
+                                    <button class="auth-demo-use" type="button"
                                             data-demo-email="miguel@discoveryshop.pe"
-                                            aria-label="Usar la cuenta miguel@discoveryshop.pe">
-                                        Usar esta cuenta
+                                            aria-label="Rellenar el formulario con la cuenta de vendedor en revisión miguel@discoveryshop.pe">
+                                        <span class="auth-demo-avatar" aria-hidden="true">⏳</span>
+                                        <span class="auth-demo-account">
+                                            <span class="auth-demo-role">Vendedor en revisión</span>
+                                            <span class="auth-demo-can">Pide con normalidad; aún no puede responder pedidos.</span>
+                                            <code class="auth-demo-email">miguel@discoveryshop.pe</code>
+                                        </span>
+                                        <span class="auth-demo-go" aria-hidden="true">
+                                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 7h9M8 3.5 11.5 7 8 10.5"/></svg>
+                                        </span>
                                     </button>
                                 </li>
                                 <li class="auth-demo-row is-buyer">
-                                    <span class="auth-demo-avatar" aria-hidden="true">🛍️</span>
-                                    <span class="auth-demo-account">
-                                        <span class="auth-demo-role">Comprador</span>
-                                        <span class="auth-demo-can">Reacciona, guarda, comenta y escribe mensajes.</span>
-                                        <code class="auth-demo-email">patricia@discoveryshop.pe</code>
-                                    </span>
-                                    <button class="btn btn-secondary btn-sm auth-demo-use" type="button"
+                                    <button class="auth-demo-use" type="button"
                                             data-demo-email="patricia@discoveryshop.pe"
-                                            aria-label="Usar la cuenta patricia@discoveryshop.pe">
-                                        Usar esta cuenta
+                                            aria-label="Rellenar el formulario con la cuenta de compradora patricia@discoveryshop.pe">
+                                        <span class="auth-demo-avatar" aria-hidden="true">🛍️</span>
+                                        <span class="auth-demo-account">
+                                            <span class="auth-demo-role">Compradora</span>
+                                            <span class="auth-demo-can">Publica pedidos, guarda, comenta y conversa.</span>
+                                            <code class="auth-demo-email">patricia@discoveryshop.pe</code>
+                                        </span>
+                                        <span class="auth-demo-go" aria-hidden="true">
+                                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 7h9M8 3.5 11.5 7 8 10.5"/></svg>
+                                        </span>
                                     </button>
                                 </li>
                             </ul>

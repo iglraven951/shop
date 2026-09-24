@@ -541,6 +541,14 @@
             });
         }
 
+        /** Marca o desmarca un pedido como no apto para menores (ADR-027). */
+        setRequestAdult(id, adult) {
+            return this.request(`/api/admin/requests/${id}/adult`, {
+                method: 'POST',
+                body: { adult: Boolean(adult) },
+            });
+        }
+
         getAdminSellers(status = 'pending') {
             return this.request(`/api/admin/sellers${this.toQuery({ status })}`);
         }
@@ -678,7 +686,7 @@
             return this.request('/api/auth/me', { method: 'PUT', body: data });
         }
 
-        /** Un comprador solicita permiso para publicar artículos. */
+        /** Una cuenta solicita ser vendedor, que es lo que habilita ofertar. */
         applyAsSeller(motivation = '') {
             return this.request('/api/auth/seller-application', {
                 method: 'POST',
@@ -703,10 +711,14 @@
             return this.request(`/api/chat/conversations/${conversationId}/messages`);
         }
 
-        sendMessage(conversationId, text) {
+        /**
+         * Enseñar el producto es media conversación, así que un mensaje puede
+         * ser solo fotos: `text` viaja vacío y el almacén lo admite.
+         */
+        sendMessage(conversationId, text, photos) {
             return this.request(`/api/chat/conversations/${conversationId}/messages`, {
                 method: 'POST',
-                body: { text },
+                body: { text, photos: Array.isArray(photos) ? photos : [] },
             });
         }
 

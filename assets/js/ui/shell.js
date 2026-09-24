@@ -51,12 +51,27 @@
 
     const NAV_LINKS = [
         { href: 'index.html', label: 'Inicio' },
-        { href: 'mapa.html', label: 'Tiendas que responden' },
-        { href: 'guardados.html', label: 'Mis pedidos' },
+        { href: 'mapa.html', label: 'Vendedores que responden' },
+        { href: 'guardados.html', label: 'Guardados' },
         { href: 'mensajes.html', label: 'Mensajes' },
         { href: 'publicar.html', label: 'Pedir lo que busco' },
         { href: 'perfil.html', label: 'Mi perfil' },
     ];
+
+    /* El menú del móvil llevaba solo texto, con estilos escritos en el
+       atributo y sin señalar dónde estabas. Cada destino tiene su icono, el
+       mismo que ya usa la cabecera o la barra inferior. */
+    const NAV_ICON = {
+        'index.html': ICON.home,
+        'mapa.html': ICON.map,
+        'guardados.html': ICON.bookmark,
+        'mensajes.html': ICON.chat,
+        'publicar.html': ICON.plus,
+        'perfil.html': ICON.user,
+    };
+
+    /** Página actual, para marcar dónde estás. */
+    const here = (global.location.pathname.split('/').pop() || 'index.html');
 
     /* ----------------------------------------------------------------------
        Cabecera
@@ -98,14 +113,20 @@
                             data-tooltip="Cambiar tema" aria-label="Cambiar tema"></button>
 
                     <a class="header-icon-btn" href="mapa.html"
-                       data-tooltip="Tiendas que responden" aria-label="Tiendas que responden">
+                       data-tooltip="Vendedores que responden" aria-label="Vendedores que responden">
                         ${ICON.map}
                     </a>
 
                     <a class="header-icon-btn" href="guardados.html"
-                       data-tooltip="Mis pedidos" aria-label="Mis pedidos">
+                       data-tooltip="Guardados" aria-label="Pedidos guardados">
                         ${ICON.bookmark}
-                        <span class="count-dot hidden" id="saved-count">0</span>
+                        <!-- Se llama saved-badge, no saved-count: ese id ya lo usa el
+                             recuento de la propia página de guardados y, como DS.$ es
+                             querySelector, ganaba este por salir antes en el documento.
+                             El contador de la página se quedaba en «Cargando tus
+                             guardados…» para siempre, y esa frase entera acababa dentro
+                             de la burbuja del icono, desbordando la barra. -->
+                        <span class="count-dot is-quiet hidden" id="saved-badge">0</span>
                     </a>
 
                     <a class="header-icon-btn" href="mensajes.html"
@@ -212,13 +233,21 @@
         }
     }
 
-    /** Solo los vendedores aprobados (y el admin) ven el botón de publicar. */
+    /**
+     * El botón «Pedir» se ve con cualquier sesión iniciada.
+     *
+     * Exigía `seller_status === 'approved'`, que es la condición para
+     * RESPONDER pedidos, no para hacerlos (ADR-019). El resultado era el peor
+     * posible: la acción que define la plataforma, y la única que un comprador
+     * viene a hacer, estaba escondida precisamente para los compradores —
+     * mientras `publicar.html` los dejaba pasar sin problema si llegaban por
+     * otro camino.
+     */
     function updatePublishButton(user) {
         const button = $('#publish-btn');
         if (!button) return;
 
-        const canPublish = !!user && (user.role === 'admin' || user.seller_status === 'approved');
-        button.classList.toggle('hidden', !canPublish);
+        button.classList.toggle('hidden', !user);
     }
 
     function updateAdminLink(user) {
@@ -256,14 +285,21 @@
         });
 
         const logout = $('#logout-btn');
-        if (logout) {
-            logout.addEventListener('click', async () => {
-                await api.logout();
-                store.set({ user: null, saved: [], unreadMessages: 0, pendingModeration: 0 });
-                global.toast.success('Cerraste sesión correctamente');
-                setTimeout(() => { global.location.href = 'index.html'; }, 700);
-            });
-        }
+        if (logout) logout.addEventListener('click', signOut);
+    }
+
+    /**
+     * Cerrar sesión, desde donde se pida.
+     *
+     * Vive aparte porque ahora hay dos puertas: el menú de la cuenta en
+     * escritorio y el menú desplegable del móvil, donde antes no había
+     * ninguna y había que entrar al perfil y bajar hasta el final.
+     */
+    async function signOut() {
+        await api.logout();
+        store.set({ user: null, saved: [], unreadMessages: 0, pendingModeration: 0 });
+        global.toast.success('Cerraste sesión correctamente');
+        setTimeout(() => { global.location.href = 'index.html'; }, 700);
     }
 
     /* ----------------------------------------------------------------------
@@ -413,8 +449,8 @@
                             <span class="brand-name">DiscoveryShop</span>
                         </a>
                         <p>
-                            El foro de compraventa donde encuentras lo que buscas y
-                            conversas directamente con quien lo vende. Sin intermediarios,
+                            El comercio inverso de Arequipa: publicas lo que buscas y los
+                            vendedores de la ciudad te responden. Sin intermediarios,
                             sin comisiones ocultas.
                         </p>
                     </div>
@@ -423,7 +459,7 @@
                         <h3 class="footer-heading">Explorar</h3>
                         <div class="footer-links">
                             <a href="index.html">Todos los pedidos</a>
-                            <a href="mapa.html">Tiendas que responden</a>
+                            <a href="mapa.html">Vendedores que responden</a>
                             <a href="index.html?sort=popular">Más populares</a>
                             <a href="index.html?sort=recent">Recién publicados</a>
                         </div>
@@ -435,7 +471,7 @@
                             <a href="perfil.html">Mi perfil</a>
                             <a href="guardados.html">Guardados</a>
                             <a href="mensajes.html">Mis mensajes</a>
-                            <a href="publicar.html">Publicar artículo</a>
+                            <a href="publicar.html">Publicar un pedido</a>
                         </div>
                     </div>
 
@@ -473,9 +509,9 @@
                         <div style="display: flex; flex-direction: column; gap: var(--space-4); font-size: var(--text-sm); color: var(--text-secondary); line-height: 1.7;">
                             <p><strong style="color: var(--text-primary);">1. Mira lo que busca la gente.</strong> Cada publicación es un pedido de alguien: filtra por categoría, distrito, presupuesto y en qué estado lo acepta.</p>
                             <p><strong style="color: var(--text-primary);">2. Súmate o responde.</strong> Si buscas lo mismo, marca «También lo busco» y contará como demanda. Si lo tienes, pulsa «Lo tengo» y haz tu oferta.</p>
-                            <p><strong style="color: var(--text-primary);">3. Ubica.</strong> Cada pedido muestra en un mapa el distrito de Arequipa donde hace falta. Y el mapa general reúne a las tiendas que ya han resuelto pedidos.</p>
-                            <p><strong style="color: var(--text-primary);">4. Acepta y cierra el trato.</strong> Al aceptar una oferta se abre el chat con esa tienda y acuerdan dónde verse. DiscoveryShop no cobra comisiones ni gestiona pagos: solo conecta a las personas.</p>
-                            <p><strong style="color: var(--text-primary);">5. Pide lo que buscas.</strong> Con una cuenta basta. Para <em>responder</em> pedidos sí hace falta cuenta de tienda aprobada: solicítala al registrarte o desde tu perfil.</p>
+                            <p><strong style="color: var(--text-primary);">3. Ubica.</strong> Cada pedido muestra en un mapa el distrito de Arequipa donde hace falta. Y el mapa general reúne a los vendedores que ya han resuelto pedidos.</p>
+                            <p><strong style="color: var(--text-primary);">4. Acepta y cierra el trato.</strong> Al aceptar una oferta se abre el chat con ese vendedor y acuerdan dónde verse. DiscoveryShop no cobra comisiones ni gestiona pagos: solo conecta a las personas.</p>
+                            <p><strong style="color: var(--text-primary);">5. Pide lo que buscas.</strong> Con una cuenta basta. Para <em>responder</em> pedidos sí hace falta cuenta de vendedor aprobado: solicítala al registrarte o desde tu perfil.</p>
                         </div>
                     `,
                     actions: [{ label: 'Entendido', variant: 'primary' }],
@@ -513,9 +549,12 @@
        menú. Aquí están a uno.
        ---------------------------------------------------------------------- */
 
+    /* El del medio es la acción, no un destino: es lo único que esta
+       plataforma hace, y hasta ahora había que buscarlo en el menú. */
     const BOTTOM_NAV = [
         { href: 'index.html', label: 'Inicio', icon: 'home', match: ['index.html', ''] },
-        { href: 'guardados.html', label: 'Pedidos', icon: 'orders', match: ['guardados.html'] },
+        { href: 'guardados.html', label: 'Guardados', icon: 'bookmark', match: ['guardados.html'] },
+        { href: 'publicar.html', label: 'Pedir', icon: 'plus', match: ['publicar.html'], primary: true },
         { href: 'mensajes.html', label: 'Mensajes', icon: 'chat', match: ['mensajes.html'], badge: 'nav-msg-count' },
         { href: 'perfil.html', label: 'Perfil', icon: 'user', match: ['perfil.html'] },
     ];
@@ -533,8 +572,8 @@
         nav.innerHTML = BOTTOM_NAV.map((item) => {
             const active = item.match.includes(page);
             return `
-            <a class="bottom-nav-item${active ? ' is-active' : ''}" href="${item.href}"
-               ${active ? 'aria-current="page"' : ''}>
+            <a class="bottom-nav-item${active ? ' is-active' : ''}${item.primary ? ' is-primary' : ''}"
+               href="${item.href}" ${active ? 'aria-current="page"' : ''}>
                 <span class="bottom-nav-icon" aria-hidden="true">${ICON[item.icon]}</span>
                 <span class="bottom-nav-label">${escapeHtml(item.label)}</span>
                 ${item.badge ? `<span class="count-dot hidden" id="${item.badge}">0</span>` : ''}
@@ -553,18 +592,31 @@
        La señal que sostiene el foro, que alguien quiere tu cosa, no llegaba.
        ---------------------------------------------------------------------- */
 
-    const NOTIF_ICON = {
-        interest: '🙌',
-        comment: '💬',
-        post_approved: '✅',
-        post_rejected: '⛔',
-        post_pending: '⏳',
-        post_reserved: '🔖',
-        post_sold: '🤝',
-        seller_approved: '🎉',
-        seller_rejected: '📄',
-        report_resolved: '🛡️',
+    /* Cada aviso que el servidor sabe emitir, con el nombre de su familia y su
+       tono. Los tipos son los que escribe `notify()`: esta tabla decía
+       `post_approved` e `interest`, que nadie emite desde la migración, así
+       que casi todos los avisos —incluido el que sostiene la plataforma, «una
+       vendedor respondió tu pedido»— caían en el 🔔 genérico y se leían todos
+       iguales. El título da la familia de un vistazo; el texto, el detalle. */
+    const NOTIF_META = {
+        offer_received: { icon: '🏷️', title: 'Nueva oferta', tone: 'brand' },
+        offer_accepted: { icon: '🤝', title: 'Tu oferta fue aceptada', tone: 'success' },
+        offer_declined: { icon: '📭', title: 'Oferta descartada', tone: 'muted' },
+        deal_confirmed: { icon: '✅', title: 'Compra confirmada', tone: 'success' },
+        deal_rated: { icon: '⭐', title: 'Te calificaron', tone: 'brand' },
+        me_too: { icon: '🙌', title: 'También lo buscan', tone: 'brand' },
+        comment: { icon: '💬', title: 'Nuevo comentario', tone: 'muted' },
+        request_approved: { icon: '📢', title: 'Pedido publicado', tone: 'success' },
+        request_rejected: { icon: '⛔', title: 'Pedido rechazado', tone: 'danger' },
+        request_flagged_adult: { icon: '🔞', tone: 'warn', title: 'Marcado +18' },
+        request_unflagged_adult: { icon: '🔞', tone: 'info', title: 'Marca +18 retirada' },
+        request_pending: { icon: '⏳', title: 'Pedido en revisión', tone: 'muted' },
+        seller_approved: { icon: '🎉', title: 'Vendedor aprobado', tone: 'success' },
+        seller_rejected: { icon: '📄', title: 'Solicitud rechazada', tone: 'danger' },
+        report_resolved: { icon: '🛡️', title: 'Denuncia resuelta', tone: 'muted' },
     };
+
+    const NOTIF_FALLBACK = { icon: '🔔', title: 'Aviso', tone: 'muted' };
 
     /** A dónde lleva cada aviso al tocarlo. */
     function notificationHref(item) {
@@ -585,24 +637,33 @@
 
         if (!items.length) {
             list.innerHTML = `
-                <p class="notif-empty">
-                    Aquí aparecerán las reacciones a tus publicaciones y las
-                    decisiones sobre ellas.
-                </p>`;
+                <div class="notif-empty">
+                    <span class="notif-empty-icon" aria-hidden="true">🔔</span>
+                    <p class="notif-empty-title">Aquí no hay nada todavía</p>
+                    <p class="notif-empty-text">
+                        Te avisamos cuando un vendedor responda a un pedido tuyo,
+                        cuando acepten tu oferta o cuando se decida sobre lo que publicaste.
+                    </p>
+                </div>`;
             return;
         }
 
-        list.innerHTML = items.map((item) => `
+        list.innerHTML = items.map((item) => {
+            const meta = NOTIF_META[item.type] || NOTIF_FALLBACK;
+
+            return `
             <a class="notif-item${item.read ? '' : ' is-unread'}"
                href="${escapeAttr(notificationHref(item))}"
                data-notif-id="${escapeAttr(item.id)}" role="menuitem">
-                <span class="notif-icon" aria-hidden="true">${NOTIF_ICON[item.type] || '🔔'}</span>
+                <span class="notif-icon is-${meta.tone}" aria-hidden="true">${meta.icon}</span>
                 <span class="notif-body">
+                    <span class="notif-title">${escapeHtml(meta.title)}</span>
                     <span class="notif-text">${escapeHtml(item.text)}</span>
                     <span class="notif-time">${escapeHtml(format.relative(item.created_at))}</span>
                 </span>
                 ${item.read ? '' : '<span class="notif-dot" aria-label="Sin leer"></span>'}
-            </a>`).join('');
+            </a>`;
+        }).join('');
     }
 
     async function refreshNotifications() {
@@ -738,10 +799,14 @@
             saved: saved?.ids || [],
             unreadMessages: (conversations?.conversations || [])
                 .reduce((sum, c) => sum + (c.unread || 0), 0),
-            // Publicaciones, vendedores y denuncias esperando revisión, en
-            // una sola cifra: es lo que el escudo de la cabecera anuncia.
-            pendingModeration: adminStats
-                ? (adminStats.posts.pending
+            // Pedidos, vendedores y denuncias esperando revisión, en una sola
+            // cifra: es lo que el escudo de la cabecera anuncia. La clave es
+            // `requests`; mientras dijo `posts` esto lanzaba un TypeError al
+            // construir el objeto, así que `store.set` no llegaba a ejecutarse
+            // y un administrador se quedaba sin campana, sin guardados y sin
+            // mensajes sin leer en todas las páginas del sitio.
+            pendingModeration: adminStats && adminStats.requests
+                ? (adminStats.requests.pending
                     + adminStats.sellers.pending
                     + (adminStats.reports ? adminStats.reports.open : 0))
                 : 0,
@@ -795,17 +860,36 @@
                 title: 'Navegación',
                 size: 'sm',
                 content: `
-                    <div class="footer-links" style="gap: var(--space-4);">
-                        ${NAV_LINKS.map((link) => `
-                            <a href="${escapeAttr(link.href)}" style="font-size: var(--text-base); color: var(--text-primary);">
-                                ${escapeHtml(link.label)}
-                            </a>`).join('')}
+                    <nav class="nav-sheet" aria-label="Secciones">
+                        ${NAV_LINKS.map((link) => {
+                            const current = here === link.href;
+                            return `
+                            <a class="nav-sheet-item${current ? ' is-current' : ''}"
+                               href="${escapeAttr(link.href)}"
+                               ${current ? 'aria-current="page"' : ''}>
+                                <span class="nav-sheet-icon" aria-hidden="true">${NAV_ICON[link.href] || ICON.home}</span>
+                                <span>${escapeHtml(link.label)}</span>
+                            </a>`;
+                        }).join('')}
                         ${store.get('user')?.role === 'admin'
-                            ? '<a href="admin.html" style="font-size: var(--text-base); color: var(--brand);">Panel de administración</a>'
+                            ? `<a class="nav-sheet-item is-admin" href="admin.html">
+                                   <span class="nav-sheet-icon" aria-hidden="true">${ICON.shield}</span>
+                                   <span>Panel de administración</span>
+                               </a>`
                             : ''}
-                    </div>
+                        ${store.get('user')
+                            ? `<button class="nav-sheet-item is-logout" type="button" data-action="logout">
+                                   <span class="nav-sheet-icon" aria-hidden="true">${ICON.logout}</span>
+                                   <span>Cerrar sesión</span>
+                               </button>`
+                            : ''}
+                    </nav>
                 `,
             });
+
+            // El modal se pinta después de abrirse; el botón vive dentro de él
+            const sheet = document.querySelector('.nav-sheet [data-action="logout"]');
+            if (sheet) sheet.addEventListener('click', signOut);
         });
     }
 
@@ -859,7 +943,7 @@
         bindNotifications();
 
         // Los contadores se repintan solos ante cualquier cambio de estado
-        store.subscribe('saved', (list) => updateBadge('saved-count', (list || []).length));
+        store.subscribe('saved', (list) => updateBadge('saved-badge', (list || []).length));
         store.subscribe('unreadMessages', (count) => {
             updateBadge('msg-count', count);
             updateBadge('nav-msg-count', count);

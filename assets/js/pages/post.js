@@ -15,6 +15,8 @@
     const { $, escapeHtml, escapeAttr, format, url } = global.DS;
     const api = global.api;
     const UI = global.UI;
+    /* El tono del avatar lo decide el nombre: ver `UI.avatarTone`. */
+    const toneAttr = (name) => ` data-tone="${UI.avatarTone(name)}"`;
     const store = global.store;
     const toast = global.toast;
     const modal = global.modal;
@@ -243,6 +245,7 @@
 
                 <div class="post-tags">
                     ${UI.availabilityBadge(post)}
+                    ${UI.ageBadge(post)}
                     <span class="badge badge-brand">${escapeHtml(post.category.icon)} ${escapeHtml(post.category.name)}</span>
                     <span class="badge">${escapeHtml(post.condition)}</span>
                     ${UI.budgetTag(post)}
@@ -309,6 +312,7 @@
                             <option value="prohibido">Busca algo prohibido</option>
                             <option value="duplicado">Está repetido</option>
                             <option value="ofensivo">Contenido ofensivo</option>
+                            <option value="menores">No es apto para menores</option>
                             <option value="otro">Otro motivo</option>
                         </select>
                     </div>
@@ -377,6 +381,20 @@
        Ficha de datos
        ====================================================================== */
 
+    /**
+     * Cuánto le queda al pedido, dicho como se dice en voz alta.
+     *
+     * «En 15 días hábiles» no es lo que nadie pregunta; lo que se pregunta es
+     * si todavía da tiempo. Por eso el último día tiene su propia frase.
+     *
+     * @param {number} days Días hábiles restantes, ya contados por el servidor.
+     */
+    function expiryText(days) {
+        if (days <= 0) return 'Hoy mismo';
+        if (days === 1) return 'Mañana · último día';
+        return `En ${days} días hábiles`;
+    }
+
     function renderFacts(post) {
         const list = $('#post-facts');
         if (!list) return;
@@ -389,6 +407,13 @@
             ['Visitas', format.number(post.views)],
             ['Publicado', format.relative(post.created_at)],
         ];
+
+        /* Un pedido vivo tiene fecha de caducidad, y quien vaya a responderlo
+           merece saber cuánta vida le queda tanto como quien lo publicó. Los
+           ya resueltos no caducan: ahí la fila sobra. */
+        if (post.state === 'open' && typeof post.days_left === 'number') {
+            rows.push(['Caduca', expiryText(post.days_left)]);
+        }
 
         list.innerHTML = rows.map(([label, value]) => `
             <div class="post-detail-row">
@@ -477,19 +502,19 @@
             slot.innerHTML = UI.loginGate({
                 icon: '💬',
                 title: 'Únete a la conversación',
-                message: 'Inicia sesión para preguntar por el artículo o dejar un comentario.',
+                message: 'Inicia sesión para preguntar por el pedido o dejar un comentario.',
             });
             return;
         }
 
         slot.innerHTML = `
         <form class="comment-composer" id="comment-form" novalidate>
-            <span class="avatar avatar-sm" aria-hidden="true">${escapeHtml(format.initials(state.user.username))}</span>
+            <span class="avatar avatar-sm" aria-hidden="true"${toneAttr(state.user.username)}>${escapeHtml(format.initials(state.user.username))}</span>
 
             <div class="comment-composer-field">
                 <label class="sr-only" for="comment-text">Escribe un comentario</label>
                 <textarea class="textarea" id="comment-text" name="text" rows="1"
-                          placeholder="Pregunta por el estado, la zona o el precio…"
+                          placeholder="Pregunta por el estado, la zona o algún detalle…"
                           aria-describedby="comment-counter comment-hint"></textarea>
 
                 <div class="comment-composer-footer">
@@ -719,7 +744,7 @@
             <h2 class="sr-only" id="seller-card-title">Quién lo busca</h2>
 
             <div class="seller-card-head">
-                <span class="avatar avatar-lg" aria-hidden="true">${escapeHtml(format.initials(author.username))}</span>
+                <span class="avatar avatar-lg" aria-hidden="true"${toneAttr(author.username)}>${escapeHtml(format.initials(author.username))}</span>
                 <div class="seller-card-identity">
                     <p class="seller-card-name">
                         <span class="truncate">${escapeHtml(author.username)}</span>
@@ -882,25 +907,40 @@
         const canAct = Boolean(request.is_mine) && offer.status === 'pending'
             && request.state === 'open';
 
+        /* Con relleno proporcional, como el del comprador. Redondeando, un 4,3
+           y un 4,8 se veían idénticos justo donde hay que elegir entre ellos. */
         const rating = offer.seller.rating_count
-            ? `${starsMarkup(Math.round(offer.seller.rating))}
-               <span class="offer-rating-text">${escapeHtml(String(offer.seller.rating))} ·
-               ${offer.seller.rating_count} ${offer.seller.rating_count === 1 ? 'compra' : 'compras'}</span>`
+            ? `${ratingMarkup(offer.seller.rating)}
+               <span class="offer-rating-text">${offer.seller.rating_count}
+               ${offer.seller.rating_count === 1 ? 'compra' : 'compras'}</span>`
             : '<span class="offer-rating-text">Sin calificaciones todavía</span>';
 
-        const photos = (offer.photos || []).slice(0, 4).map((photo) => `
-            <img class="offer-photo" src="${escapeAttr(photo.url)}" alt="" loading="lazy" decoding="async">`).join('');
+        /* Ampliables: son la única prueba de que el vendedor tiene lo que dice,
+           y a 84 px no se juzga nada. */
+        const photos = (offer.photos || []).slice(0, 4).map((photo, index) => `
+            <button class="offer-photo" type="button" data-offer-photo="${escapeAttr(photo.url)}"
+                    aria-label="Ampliar la foto ${index + 1}">
+                <img src="${escapeAttr(photo.url)}" alt="" loading="lazy" decoding="async">
+            </button>`).join('');
+
+        const state = offer.status === 'accepted' ? ' is-accepted'
+            : offer.status === 'declined' ? ' is-declined' : '';
 
         return `
-        <article class="offer-card${offer.status === 'accepted' ? ' is-accepted' : ''}"
-                 data-offer-id="${escapeAttr(offer.id)}">
+        <article class="offer-card${state}" data-offer-id="${escapeAttr(offer.id)}">
             <header class="offer-head">
+                <span class="avatar avatar-sm offer-avatar" aria-hidden="true"${toneAttr(offer.shop_name || offer.seller.username)}>${escapeHtml(format.initials(offer.shop_name || offer.seller.username))}</span>
                 <div class="offer-shop">
-                    <span class="offer-shop-name">${escapeHtml(offer.shop_name || offer.seller.username)}</span>
+                    <span class="offer-shop-name">
+                        ${escapeHtml(offer.shop_name || offer.seller.username)}${UI.verifiedBadge(offer.seller)}
+                    </span>
                     <span class="offer-rating">${rating}</span>
                 </div>
                 <span class="offer-price">${escapeHtml(format.money(offer.price))}</span>
             </header>
+
+            ${offer.status === 'declined'
+                ? '<p class="offer-state-note">Descartada</p>' : ''}
 
             <p class="offer-message">${escapeHtml(offer.message)}</p>
 
@@ -913,9 +953,15 @@
             </p>
 
             ${offer.status === 'accepted' ? `
-            <p class="offer-accepted-note">
-                ✅ Aceptaste esta oferta. Coordina los detalles por la conversación.
-            </p>` : ''}
+            <div class="offer-accepted-note">
+                <p>✅ Trato cerrado con ${escapeHtml(offer.shop_name || offer.seller.username)}.</p>
+                ${offer.conversation_id ? `
+                <a class="btn btn-primary btn-sm"
+                   href="mensajes.html?c=${escapeAttr(offer.conversation_id)}">
+                    Abrir la conversación
+                </a>` : `
+                <a class="btn btn-secondary btn-sm" href="mensajes.html">Ir a Mensajes</a>`}
+            </div>` : ''}
 
             ${canAct ? `
             <div class="offer-actions">
@@ -962,7 +1008,7 @@
                     Tu mensaje <span class="required" aria-hidden="true">*</span>
                 </label>
                 <textarea class="textarea" id="offer-message" rows="4" maxlength="700"
-                          placeholder="Hola, soy de mi tienda. Tengo justo lo que buscas, en buen estado. Estamos en…"></textarea>
+                          placeholder="Hola, soy de mi cuenta de vendedor. Tengo justo lo que buscas, en buen estado. Estamos en…"></textarea>
                 <p class="field-hint">Mínimo 15 caracteres. Di quién eres y dónde estás.</p>
             </div>
 
@@ -1013,7 +1059,8 @@
                     <p class="field-error" id="rating-error" aria-live="polite"></p>
                     <button class="btn btn-primary" type="submit">Enviar</button>
                 </form>
-            </div>`;
+            </div>
+            ${retireMarkup()}`;
         }
 
         return `
@@ -1021,7 +1068,74 @@
             <p class="deal-title">✅ Compra realizada y calificada</p>
             <p class="deal-rating">${starsMarkup(deal.rating.stars)}</p>
             ${deal.rating.comment ? `<p class="deal-text">«${escapeHtml(deal.rating.comment)}»</p>` : ''}
+        </div>
+        ${retireMarkup()}`;
+    }
+
+    /**
+     * Retirar el pedido, una vez cumplido.
+     *
+     * Lo que ya encontró dueño no tiene por qué seguir en el tablón: quien lo
+     * lea perderá el tiempo ofreciendo algo que ya se compró. La compra no se
+     * va con él —el trato, su precio y la calificación viven aparte, y de ahí
+     * salen las estrellas del vendedor—, así que se puede decir sin letra
+     * pequeña.
+     */
+    function retireMarkup() {
+        if (!state.post || !state.post.is_mine) return '';
+
+        return `
+        <div class="deal-retire">
+            <p class="deal-retire-text">
+                Ya lo encontraste. Puedes retirar el pedido del tablón para que nadie
+                más pierda el tiempo ofreciéndote lo mismo; tu compra —y la
+                calificación que le des al vendedor— se conservan.
+            </p>
+            <button class="btn btn-ghost btn-sm" type="button" data-retire-request>
+                Eliminar este pedido
+            </button>
         </div>`;
+    }
+
+    /**
+     * Ordena las ofertas para poder compararlas: la más barata primero.
+     *
+     * Llegaban por fecha, así que elegir entre cuatro exigía leerlas enteras y
+     * recordar los precios de memoria. La aceptada se queda arriba del todo —
+     * ya no compite, informa— y las descartadas caen al final.
+     */
+    function sortOffers(offers) {
+        const rank = (offer) => (
+            offer.status === 'accepted' ? 0 : offer.status === 'declined' ? 2 : 1
+        );
+
+        return offers.slice().sort((a, b) => (
+            rank(a) - rank(b) || (Number(a.price) || 0) - (Number(b.price) || 0)
+        ));
+    }
+
+    /**
+     * Una línea que resume lo que hay antes de leer tarjeta por tarjeta:
+     * cuántas respuestas y entre qué precios se mueven.
+     */
+    function offersSummaryMarkup(offers) {
+        const live = offers.filter((o) => o.status !== 'declined');
+        if (live.length < 2) return '';
+
+        const prices = live.map((o) => Number(o.price) || 0).filter(Boolean);
+        if (!prices.length) return '';
+
+        const low = Math.min(...prices);
+        const high = Math.max(...prices);
+
+        return `
+        <p class="offers-summary">
+            <strong>${format.number(live.length)} ofertas</strong>
+            ${low === high
+                ? `· todas a ${escapeHtml(format.money(low))}`
+                : `· de ${escapeHtml(format.money(low))} a ${escapeHtml(format.money(high))}`}
+            <span class="offers-summary-hint">Ordenadas de menor a mayor precio</span>
+        </p>`;
     }
 
     /** Pinta la sección entera según quién mira y en qué punto está el pedido. */
@@ -1039,7 +1153,7 @@
             body.innerHTML = `
                 <p class="offers-empty">
                     ${post.offers_count
-                        ? `${format.number(post.offers_count)} ${post.offers_count === 1 ? 'tienda ha respondido' : 'tiendas han respondido'} a este pedido.`
+                        ? `${format.number(post.offers_count)} ${post.offers_count === 1 ? 'vendedor ha respondido' : 'vendedores han respondido'} a este pedido.`
                         : 'Todavía nadie ha respondido a este pedido.'}
                     Inicia sesión para participar.
                 </p>`;
@@ -1047,12 +1161,15 @@
         }
 
         if (isOwner) {
-            const offers = state.offers || [];
+            const offers = sortOffers(state.offers || []);
 
             body.innerHTML = `
                 ${dealMarkup(state.deal)}
+                ${offersSummaryMarkup(offers)}
                 ${offers.length
-                    ? offers.map((offer) => offerCardMarkup(offer, post)).join('')
+                    ? `<div class="offer-list${state.deal ? ' has-deal' : ''}">
+                           ${offers.map((offer) => offerCardMarkup(offer, post)).join('')}
+                       </div>`
                     : `<p class="offers-empty">
                            Todavía nadie ha respondido. Te avisaremos en cuanto alguien lo haga.
                        </p>`}`;
@@ -1070,18 +1187,35 @@
         body.innerHTML = `
             <p class="offers-empty">
                 ${post.offers_count
-                    ? `${format.number(post.offers_count)} ${post.offers_count === 1 ? 'tienda ha respondido' : 'tiendas han respondido'}.`
+                    ? `${format.number(post.offers_count)} ${post.offers_count === 1 ? 'vendedor ha respondido' : 'vendedores han respondido'}.`
                     : 'Todavía nadie ha respondido.'}
-                Para responder pedidos necesitas una cuenta de vendedor aprobada.
+                Para responder pedidos necesitas una cuenta de vendedor aprobado.
             </p>`;
     }
 
     /** Aceptar, descartar, confirmar la compra y calificar. */
     function bindOfferActions(container) {
+        /* `#offers-body` es el mismo nodo en cada repintado, y esto se llama
+           una vez por repintado: sin la marca, descartar una oferta y aceptar
+           otra después colgaba dos escuchas del mismo clic y `acceptOffer` se
+           lanzaba por partida doble. La segunda contestaba «ya aceptaste esta
+           oferta» y el error se pintaba encima del acierto. */
+        if (container.dataset.offerActionsBound === '1') return;
+        container.dataset.offerActionsBound = '1';
+
         container.addEventListener('click', async (event) => {
+            /* Las fotos de la oferta, a tamaño real: son la prueba de que la
+               vendedor tiene lo que dice, y estaban condenadas a 84 px. */
+            const photo = event.target.closest('[data-offer-photo]');
+            if (photo) {
+                modal.lightbox(photo.dataset.offerPhoto, 'Foto de la oferta');
+                return;
+            }
+
             const accept = event.target.closest('[data-accept]');
             const decline = event.target.closest('[data-decline]');
             const confirm = event.target.closest('[data-confirm-deal]');
+            const retire = event.target.closest('[data-retire-request]');
             const star = event.target.closest('[data-stars]');
 
             if (star) {
@@ -1100,9 +1234,16 @@
                     const result = await api.acceptOffer(accept.dataset.accept);
                     Object.assign(state.post, result.request);
                     state.deal = result.deal;
-                    toast.success('Oferta aceptada. Ya pueden coordinar los detalles.');
+                    toast.success('Oferta aceptada. Abriendo la conversación…');
                     await loadOffers();
                     renderArticle(state.post);
+
+                    /* El paso siguiente al «sí» es hablar. Un respiro para que
+                       se lea el aviso y se vea la ficha ya actualizada. */
+                    if (result.conversation && result.conversation.id) {
+                        const id = encodeURIComponent(result.conversation.id);
+                        setTimeout(() => { global.location.href = `mensajes.html?c=${id}`; }, 900);
+                    }
                 } catch (error) {
                     accept.classList.remove('is-loading');
                     toast.error(error.message || 'No se pudo aceptar la oferta');
@@ -1133,6 +1274,38 @@
                     confirm.classList.remove('is-loading');
                     toast.error(error.message || 'No se pudo confirmar la compra');
                 }
+                return;
+            }
+
+            if (retire) {
+                /* Se pregunta porque no tiene vuelta atrás. El resto de la
+                   frase importa tanto como la pregunta: lo que se borra es el
+                   anuncio, no la compra. */
+                global.modal.open({
+                    title: '¿Eliminar este pedido?',
+                    content: `
+                        <p>Desaparecerá del tablón y nadie podrá ofrecerte lo mismo otra vez.</p>
+                        <p>Tu compra, su precio y la calificación que le diste al vendedor
+                           se conservan: eso vive aparte del anuncio.</p>`,
+                    actions: [
+                        { label: 'Cancelar', variant: 'ghost' },
+                        {
+                            label: 'Eliminar',
+                            variant: 'danger',
+                            action: async () => {
+                                try {
+                                    await api.deleteRequest(state.post.id);
+                                    toast.success('Pedido eliminado del tablón');
+                                    global.location.href = 'perfil.html';
+                                    return true;
+                                } catch (error) {
+                                    toast.error(error.message || 'No se pudo eliminar');
+                                    return false;
+                                }
+                            },
+                        },
+                    ],
+                });
             }
         });
 

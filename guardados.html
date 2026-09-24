@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pedidos guardados · DiscoveryShop</title>
-    <meta name="description" content="Tus pedidos guardados en DiscoveryShop: vuelve a los artículos de segunda mano que te interesan y escribe a quien los publica cuando quieras.">
+    <meta name="description" content="Tus pedidos guardados en DiscoveryShop: vuelve a los pedidos que te interesan y escribe a quien los publica cuando quieras.">
     <meta name="theme-color" content="#070c14">
     <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
     <link rel="apple-touch-icon" href="assets/img/logo.png">
     <link rel="manifest" href="site.webmanifest">
+    <link rel="stylesheet" href="assets/css/fonts.css">
     <link rel="stylesheet" href="assets/css/tokens.css">
     <link rel="stylesheet" href="assets/css/base.css">
     <link rel="stylesheet" href="assets/css/components.css">
@@ -30,12 +31,33 @@
 
             <div class="saved-shell" id="saved-shell" hidden>
 
-                <header class="results-header">
+                <!-- Cabecera con contexto: qué es esta lista y de quién.
+                     El resplandor y la rejilla son decoración pura, apoyados
+                     en los mismos gradientes de marca que la portada. -->
+                <header class="saved-hero">
+                    <span class="saved-hero-glow" aria-hidden="true"></span>
+                    <span class="saved-hero-grid" aria-hidden="true"></span>
+
+                    <p class="saved-eyebrow">
+                        <span class="saved-eyebrow-dot" aria-hidden="true"></span>
+                        Solo tú ves esta lista
+                    </p>
+
+                    <h1 class="saved-title">
+                        <span class="saved-title-icon" aria-hidden="true">
+                            <svg width="26" height="26" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 2.8h10v14.4l-5-3.4-5 3.4V2.8Z"/></svg>
+                        </span>
+                        Guardados
+                    </h1>
+
+                    <p class="saved-lede">
+                        Los pedidos que apartaste para mirar con calma. Quien los publicó no se
+                        entera de que están aquí, y siguen abiertos mientras nadie acepte una oferta.
+                    </p>
+                </header>
+
+                <div class="results-header saved-bar">
                     <div class="saved-heading">
-                        <h1 class="saved-title">
-                            <span class="saved-title-icon" aria-hidden="true">🔖</span>
-                            Guardados
-                        </h1>
                         <p class="results-count" id="saved-count" aria-live="polite" aria-atomic="true">
                             Cargando tus guardados…
                         </p>
@@ -44,7 +66,7 @@
                     <div class="results-tools">
                         <div class="sort-control">
                             <label class="label" for="saved-sort">Ordenar</label>
-                            <select class="select" id="saved-sort" aria-label="Ordenar las pedidos guardados">
+                            <select class="select" id="saved-sort" aria-label="Ordenar los pedidos guardados">
                                 <option value="recent">Guardados recientes</option>
                                 <option value="budget_asc">Presupuesto: menor a mayor</option>
                                 <option value="budget_desc">Presupuesto: mayor a menor</option>
@@ -52,10 +74,13 @@
                             </select>
                         </div>
                     </div>
-                </header>
+                </div>
 
                 <!-- Solo aparece cuando hay algo que vaciar -->
                 <div class="saved-actions" id="saved-actions" hidden>
+                    <span class="saved-hint-icon" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7.2"/><path d="M10 9.2v4.2"/><path d="M10 6.6h.01"/></svg>
+                    </span>
                     <p class="saved-hint">
                         Quitar un pedido de aquí no lo borra del tablón: seguirá abierto para todos.
                     </p>
@@ -66,7 +91,7 @@
 
                 <p class="saved-progress" id="saved-progress" hidden role="status" aria-live="polite"></p>
 
-                <div class="post-feed" id="saved-feed" aria-busy="true" aria-label="Pedidos guardados"></div>
+                <div class="post-feed" id="saved-feed" data-columns="2" aria-busy="true" aria-label="Pedidos guardados"></div>
 
                 <!-- Estado vacío y errores viven fuera del listado, para que el
                      listado vuelva a verse intacto en cuanto haya contenido. -->
@@ -89,6 +114,7 @@
     <script src="assets/js/ui/toast.js"></script>
     <script src="assets/js/ui/modal.js"></script>
     <script src="assets/js/ui/components.js"></script>
+    <script src="assets/js/ui/depth.js"></script>
     <script src="assets/js/ui/shell.js"></script>
     <script src="assets/js/ui/assistant-widget.js"></script>
     <!-- Página -->

@@ -18,6 +18,8 @@
     const api = global.api;
     const store = global.store;
     const UI = global.UI;
+    /* El tono del avatar lo decide el nombre: ver `UI.avatarTone`. */
+    const toneAttr = (name) => ` data-tone="${UI.avatarTone(name)}"`;
     const toast = global.toast;
     const modal = global.modal;
 
@@ -29,6 +31,7 @@
         prohibido: 'Busca algo prohibido',
         duplicado: 'Está repetido',
         ofensivo: 'Contenido ofensivo',
+        menores: 'No es apto para menores',
         otro: 'Otro motivo',
     };
 
@@ -65,18 +68,26 @@
         rejected: ['badge-danger', '✕ Rechazado'],
     };
 
+    /* Las claves son las que escribe el servidor en `logModeration`, no las
+       que se le parecen: con la migración pasaron a `_request` y aquí seguían
+       diciendo `_post`, así que toda decisión sobre un pedido —a mano o de la
+       IA— salía como un punto gris «Acción de moderación» y sin enlace. */
     const LOG_META = {
-        approve_post: { label: 'Publicación aprobada', tone: 'approve', icon: '✓', badge: 'badge-success' },
-        reject_post: { label: 'Publicación rechazada', tone: 'reject', icon: '✕', badge: 'badge-danger' },
+        approve_request: { label: 'Pedido aprobado', tone: 'approve', icon: '✓', badge: 'badge-success' },
+        reject_request: { label: 'Pedido rechazado', tone: 'reject', icon: '✕', badge: 'badge-danger' },
+        flag_request: { label: 'Pedido en duda', tone: 'neutral', icon: '⚑', badge: 'badge-warning' },
         approve_seller: { label: 'Vendedor aprobado', tone: 'approve', icon: '✓', badge: 'badge-success' },
         reject_seller: { label: 'Vendedor rechazado', tone: 'reject', icon: '✕', badge: 'badge-danger' },
+        resolve_report: { label: 'Denuncia resuelta', tone: 'approve', icon: '⚖', badge: 'badge-info' },
+        flag_adult: { label: 'Marcado +18', tone: 'neutral', icon: '🔞', badge: 'badge-warning' },
+        unflag_adult: { label: 'Marca +18 retirada', tone: 'neutral', icon: '🔞', badge: '' },
     };
 
     const EMPTY_POSTS = {
         pending: {
             icon: '✅',
             title: 'No hay pedidos pendientes',
-            message: 'Todo al día. Cuando alguien publique un artículo aparecerá aquí para su revisión.',
+            message: 'Todo al día. Cuando alguien publique un pedido aparecerá aquí para su revisión.',
         },
         approved: {
             icon: '📭',
@@ -91,7 +102,7 @@
         all: {
             icon: '📭',
             title: 'Todavía no hay pedidos',
-            message: 'El foro está vacío. Las pedidos de los vendedores aparecerán aquí.',
+            message: 'El tablón está vacío. Los pedidos que publique la gente aparecerán aquí.',
         },
     };
 
@@ -112,7 +123,7 @@
         all: {
             icon: '🤖',
             title: 'La IA aún no ha revisado ninguna pedido',
-            message: 'En cuanto alguien publique un artículo, su decisión aparecerá aquí como un mensaje.',
+            message: 'En cuanto alguien publique un pedido, la decisión aparecerá aquí como un mensaje.',
         },
         approved: {
             icon: '✅',
@@ -148,7 +159,7 @@
         approved: {
             icon: '🧑‍💼',
             title: 'Todavía no hay vendedores aprobados',
-            message: 'Aprueba una solicitud y la persona podrá publicar sus artículos.',
+            message: 'Aprueba una solicitud y ese vendedor podrá responder pedidos con sus ofertas.',
         },
         rejected: {
             icon: '🙌',
@@ -325,6 +336,67 @@
         $$(`[data-count="${name}"]`).forEach((node) => { node.textContent = format.number(value); });
     }
 
+    /* ======================================================================
+       Dos gráficos, sin una sola dependencia
+
+       Un panel que solo enseña números obliga a comparar de memoria. Estos se
+       dibujan con lo que ya trae el navegador: un `conic-gradient` para la
+       proporción y una polilínea SVG para la serie. Cero kilobytes de
+       librería, y ambos heredan el color del tema.
+       ====================================================================== */
+
+    /** El anillo de «cuánto de lo que se pide encuentra respuesta». */
+    function paintRate(percent) {
+        const slot = $('#admin-rate-ring');
+        if (!slot) return;
+
+        slot.style.setProperty('--pct', String(percent));
+        slot.setAttribute('aria-label', `${percent} % de los pedidos encuentra respuesta`);
+        const value = slot.querySelector('.admin-ring-value');
+        if (value) value.textContent = `${percent}%`;
+    }
+
+    /**
+     * La actividad de los últimos catorce días.
+     *
+     * Sale del propio historial de moderación, que ya viaja con la fecha de
+     * cada decisión: no hace falta pedir nada nuevo al servidor.
+     */
+    function paintActivity() {
+        const slot = $('#admin-activity-chart');
+        if (!slot) return;
+
+        const DAYS = 14;
+        const counts = new Array(DAYS).fill(0);
+        const today = new Date();
+        today.setHours(23, 59, 59, 999);
+
+        (state.log.items || []).forEach((entry) => {
+            const when = new Date(entry.created_at);
+            const ago = Math.floor((today - when) / 86400000);
+            if (ago >= 0 && ago < DAYS) counts[DAYS - 1 - ago] += 1;
+        });
+
+        const peak = Math.max(1, ...counts);
+        const W = 140;
+        const H = 32;
+        const step = W / (DAYS - 1);
+
+        const points = counts
+            .map((n, i) => `${(i * step).toFixed(1)},${(H - (n / peak) * (H - 4) - 2).toFixed(1)}`)
+            .join(' ');
+
+        const total = counts.reduce((sum, n) => sum + n, 0);
+
+        slot.innerHTML = `
+            <svg class="admin-spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"
+                 role="img" aria-label="${total} decisiones en los últimos ${DAYS} días">
+                <polyline points="${points}" fill="none" stroke="currentColor"
+                          stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span class="admin-spark-caption">${format.number(total)} decisiones · ${DAYS} días</span>`;
+    }
+
     function renderMetrics(stats) {
         const activity = stats.activity.comments + stats.activity.me_too + stats.activity.views;
         const sellersTotal = stats.sellers.approved + stats.sellers.pending + stats.sellers.rejected;
@@ -346,6 +418,9 @@
                 ? `${Math.round((closed / live) * 100)} % de lo pedido encuentra respuesta`
                 : 'Todavía no hay pedidos que medir'
         );
+
+        // Ese porcentaje, además, como anillo: una cifra se lee, una forma se ve
+        paintRate(live > 0 ? Math.round((closed / live) * 100) : 0);
         setMetric('posts-rejected', format.number(stats.requests.rejected));
         setMetric('users-total', format.number(stats.users.total));
         setMetric('activity-total', format.number(activity));
@@ -355,6 +430,8 @@
             + `${format.number(stats.activity.me_too)} «también lo busco» · `
             + `${format.number(stats.activity.views)} visitas`
         );
+
+        paintActivity();
 
         // Solo se tiñen de aviso si de verdad hay trabajo esperando.
         const postsCard = $('[data-metric-card="posts-pending"]');
@@ -412,13 +489,25 @@
             const panel = $(`#panel-${item}`);
             const active = item === tab;
 
+            /* Si una pestaña no está en el HTML, se salta. Esto no es un
+               remilgo: cuando el vocabulario pasó de «publicaciones» a
+               «pedidos» el JS se renombró y el HTML no, y al leer `.classList`
+               de `null` en la PRIMERA vuelta el `forEach` moría entero. Las
+               otras cuatro pestañas dejaron de poder abrirse y la cola de
+               pedidos se quedó cargando para siempre. Un panel al que le falta
+               una sección debe perder esa sección, no todas. */
+            if (!button || !panel) return;
+
             button.classList.toggle('is-active', active);
             button.setAttribute('aria-selected', String(active));
             button.tabIndex = active ? 0 : -1;
             panel.hidden = !active;
         });
 
-        if (focus) $(`#tab-${tab}`).focus();
+        if (focus) {
+            const head = $(`#tab-${tab}`);
+            if (head) head.focus();
+        }
 
         // El hash deja rastro en el historial: atrás vuelve a la pestaña previa.
         if (syncHash && global.location.hash.replace('#', '') !== tab) {
@@ -639,6 +728,16 @@
                                 data-reject-post="${id}">Rechazar</button>`);
         }
 
+        /* La edad es otro eje: un pedido puede estar aprobado y ser +18, o
+           estar rechazado por algo que no tiene que ver con la edad. */
+        parts.push(post.adult
+            ? `<button class="btn btn-ghost btn-sm" type="button"
+                       data-adult-post="${id}" data-adult-to="0"
+                       title="Quitar la marca de mayoría de edad">Quitar +18</button>`
+            : `<button class="btn btn-ghost btn-sm" type="button"
+                       data-adult-post="${id}" data-adult-to="1"
+                       title="Avisar de que hay que ser mayor de edad para responder">Marcar +18</button>`);
+
         return parts.join('');
     }
 
@@ -669,6 +768,51 @@
             <span class="admin-ai-verdict-label">La IA: ${escapeHtml(meta.label.toLowerCase())}</span>
             <span class="admin-ai-verdict-score">${score} % de confianza</span>
             <span class="sr-only">Motivo: ${escapeHtml(reason)}</span>
+        </p>
+        ${signalTags(review.signals)}`;
+    }
+
+    /**
+     * En qué se fijó la IA, dicho en una línea.
+     *
+     * El veredicto ya dice qué decidió y con cuánta confianza; esto dice
+     * dónde miró. Para quien modera es la diferencia entre confiar en un
+     * número y poder comprobarlo: «teléfono en el texto» se verifica de un
+     * vistazo, «55 % de confianza» no se verifica de ninguna manera.
+     */
+    const SIGNAL_TAGS = [
+        ['contact', '📞', 'Teléfono o red social'],
+        ['link', '🔗', 'Enlace externo'],
+        ['address', '📍', 'Dirección exacta'],
+        ['shouting', '🔊', 'Todo en mayúsculas'],
+    ];
+
+    function signalTags(signals) {
+        if (!signals) return '';
+
+        const form = signals.form || {};
+        const tags = SIGNAL_TAGS
+            .filter(([key]) => form[key])
+            .map(([, icon, label]) => ({ icon, label }));
+
+        if (form.repetition) {
+            tags.push({ icon: '🔁', label: `Repite «${form.repetition}»` });
+        }
+
+        if (signals.adult) {
+            tags.push({ icon: '🔞', label: 'Requiere mayoría de edad' });
+        }
+
+        if (!tags.length) return '';
+
+        return `
+        <p class="admin-ai-signals">
+            <span class="sr-only">La IA se fijó en:</span>
+            ${tags.map((tag) => `
+            <span class="admin-ai-signal">
+                <span aria-hidden="true">${tag.icon}</span>
+                ${escapeHtml(tag.label)}
+            </span>`).join('')}
         </p>`;
     }
 
@@ -786,6 +930,37 @@
         return stays;
     }
 
+
+    /**
+     * Marca o desmarca la mayoría de edad.
+     *
+     * Ni aprueba ni rechaza: es el otro eje (ADR-027). Un pedido puede estar
+     * aprobado y ser +18, y quitar la marca no lo publica ni lo retira. Por eso
+     * no reutiliza `approveOne` ni su mensaje.
+     */
+    async function setAdult(id, adult, button) {
+        if (state.bulkRunning) return;
+
+        const row = findRow(id);
+        setRowBusy(row, true);
+        if (button) button.classList.add('is-loading');
+
+        try {
+            const { request } = await api.setRequestAdult(id, adult);
+            applyPostUpdate(id, request);
+
+            toast.success(adult
+                ? `«${request.title}» queda marcado +18. Sigue publicado: solo avisa a quien responda.`
+                : `«${request.title}» ya no está marcado +18.`);
+
+            await refreshStats();
+        } catch (error) {
+            toast.error(error.message || 'No se pudo cambiar la marca de edad');
+        } finally {
+            setRowBusy(row, false);
+            if (button) button.classList.remove('is-loading');
+        }
+    }
     async function approveOne(id) {
         if (state.bulkRunning) return;
 
@@ -793,10 +968,14 @@
         setRowBusy(row, true);
 
         try {
-            const { post } = await api.approveRequest(id);
-            const stays = applyPostUpdate(id, post);
+            /* La respuesta trae `request`. Cuando esto decía `post` la petición
+               salía bien, el servidor aprobaba, y aquí reventaba al leer el
+               título: salía «algo salió mal», la fila se quedaba, y al segundo
+               intento el servidor contestaba que ya estaba aprobada. */
+            const { request } = await api.approveRequest(id);
+            const stays = applyPostUpdate(id, request);
 
-            toast.success(`«${post.title}» fue aprobada y ya es visible en el feed.`);
+            toast.success(`«${request.title}» ya es visible en el tablón.`);
 
             if (!stays) await fadeOut(row);
             renderPosts();
@@ -853,6 +1032,13 @@
         $('#admin-bulk').hidden = count === 0;
         $('#admin-bulk-count').textContent =
             `${format.number(count)} ${format.plural(count, 'seleccionada', 'seleccionadas')}`;
+
+        /* En el teléfono esa barra se ancla al pie de la pantalla, y al salirse
+           del flujo taparía la última fila de la cola justo cuando hace falta
+           verla. La clase reserva su hueco solo mientras hay algo seleccionado;
+           sin selección, la lista recupera su final. */
+        const panel = $('#panel-pedidos');
+        if (panel) panel.classList.toggle('has-bulk', count > 0);
 
         const all = $('#admin-select-all');
         all.checked = total > 0 && count === total;
@@ -1015,7 +1201,7 @@
         return `
         <article class="admin-seller" data-seller-id="${id}">
             <header class="admin-seller-head">
-                <span class="avatar avatar-lg" aria-hidden="true">${escapeHtml(format.initials(seller.username))}</span>
+                <span class="avatar avatar-lg" aria-hidden="true"${toneAttr(seller.username)}>${escapeHtml(format.initials(seller.username))}</span>
                 <div class="admin-seller-identity">
                     <h3 class="admin-seller-name truncate">${escapeHtml(seller.username)}</h3>
                     <p class="admin-seller-email truncate">${escapeHtml(seller.email || 'Sin correo registrado')}</p>
@@ -1096,7 +1282,7 @@
             const { user } = await api.approveSeller(id);
             const stays = applySellerUpdate(id, user);
 
-            toast.success(`${user.username} ya puede publicar sus artículos en el foro.`);
+            toast.success(`${user.username} ya puede responder pedidos con sus ofertas.`);
 
             if (!stays && card) {
                 card.classList.add('is-leaving');
@@ -1169,7 +1355,10 @@
     function logItem(entry) {
         const meta = LOG_META[entry.action]
             || { label: 'Acción de moderación', tone: 'neutral', icon: '•', badge: '' };
-        const isPost = String(entry.action || '').endsWith('_post');
+        /* Solo las acciones sobre un pedido apuntan a una publicación. Las de
+           vendedor guardan el id de la cuenta, y enlazarlas como pedido llevaba
+           a un 404. */
+        const isPost = String(entry.action || '').endsWith('_request');
 
         return `
         <li class="admin-timeline-item is-${meta.tone}">
@@ -1881,7 +2070,13 @@
             }
 
             const reject = event.target.closest('[data-reject-post]');
-            if (reject) openRejectPost(reject.dataset.rejectPost);
+            if (reject) {
+                openRejectPost(reject.dataset.rejectPost);
+                return;
+            }
+
+            const adult = event.target.closest('[data-adult-post]');
+            if (adult) setAdult(adult.dataset.adultPost, adult.dataset.adultTo === '1', adult);
         });
 
         list.addEventListener('change', (event) => {

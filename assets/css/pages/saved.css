@@ -1,42 +1,171 @@
 /* ==========================================================================
    DiscoveryShop · Guardados (guardados.html)
 
-   Una sola columna con el mismo ancho de lectura del feed. Todo lo que se ve
-   dentro del listado son `.post-card` del núcleo: aquí solo viven la cabecera
-   de la página, la barra de acciones y la animación de salida de una tarjeta
-   cuando deja de estar guardada.
+   Una colección, no una lista de correo. La página tiene tres partes:
+
+     1. La portada, que dice de quién es esto y qué implica guardar algo
+        —nadie se entera, y el pedido sigue abierto—, sobre una escena de
+        marca con la misma gramática que el resto del sitio.
+     2. La barra de resultados: cuántos hay y cómo se ordenan.
+     3. La rejilla. Las tarjetas son `.post-card` del núcleo, que ya traen
+        su elevación y su inclinación con ratón; aquí solo se reparten en
+        columnas y se les da una salida cuando dejan de estar guardadas.
+
+   Reglas de la casa que este archivo respeta:
+   · ni un color literal — todo sale de tokens.css o se compone con color-mix
+   · nada más ancho que la pantalla, desde 320 px
+   · quien pidió menos movimiento no ve ninguno
+   · la ilustración del estado vacío es un SVG en línea recortando un color
+     de marca, nunca un emoji
    ========================================================================== */
 
 .saved-page {
-    /* El feed del núcleo mide 680 px: sumando el aire lateral, la cabecera y
-       las tarjetas quedan alineadas al mismo borde. */
-    max-width: calc(680px + var(--space-5) * 2);
+    width: 100%;
+    /* El mismo tope y los mismos márgenes que la cabecera del sitio: antes
+       la página se quedaba en una columna de 720 px y la rejilla no cabía. */
+    max-width: var(--container-max);
     margin-inline: auto;
-    padding: var(--space-8) var(--space-5) var(--space-16);
+    padding: var(--space-6) var(--space-5) var(--space-16);
 }
 
-/* --------------------------------------------------------------------------
-   Cabecera
-   -------------------------------------------------------------------------- */
-.saved-heading {
-    /* Sin esto el título largo empujaría al selector de orden fuera de la fila. */
-    min-width: 0;
+/* ==========================================================================
+   1. Portada
+   ========================================================================== */
+.saved-hero {
+    --glass-soft: color-mix(in srgb, var(--brand) 12%, transparent);
+    --glass-line: color-mix(in srgb, var(--brand) 16%, transparent);
+
+    position: relative;
+    overflow: hidden;
+    margin-bottom: var(--space-6);
+    padding: var(--space-10) var(--space-8);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md), var(--edge-light);
+    animation: fade-in-up var(--duration-slow) var(--ease-cinema) backwards;
+}
+
+/* Resplandor de marca en la esquina: da volumen sin tocar el contraste del
+   texto, que sigue apoyado en `--bg-surface`. */
+.saved-hero-glow {
+    position: absolute;
+    top: -160px;
+    right: -120px;
+    /* En `rem` y no en píxeles: a 360 px de ancho un círculo de 420 px de
+       lado no cabe, y aunque el recorte de la portada lo esconda, es la
+       clase de medida que acaba desbordando en cuanto alguien quita el
+       `overflow: hidden`. */
+    width: 26rem;
+    height: 26rem;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--glass-soft), transparent 66%);
+    pointer-events: none;
+}
+
+/* Retícula fina, desvanecida hacia dentro. */
+.saved-hero-grid {
+    position: absolute;
+    inset: 0;
+    background:
+        repeating-linear-gradient(90deg, var(--glass-line) 0 1px, transparent 1px 56px),
+        repeating-linear-gradient(0deg, var(--glass-line) 0 1px, transparent 1px 56px);
+    -webkit-mask-image: radial-gradient(70% 140% at 88% 0%, var(--brand) 6%, transparent 72%);
+    mask-image: radial-gradient(70% 140% at 88% 0%, var(--brand) 6%, transparent 72%);
+    pointer-events: none;
+}
+
+.saved-eyebrow {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+    padding: var(--space-1) var(--space-3);
+    background: var(--brand-soft);
+    border: 1px solid var(--brand-ring);
+    border-radius: var(--radius-full);
+    font-size: var(--text-3xs);
+    font-weight: 700;
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    color: var(--brand);
+}
+
+.saved-eyebrow-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: pulse-soft 2.4s var(--ease-in-out) infinite;
 }
 
 .saved-title {
+    position: relative;
     display: flex;
     align-items: center;
     gap: var(--space-3);
-    font-size: var(--text-2xl);
+    font-family: var(--font-display);
+    font-size: var(--text-section);
+    font-weight: 700;
     line-height: var(--leading-tight);
-    letter-spacing: var(--tracking-tight);
-    margin-bottom: var(--space-1);
+    letter-spacing: var(--tracking-display);
+    color: var(--text-primary);
 }
 
+/* El marcador ya no es un emoji: es el mismo icono de guardar que llevan las
+   tarjetas, recortado dentro de una ficha de marca.
+
+   El degradado va de `--brand-600` a `--brand-950` y no hasta el cian de
+   `--gradient-brand`: el trazo es blanco, y sobre ese cian se queda en 1,9.
+   Entre estos dos azules —que no se redefinen por tema— el peor punto da
+   6,9, así que la ficha se ve igual de viva y el icono se lee. */
 .saved-title-icon {
+    display: grid;
+    place-items: center;
     flex-shrink: 0;
-    font-size: var(--text-xl);
-    line-height: 1;
+    width: 52px;
+    height: 52px;
+    color: var(--on-navy);
+    background: linear-gradient(150deg, var(--brand-600), var(--brand-950));
+    border: 1px solid color-mix(in srgb, var(--accent) 34%, transparent);
+    border-radius: var(--radius-lg);
+    box-shadow:
+        var(--edge-light-strong),
+        0 10px 26px color-mix(in srgb, var(--brand) 34%, transparent);
+}
+
+.saved-lede {
+    position: relative;
+    margin-top: var(--space-3);
+    max-width: var(--measure);
+    font-size: var(--text-sm);
+    line-height: var(--leading-normal);
+    color: var(--text-secondary);
+    overflow-wrap: anywhere;
+}
+
+/* ==========================================================================
+   2. Barra de resultados
+   ========================================================================== */
+.saved-bar {
+    align-items: center;
+    margin-bottom: var(--space-5);
+    padding: var(--space-3) var(--space-4);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--edge-light);
+}
+
+.saved-heading {
+    /* Sin esto el recuento largo empujaría al selector de orden fuera de la fila. */
+    min-width: 0;
+}
+
+.saved-bar .results-count {
+    font-weight: 650;
+    color: var(--text-primary);
 }
 
 /* --------------------------------------------------------------------------
@@ -45,14 +174,26 @@
 .saved-actions {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: var(--space-4);
+    gap: var(--space-3);
     flex-wrap: wrap;
     margin-bottom: var(--space-5);
     padding: var(--space-3) var(--space-4);
-    background: var(--bg-surface);
+    background: var(--bg-raised);
+    background-image: var(--gradient-surface);
     border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--edge-light);
+}
+
+.saved-hint-icon {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    color: var(--info);
+    background: var(--info-soft);
+    border-radius: var(--radius-full);
 }
 
 .saved-hint {
@@ -61,6 +202,7 @@
     font-size: var(--text-xs);
     color: var(--text-secondary);
     line-height: var(--leading-snug);
+    overflow-wrap: anywhere;
 }
 
 .saved-clear {
@@ -75,6 +217,7 @@
     margin-bottom: var(--space-5);
     padding: var(--space-3) var(--space-4);
     background: var(--brand-soft);
+    border: 1px solid var(--brand-ring);
     border-radius: var(--radius-md);
     color: var(--brand);
     font-size: var(--text-xs);
@@ -93,9 +236,16 @@
     animation: spin 0.7s linear infinite;
 }
 
-/* --------------------------------------------------------------------------
-   Listado
-   -------------------------------------------------------------------------- */
+/* ==========================================================================
+   3. Rejilla
+   ========================================================================== */
+
+/* El feed del núcleo trae un hueco al final para el botón flotante de
+   filtros, que aquí no existe: sin esto quedaban 88 px de vacío bajo la
+   última tarjeta en tableta y en móvil. */
+.saved-page .post-feed {
+    padding-bottom: 0;
+}
 
 /* La tarjeta del núcleo solo transiciona borde y sombra; aquí necesita además
    desvanecerse al quitarla, así que se repite la lista completa. */
@@ -112,32 +262,142 @@
     pointer-events: none;
 }
 
-/* --------------------------------------------------------------------------
-   Invitación a iniciar sesión
-   -------------------------------------------------------------------------- */
+/* ==========================================================================
+   4. Invitación a iniciar sesión y estado vacío
+   ========================================================================== */
 .saved-gate {
     display: grid;
     place-items: center;
     min-height: 54vh;
+    padding: var(--space-8) var(--space-5);
     background: var(--bg-surface);
+    background-image: var(--gradient-glow);
     border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg), var(--edge-light);
 }
 
-/* --------------------------------------------------------------------------
-   Responsive
-   -------------------------------------------------------------------------- */
+.saved-gate .empty-state { max-width: 540px; }
+
+/* El estado vacío, centrado en la anchura de lectura para que no quede
+   perdido a lo ancho de la rejilla. */
+#saved-state .empty-state {
+    max-width: 620px;
+    margin-inline: auto;
+    margin-top: var(--space-6);
+    padding: var(--space-12) var(--space-6);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md), var(--edge-light);
+}
+
+/*
+   `UI.emptyState` recibe un emoji desde el guion, que cada sistema dibuja a
+   su manera y que no pega con la familia de iconos del resto del sitio. Aquí
+   ese glifo se apaga (`font-size: 0`) y en su sitio se recorta un SVG en
+   línea sobre un color de marca: el dibujo es una silueta, el color lo pone
+   el token, y por eso sigue el tema sin declarar un solo literal.
+*/
+.saved-page .empty-icon {
+    position: relative;
+    width: 96px;
+    height: 96px;
+    font-size: 0;
+    line-height: 0;
+    background: var(--bg-raised);
+    background-image: var(--gradient-glow);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md), var(--edge-light);
+}
+
+.saved-page .empty-icon::after {
+    content: '';
+    position: absolute;
+    inset: -9px;
+    border: 1px solid color-mix(in srgb, var(--brand) 20%, transparent);
+    border-radius: var(--radius-xl);
+    pointer-events: none;
+}
+
+.saved-page .empty-icon::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--brand);
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: 44px 44px;
+    mask-size: 44px 44px;
+    /* Marcador con una chispa: la lista está vacía, no rota. */
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6.6 4.2h10.8v16.2l-5.4-3.7-5.4 3.7V4.2Z'/%3E%3Cpath d='M19.6 3.1v3.4'/%3E%3Cpath d='M21.3 4.8h-3.4'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6.6 4.2h10.8v16.2l-5.4-3.7-5.4 3.7V4.2Z'/%3E%3Cpath d='M19.6 3.1v3.4'/%3E%3Cpath d='M21.3 4.8h-3.4'/%3E%3C/svg%3E");
+}
+
+/* Sin sesión: un candado, no un marcador. */
+#saved-gate .empty-icon::before {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4.4' y='10' width='15.2' height='10.4' rx='2.6'/%3E%3Cpath d='M8.1 10V7.6a3.9 3.9 0 0 1 7.8 0V10'/%3E%3Cpath d='M12 14.1v2.6'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4.4' y='10' width='15.2' height='10.4' rx='2.6'/%3E%3Cpath d='M8.1 10V7.6a3.9 3.9 0 0 1 7.8 0V10'/%3E%3Cpath d='M12 14.1v2.6'/%3E%3C/svg%3E");
+}
+
+/* ==========================================================================
+   5. Responsive
+   ========================================================================== */
+@media (max-width: 1080px) {
+    .saved-hero { padding: var(--space-8) var(--space-6); }
+}
+
 @media (max-width: 720px) {
-    .saved-page { padding: var(--space-6) var(--space-4) var(--space-12); }
-    .saved-title { font-size: var(--text-xl); }
+    .saved-page { padding: var(--space-5) var(--space-4) var(--space-12); }
+
+    .saved-hero {
+        margin-bottom: var(--space-5);
+        padding: var(--space-6) var(--space-5);
+        border-radius: var(--radius-lg);
+    }
+
+    .saved-title-icon { width: 44px; height: 44px; }
+
+    .saved-bar { padding: var(--space-3); }
+
+    .saved-page .empty-icon { width: 84px; height: 84px; }
+    .saved-page .empty-icon::before {
+        -webkit-mask-size: 38px 38px;
+        mask-size: 38px 38px;
+    }
+
+    #saved-state .empty-state { padding: var(--space-10) var(--space-5); }
 }
 
 @media (max-width: 480px) {
+    .saved-page { padding-inline: var(--space-3); }
+
     /* Con tan poco ancho, etiqueta y desplegable comparten toda la fila. */
     .saved-page .results-tools,
     .saved-page .sort-control { width: 100%; }
     .saved-page .sort-control .select { flex: 1; min-width: 0; }
 
+    .saved-hero { padding: var(--space-5) var(--space-4); }
+    .saved-title { gap: var(--space-2); }
+    .saved-title-icon { width: 38px; height: 38px; }
+
     .saved-actions { padding: var(--space-3); }
     .saved-clear { width: 100%; }
+}
+
+/* --------------------------------------------------------------------------
+   Área táctil
+   `.btn-sm` mide 39 px de alto: con ratón sobra y con el dedo se queda corto.
+   -------------------------------------------------------------------------- */
+@media (pointer: coarse) {
+    .saved-clear { min-height: 44px; }
+}
+
+/* Respeta la preferencia de movimiento reducido del sistema */
+@media (prefers-reduced-motion: reduce) {
+    .saved-hero { animation: none; }
+    .saved-eyebrow-dot { animation: none; }
 }

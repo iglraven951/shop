@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DiscoveryShop · Lo que buscas, lo encuentras</title>
-    <meta name="description" content="Comercio inverso arequipeño: publica lo que buscas y las tiendas de los 18 distritos te responden con lo que tienen. Sin comisiones ni pagos en la plataforma.">
+    <meta name="description" content="Comercio inverso arequipeño: publica lo que buscas y los vendedores de los 18 distritos te responden con lo que tienen. Sin comisiones ni pagos en la plataforma.">
     <meta name="theme-color" content="#070c14">
     <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
     <link rel="apple-touch-icon" href="assets/img/logo.png">
     <link rel="manifest" href="site.webmanifest">
+    <link rel="stylesheet" href="assets/css/fonts.css">
     <link rel="stylesheet" href="assets/css/tokens.css">
     <link rel="stylesheet" href="assets/css/base.css">
     <link rel="stylesheet" href="assets/css/components.css">
@@ -26,8 +27,27 @@
          Solo en la portada y solo una vez por sesión. La secuencia está en
          CSS y se retira sola, así que sigue funcionando sin JavaScript.
          `aria-hidden` la mantiene fuera del árbol de accesibilidad: es
-         decorativa, y el contenido real ya está debajo. -->
+         decorativa, y el contenido real ya está debajo.
+
+         Toda la escena vive dentro de una sola perspectiva declarada en
+         `.intro`. Cada pieza se coloca a una profundidad distinta con
+         `translateZ`, así que cuando la cámara avanza al final, cada una se
+         mueve a su ritmo: el relieve es geometría, no un dibujo que lo
+         imita. -->
     <div class="intro" id="intro" aria-hidden="true">
+
+        <!-- El espacio: tres retículas a distinta profundidad, una lluvia de
+             motas y una línea de horizonte. Van en su propio contenedor para
+             que el empujón final de cámara las mueva juntas y el paralaje
+             entre ellas salga solo. -->
+        <div class="intro-space">
+            <span class="intro-plane intro-plane-far"></span>
+            <span class="intro-plane intro-plane-mid"></span>
+            <span class="intro-plane intro-plane-near"></span>
+            <span class="intro-motes"></span>
+            <span class="intro-horizon"></span>
+        </div>
+
         <div class="intro-stage">
             <div class="intro-mark">
                 <svg viewBox="0 0 40 40" fill="none">
@@ -53,6 +73,10 @@
                 </svg>
                 <!-- Barrido de luz: la lupa «escanea» el símbolo -->
                 <span class="intro-mark-sweep"></span>
+
+                <!-- Charco de luz de contacto: es lo que convierte una figura
+                     flotando en el vacío en un objeto posado sobre algo. -->
+                <span class="intro-pool"></span>
             </div>
 
             <!-- El script separa las palabras para subirlas por turnos.
@@ -68,8 +92,19 @@
             <p class="intro-tagline">Lo que buscas, lo encuentras.</p>
         </div>
 
+        <!-- El contador.
+
+             La cifra viva y la cifra final comparten una misma ranura de tres
+             dígitos: así el «%» no baila mientras se pasa de 9 a 10 y a 100,
+             y el último acto puede girar una por otra como un cuentakilómetros.
+             Ese relevo existe porque quien lleva la cuenta —intro.js— corre a
+             su propio ritmo, y la secuencia tiene que cerrar en 100 exacto
+             venga de donde venga el número. -->
         <p class="intro-count">
-            <span class="intro-count-value"></span><span class="intro-count-unit">%</span>
+            <span class="intro-count-slot">
+                <span class="intro-count-value"></span>
+                <span class="intro-count-final">100</span>
+            </span><span class="intro-count-unit">%</span>
         </p>
 
         <button class="intro-skip" type="button">Saltar</button>
@@ -83,7 +118,15 @@
         <!-- ===================== Portada compacta =====================
              El script la oculta con [hidden] en cuanto hay un filtro activo:
              cuando alguien busca, lo que importa es el feed, no la portada. -->
-        <section class="feed-hero" id="feed-hero" aria-labelledby="feed-hero-title">
+        <!-- `data-depth-field` y `data-depth-parallax` los lee assets/js/ui/depth.js:
+             el primero le pide que escriba aquí dónde está el puntero, el
+             segundo cuánto se ha rodado la portada. El módulo solo escribe dos
+             variables; qué se hace con ellas lo decide feed.css, que ya sabe
+             de `prefers-reduced-motion`. Sin el módulo —o con el movimiento
+             reducido— los valores por defecto del CSS dejan la escena quieta
+             y bien compuesta, no rota. -->
+        <section class="feed-hero" id="feed-hero" aria-labelledby="feed-hero-title"
+                 data-depth-field data-depth-parallax>
 
             <!-- ---------------- Muro de fotos del fondo ----------------
                  Dos hileras de fotos del catálogo que pasan en sentidos
@@ -98,6 +141,18 @@
                 <div class="showcase-track showcase-track-back" id="showcase-track-2"></div>
             </div>
 
+            <!-- ---------------- Atmósfera ----------------
+                 Tres capas entre el muro de fotos y el texto: una malla de
+                 resplandores que se despega al rodar la página, un suelo de
+                 retícula en perspectiva que le da fondo a la escena, y una luz
+                 que sigue al puntero. Decoración pura: sin texto, fuera del
+                 árbol de accesibilidad y sin recoger el ratón. -->
+            <div class="hero-aura" aria-hidden="true">
+                <span class="hero-aura-mesh"></span>
+                <span class="hero-aura-floor"></span>
+                <span class="hero-aura-light"></span>
+            </div>
+
             <div class="feed-hero-inner">
                 <!-- Las dos reglas y el texto en versalitas calcan la línea
                      «Arequipa · Perú» de la entrada cinematográfica: al
@@ -109,16 +164,45 @@
                     <span class="feed-hero-rule" aria-hidden="true"></span>
                 </p>
 
+                <!-- Las dos mitades del titular van en cajas propias porque
+                     pesan distinto: la primera en fina, la segunda en negra y
+                     con el degradado de la marca. Ese contraste de grosor es
+                     lo que hace que una frase se imponga; el mismo grosor en
+                     las dos la deja en rótulo. -->
                 <h1 class="feed-hero-title" id="feed-hero-title">
-                    Lo que buscas,
+                    <span class="feed-hero-lede">Lo que buscas,</span>
                     <span class="feed-hero-highlight">lo encuentras</span>
                 </h1>
 
                 <p class="feed-hero-subtitle">
-                    Aquí no buscas tú entre catálogos: lo pides y las tiendas de Arequipa te
+                    Aquí no buscas tú entre catálogos: lo pides y los vendedores de Arequipa te
                     responden. Describe lo que necesitas, aunque sea algo muy específico, y
                     espera. Cuando alguien lo tenga, te avisamos.
                 </p>
+
+                <!-- ---------------- Buscador principal ----------------
+                     En una plataforma que existe para buscar, el buscador no
+                     puede vivir solo en un rincón de la cabecera. Este escribe
+                     en el mismo filtro que el de arriba y baja al tablón. -->
+                <form class="hero-search" id="hero-search" role="search"
+                      aria-label="Buscar en el tablón de pedidos">
+                    <span class="hero-search-icon" aria-hidden="true">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
+                             stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                            <circle cx="8.8" cy="8.8" r="5.8"/><path d="m13.2 13.2 4 4"/>
+                        </svg>
+                    </span>
+                    <label class="sr-only" for="hero-search-input">¿Qué estás buscando?</label>
+                    <input class="hero-search-input" id="hero-search-input" type="search"
+                           placeholder="¿Qué estás buscando? Una lámpara, un iPhone 13…"
+                           autocomplete="off" maxlength="120">
+                    <button class="btn btn-primary hero-search-submit" type="submit">Buscar</button>
+                </form>
+
+                <!-- Categorías: el atajo más corto entre «no sé qué quiero» y
+                     ver algo concreto. Las pinta feed.js con sus contadores. -->
+                <div class="hero-categories" id="hero-categories" role="group"
+                     aria-label="Buscar por categoría" aria-busy="true"></div>
 
                 <div class="feed-hero-actions">
                     <a class="btn btn-primary btn-lg" href="publicar.html">
@@ -129,13 +213,66 @@
                     </button>
                 </div>
 
+                <!-- ---------------- El modelo, en tres tarjetas ----------------
+                     El comercio inverso hay que verlo para entenderlo: una
+                     persona pide en el centro y los vendedores responden desde los
+                     lados, giradas hacia ella. Las tarjetas están a distinta
+                     profundidad dentro de una misma perspectiva, así que se
+                     miran entre sí de verdad en lugar de estar dibujadas en
+                     escorzo.
+
+                     El contenido es un ejemplo, y por eso la ilustración queda
+                     fuera del árbol de accesibilidad: el párrafo de arriba ya
+                     cuenta lo mismo en palabras, y a un lector de pantalla le
+                     llegarían tres precios inventados como si fueran ofertas
+                     reales. El rótulo sí se anuncia.
+
+                     Fíjate en el dato: el pedido lleva un PRESUPUESTO con dos
+                     extremos y las respuestas llevan un PRECIO. Confundir los
+                     dos es el error más repetido de este código (ADR-021), y
+                     la portada es el primer sitio donde se aprende a
+                     distinguirlos. -->
+                <figure class="hero-flow">
+                    <figcaption class="hero-flow-label">Así funciona</figcaption>
+
+                    <div class="hero-flow-cards" aria-hidden="true">
+                        <article class="hero-card hero-card-ask" data-tilt>
+                            <span class="hero-card-badge">Alguien busca</span>
+                            <p class="hero-card-title">Una laptop para diseño, con 16 GB de RAM</p>
+                            <p class="hero-card-meta">Presupuesto S/ 2 500 – 3 500 · Cerro Colorado</p>
+                            <span class="hero-card-answers">
+                                <span class="hero-card-pulse"></span>
+                                2 vendedores respondieron
+                            </span>
+                        </article>
+
+                        <article class="hero-card hero-card-offer hero-card-left" data-tilt>
+                            <span class="hero-card-shop">
+                                <span class="hero-card-avatar">M</span>
+                                Mundo Tech · Cayma
+                            </span>
+                            <p class="hero-card-text">Tengo una casi nueva, con factura.</p>
+                            <p class="hero-card-price">S/ 2 890</p>
+                        </article>
+
+                        <article class="hero-card hero-card-offer hero-card-right" data-tilt>
+                            <span class="hero-card-shop">
+                                <span class="hero-card-avatar">A</span>
+                                AQP Cómputo · Yanahuara
+                            </span>
+                            <p class="hero-card-text">Me queda una, con garantía de un año.</p>
+                            <p class="hero-card-price">S/ 3 150</p>
+                        </article>
+                    </div>
+                </figure>
+
                 <dl class="feed-stats">
                     <div class="feed-stat">
                         <dt class="feed-stat-label">Pedidos abiertos</dt>
                         <dd class="feed-stat-value" id="stat-posts">—</dd>
                     </div>
                     <div class="feed-stat">
-                        <dt class="feed-stat-label">Tiendas que responden</dt>
+                        <dt class="feed-stat-label">Vendedores que responden</dt>
                         <dd class="feed-stat-value" id="stat-sellers">—</dd>
                     </div>
                     <div class="feed-stat">
@@ -186,7 +323,7 @@
                                     <svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="7.5" cy="7.5" r="5"/><path d="m11.5 11.5 4 4"/></svg>
                                 </span>
                                 <input class="input" type="search" id="filter-search" autocomplete="off"
-                                       maxlength="120" placeholder="Artículo, marca o vendedor…"
+                                       maxlength="120" placeholder="Qué buscas, marca o categoría…"
                                        aria-label="Buscar pedidos en el tablón">
                             </div>
                         </div>
@@ -213,7 +350,7 @@
                     </details>
 
                     <!-- Distrito -->
-                    <details class="filter-group" id="group-district" open>
+                    <details class="filter-group" id="group-district">
                         <summary class="filter-summary">
                             <span class="filter-summary-name">Distrito</span>
                             <span class="filter-summary-value" id="summary-district">Todos</span>
@@ -242,7 +379,7 @@
                     </details>
 
                     <!-- Presupuesto -->
-                    <details class="filter-group" id="group-price" open>
+                    <details class="filter-group" id="group-price">
                         <summary class="filter-summary">
                             <span class="filter-summary-name">Presupuesto</span>
                             <span class="filter-summary-value" id="summary-price">Cualquiera</span>
@@ -273,7 +410,7 @@
                     </details>
 
                     <!-- Estado del artículo -->
-                    <details class="filter-group" id="group-condition" open>
+                    <details class="filter-group" id="group-condition">
                         <summary class="filter-summary">
                             <span class="filter-summary-name">¿En qué estado lo acepta?</span>
                             <span class="filter-summary-value" id="summary-condition">Cualquiera</span>
@@ -300,9 +437,9 @@
                         </div>
                     </details>
 
-                    <!-- Disponibilidad: si el artículo sigue libre, está
-                         reservado o ya se vendió. Distinto del estado físico. -->
-                    <details class="filter-group" id="group-situation" open>
+                    <!-- Situación: si el pedido sigue abierto, ya tiene una oferta
+                         aceptada o se resolvió. Distinto del estado que se acepta. -->
+                    <details class="filter-group" id="group-situation">
                         <summary class="filter-summary">
                             <span class="filter-summary-name">Situación del pedido</span>
                             <span class="filter-summary-value" id="summary-situation">Todo</span>
@@ -388,6 +525,7 @@
     <script src="assets/js/core/native.js"></script>
     <script src="assets/js/core/seed.js"></script>
     <script src="assets/js/core/moderator.js"></script>
+    <script src="assets/js/core/seller-bot.js"></script>
     <script src="assets/js/core/mock-api.js"></script>
     <script src="assets/js/core/store.js"></script>
     <script src="assets/js/core/api.js"></script>
@@ -395,6 +533,7 @@
     <script src="assets/js/ui/toast.js"></script>
     <script src="assets/js/ui/modal.js"></script>
     <script src="assets/js/ui/components.js"></script>
+    <script src="assets/js/ui/depth.js"></script>
     <script src="assets/js/ui/shell.js"></script>
     <script src="assets/js/ui/showcase.js"></script>
     <script src="assets/js/ui/assistant-widget.js"></script>

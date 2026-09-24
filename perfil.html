@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi perfil · DiscoveryShop</title>
-    <meta name="description" content="Tu cuenta de DiscoveryShop: edita tus datos, revisa el estado de tus pedidos y solicita tu cuenta de tienda para responder a los de otros.">
+    <meta name="description" content="Tu cuenta de DiscoveryShop: edita tus datos, revisa el estado de tus pedidos y solicita tu cuenta de vendedor para responder a los de otros.">
     <meta name="theme-color" content="#070c14">
     <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
     <link rel="apple-touch-icon" href="assets/img/logo.png">
     <link rel="manifest" href="site.webmanifest">
+    <link rel="stylesheet" href="assets/css/fonts.css">
     <link rel="stylesheet" href="assets/css/tokens.css">
     <link rel="stylesheet" href="assets/css/base.css">
     <link rel="stylesheet" href="assets/css/components.css">
@@ -28,9 +29,13 @@
             <!-- Mientras se resuelve la sesión: silueta, nunca una pantalla en blanco -->
             <div class="profile-boot" id="profile-boot" aria-live="polite" aria-busy="true">
                 <div class="skeleton profile-boot-hero"></div>
-                <div class="skeleton profile-boot-seller"></div>
-                <div class="skeleton profile-boot-tabs"></div>
-                <div class="skeleton profile-boot-body"></div>
+                <div class="profile-boot-split">
+                    <div class="skeleton profile-boot-body"></div>
+                    <div class="profile-boot-side">
+                        <div class="skeleton profile-boot-seller"></div>
+                        <div class="skeleton profile-boot-tabs"></div>
+                    </div>
+                </div>
                 <span class="sr-only">Cargando tu perfil…</span>
             </div>
 
@@ -40,10 +45,25 @@
             <!-- Panel de cuenta -->
             <div id="profile-content" hidden>
 
-                <!-- Cabecera de perfil -->
+                <!-- ==================== Cabecera de perfil ====================
+                     La franja superior es decoración con perspectiva: una malla
+                     de luz de marca sobre una rejilla fina. Va en el marcado y
+                     no en un pseudoelemento porque son tres capas con
+                     velocidades distintas, y un solo ::before no las sostiene. -->
                 <section class="profile-hero" aria-labelledby="profile-name">
+                    <div class="profile-hero-cover" aria-hidden="true">
+                        <span class="profile-hero-mesh"></span>
+                        <span class="profile-hero-grid"></span>
+                        <span class="profile-hero-sheen"></span>
+                    </div>
+
                     <div class="profile-hero-main">
-                        <span class="avatar avatar-xl profile-avatar" id="profile-avatar" aria-hidden="true">··</span>
+                        <!-- El aro toma el color del estado de la cuenta; el
+                             disco se queda en azul profundo para que las
+                             iniciales blancas mantengan su contraste. -->
+                        <span class="profile-avatar-wrap">
+                            <span class="avatar avatar-xl profile-avatar" id="profile-avatar" aria-hidden="true">··</span>
+                        </span>
 
                         <div class="profile-identity">
                             <div class="profile-identity-head">
@@ -59,185 +79,237 @@
 
                         <div class="profile-hero-actions">
                             <button class="btn btn-secondary" type="button" data-goto-tab="datos">
+                                <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.4 3.6a1.8 1.8 0 0 1 2.5 2.5L7.4 14.6 4 15.5l.9-3.4 8.5-8.5Z"/></svg>
                                 Editar perfil
                             </button>
-                            <a class="btn btn-ghost" href="guardados.html">Ver guardados</a>
+                            <a class="btn btn-ghost" href="guardados.html">
+                                <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 2.8h10v14.4l-5-3.4-5 3.4V2.8Z"/></svg>
+                                Ver guardados
+                            </a>
                         </div>
+                    </div>
+
+                    <!-- Reputación.
+                         Las estrellas se dibujan igual que en las ofertas: un
+                         renglón de cinco y una capa dorada recortada al
+                         porcentaje exacto de la nota. Nace vacía a propósito:
+                         la reputación solo sale de tratos confirmados y no se
+                         siembra, así que sin calificaciones se dice, no se
+                         inventa un número. -->
+                    <div class="profile-reputation is-unrated" id="profile-reputation">
+                        <span class="profile-reputation-stars rating-stars" id="profile-rating-stars"
+                              data-stars="★★★★★" style="--fill: 0%;" aria-hidden="true">★★★★★</span>
+                        <span class="profile-reputation-text">
+                            <strong class="profile-reputation-value" id="profile-rating-value">Sin calificaciones todavía</strong>
+                            <span class="profile-reputation-note" id="profile-rating-note">
+                                Las estrellas solo salen de tratos confirmados: nadie puede calificarte hasta que cierres uno.
+                            </span>
+                        </span>
                     </div>
 
                     <dl class="profile-metrics" id="profile-metrics">
                         <!-- El `dt` va antes que el `dd` para que el marcado sea válido;
                              el orden visual lo invierte la hoja de estilos. -->
-                        <div class="profile-metric">
+                        <div class="profile-metric is-brand">
+                            <span class="profile-metric-icon" aria-hidden="true">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.2 9.6V4a.8.8 0 0 1 .8-.8h5.6l7 7a1.2 1.2 0 0 1 0 1.7l-4.9 4.9a1.2 1.2 0 0 1-1.7 0l-6.8-7.2Z"/><circle cx="6.7" cy="6.7" r="1.1"/></svg>
+                            </span>
                             <dt class="profile-metric-label">Pedidos abiertos</dt>
                             <dd class="profile-metric-value" data-metric="approved">—</dd>
                         </div>
-                        <div class="profile-metric">
+                        <div class="profile-metric is-warning">
+                            <span class="profile-metric-icon" aria-hidden="true">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7"/><path d="M10 5.9V10l2.8 1.8"/></svg>
+                            </span>
                             <dt class="profile-metric-label">En revisión</dt>
                             <dd class="profile-metric-value" data-metric="pending">—</dd>
                         </div>
-                        <div class="profile-metric">
+                        <div class="profile-metric is-accent">
+                            <span class="profile-metric-icon" aria-hidden="true">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 2.8h10v14.4l-5-3.4-5 3.4V2.8Z"/></svg>
+                            </span>
                             <dt class="profile-metric-label">Guardados</dt>
                             <dd class="profile-metric-value">
                                 <a class="profile-metric-link" href="guardados.html" data-metric="saved">—</a>
                             </dd>
                         </div>
-                        <div class="profile-metric">
+                        <div class="profile-metric is-neutral">
+                            <span class="profile-metric-icon" aria-hidden="true">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 10s3-5 8-5 8 5 8 5-3 5-8 5-8-5-8-5Z"/><circle cx="10" cy="10" r="2.4"/></svg>
+                            </span>
                             <dt class="profile-metric-label">Visitas totales</dt>
                             <dd class="profile-metric-value" data-metric="views">—</dd>
                         </div>
                     </dl>
                 </section>
 
-                <!-- Estado de vendedor: el bloque cambia según `seller_status` -->
-                <section class="profile-seller" id="profile-seller"
-                         aria-live="polite" aria-label="Estado de tu cuenta de vendedor"></section>
+                <!-- Dos columnas en pantalla ancha: el trabajo a la izquierda,
+                     el estado de la cuenta a la derecha. En móvil el lateral se
+                     adelanta, porque el estado de vendedor es lo primero que
+                     alguien viene a mirar. -->
+                <div class="profile-layout">
 
-                <!-- Navegación por secciones (las anclas viven en la URL) -->
-                <div class="profile-tabs" id="profile-tabs" role="tablist" aria-label="Secciones del perfil">
-                    <button class="profile-tab is-active" type="button" role="tab" data-tab="datos"
-                            id="tab-datos" aria-controls="panel-datos" aria-selected="true">
-                        <span aria-hidden="true">👤</span><span>Mis datos</span>
-                    </button>
-                    <button class="profile-tab" type="button" role="tab" data-tab="pedidos"
-                            id="tab-pedidos" aria-controls="panel-pedidos"
-                            aria-selected="false" tabindex="-1">
-                        <span aria-hidden="true">🏷️</span><span>Mis pedidos</span>
-                    </button>
-                </div>
+                    <div class="profile-main">
 
-                <!-- Pestaña: Mis datos -->
-                <section class="profile-panel" id="panel-datos" role="tabpanel"
-                         aria-labelledby="tab-datos" tabindex="0">
-                    <div class="profile-block">
-                        <div class="profile-section-head">
-                            <div class="profile-section-text">
-                                <h2 class="profile-block-title">Datos de la cuenta</h2>
-                                <p class="profile-block-hint">Así te verán quienes lean tus publicaciones y comentarios.</p>
-                            </div>
-                        </div>
-
-                        <form class="profile-form" id="profile-form" novalidate>
-                            <div class="profile-form-grid">
-                                <div class="field">
-                                    <label class="label" for="pf-username">Nombre <span class="required">*</span></label>
-                                    <input class="input" id="pf-username" name="username" type="text"
-                                           autocomplete="name" maxlength="40" required>
-                                    <p class="field-error" data-error-for="username" aria-live="polite"></p>
-                                </div>
-
-                                <div class="field">
-                                    <label class="label" for="pf-email">Correo electrónico</label>
-                                    <input class="input" id="pf-email" name="email" type="email"
-                                           disabled aria-describedby="pf-email-hint">
-                                    <p class="field-hint" id="pf-email-hint">El correo no se puede modificar.</p>
-                                </div>
-
-                                <div class="field">
-                                    <label class="label" for="pf-district">Distrito <span class="required">*</span></label>
-                                    <select class="select" id="pf-district" name="district" required></select>
-                                    <p class="field-error" data-error-for="district" aria-live="polite"></p>
-                                </div>
-
-                                <div class="field">
-                                    <label class="label" for="pf-phone">Teléfono</label>
-                                    <input class="input" id="pf-phone" name="phone" type="tel"
-                                           inputmode="tel" maxlength="20" placeholder="+51 999 888 777"
-                                           autocomplete="tel">
-                                    <p class="field-error" data-error-for="phone" aria-live="polite"></p>
-                                </div>
-                            </div>
-
-                            <div class="field profile-field-wide">
-                                <div class="profile-label-row">
-                                    <label class="label" for="pf-bio">Biografía</label>
-                                    <span class="profile-counter" id="pf-bio-counter">0/200</span>
-                                </div>
-                                <textarea class="textarea" id="pf-bio" name="bio" rows="3" maxlength="200"
-                                          placeholder="Cuéntale al foro quién eres en pocas palabras."
-                                          aria-describedby="pf-bio-counter"></textarea>
-                                <p class="field-error" data-error-for="bio" aria-live="polite"></p>
-                            </div>
-
-                            <div class="profile-form-actions">
-                                <button class="btn btn-primary" type="submit" id="profile-save">Guardar cambios</button>
-                                <button class="btn btn-ghost" type="button" id="profile-revert">Descartar cambios</button>
-                            </div>
-                        </form>
-                    </div>
-
-                    <div class="profile-block">
-                        <div class="profile-section-head">
-                            <div class="profile-section-text">
-                                <h2 class="profile-block-title">Preferencias</h2>
-                                <p class="profile-block-hint">Configuración que solo afecta a este navegador.</p>
-                            </div>
-                        </div>
-
-                        <div class="profile-pref">
-                            <div class="profile-pref-text">
-                                <span class="profile-pref-label" id="pref-theme-label">Tema oscuro</span>
-                                <span class="profile-pref-hint">
-                                    Cambia el aspecto de todo el sitio. Se sincroniza con el botón de la cabecera.
+                        <!-- Navegación por secciones (las anclas viven en la URL) -->
+                        <div class="profile-tabs" id="profile-tabs" role="tablist" aria-label="Secciones del perfil">
+                            <button class="profile-tab is-active" type="button" role="tab" data-tab="datos"
+                                    id="tab-datos" aria-controls="panel-datos" aria-selected="true">
+                                <span class="profile-tab-icon" aria-hidden="true">
+                                    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M16.2 16.8v-1.4a3.4 3.4 0 0 0-3.4-3.4H7.2a3.4 3.4 0 0 0-3.4 3.4v1.4"/><circle cx="10" cy="6.6" r="3.2"/></svg>
                                 </span>
-                            </div>
-                            <label class="switch">
-                                <input type="checkbox" id="pref-theme" aria-labelledby="pref-theme-label">
-                                <span class="switch-track"></span>
-                                <span class="switch-thumb"></span>
-                            </label>
+                                <span>Mis datos</span>
+                            </button>
+                            <button class="profile-tab" type="button" role="tab" data-tab="pedidos"
+                                    id="tab-pedidos" aria-controls="panel-pedidos"
+                                    aria-selected="false" tabindex="-1">
+                                <span class="profile-tab-icon" aria-hidden="true">
+                                    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.2 9.6V4a.8.8 0 0 1 .8-.8h5.6l7 7a1.2 1.2 0 0 1 0 1.7l-4.9 4.9a1.2 1.2 0 0 1-1.7 0l-6.8-7.2Z"/><circle cx="6.7" cy="6.7" r="1.1"/></svg>
+                                </span>
+                                <span>Mis pedidos</span>
+                            </button>
                         </div>
-                    </div>
-                </section>
 
-                <!-- Pestaña: Mis pedidos -->
-                <section class="profile-panel" id="panel-pedidos" role="tabpanel"
-                         aria-labelledby="tab-pedidos" tabindex="0" hidden>
-                    <div class="profile-block">
-                        <div class="profile-section-head">
+                        <!-- Pestaña: Mis datos -->
+                        <section class="profile-panel" id="panel-datos" role="tabpanel"
+                                 aria-labelledby="tab-datos" tabindex="0">
+                            <div class="profile-block">
+                                <div class="profile-section-head">
+                                    <div class="profile-section-text">
+                                        <h2 class="profile-block-title">Datos de la cuenta</h2>
+                                        <p class="profile-block-hint">Así te verán quienes lean tus publicaciones y comentarios.</p>
+                                    </div>
+                                </div>
+
+                                <form class="profile-form" id="profile-form" novalidate>
+                                    <div class="profile-form-grid">
+                                        <div class="field">
+                                            <label class="label" for="pf-username">Nombre <span class="required">*</span></label>
+                                            <input class="input" id="pf-username" name="username" type="text"
+                                                   autocomplete="name" maxlength="40" required>
+                                            <p class="field-error" data-error-for="username" aria-live="polite"></p>
+                                        </div>
+
+                                        <div class="field">
+                                            <label class="label" for="pf-email">Correo electrónico</label>
+                                            <input class="input" id="pf-email" name="email" type="email"
+                                                   disabled aria-describedby="pf-email-hint">
+                                            <p class="field-hint" id="pf-email-hint">El correo no se puede modificar.</p>
+                                        </div>
+
+                                        <div class="field">
+                                            <label class="label" for="pf-district">Distrito <span class="required">*</span></label>
+                                            <select class="select" id="pf-district" name="district" required></select>
+                                            <p class="field-error" data-error-for="district" aria-live="polite"></p>
+                                        </div>
+
+                                        <div class="field">
+                                            <label class="label" for="pf-phone">Teléfono</label>
+                                            <input class="input" id="pf-phone" name="phone" type="tel"
+                                                   inputmode="tel" maxlength="20" placeholder="+51 999 888 777"
+                                                   autocomplete="tel">
+                                            <p class="field-error" data-error-for="phone" aria-live="polite"></p>
+                                        </div>
+                                    </div>
+
+                                    <div class="field profile-field-wide">
+                                        <div class="profile-label-row">
+                                            <label class="label" for="pf-bio">Biografía</label>
+                                            <span class="profile-counter" id="pf-bio-counter">0/200</span>
+                                        </div>
+                                        <textarea class="textarea" id="pf-bio" name="bio" rows="3" maxlength="200"
+                                                  placeholder="Cuéntale al foro quién eres en pocas palabras."
+                                                  aria-describedby="pf-bio-counter"></textarea>
+                                        <p class="field-error" data-error-for="bio" aria-live="polite"></p>
+                                    </div>
+
+                                    <div class="profile-form-actions">
+                                        <button class="btn btn-primary" type="submit" id="profile-save">Guardar cambios</button>
+                                        <button class="btn btn-ghost" type="button" id="profile-revert">Descartar cambios</button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <div class="profile-block">
+                                <div class="profile-section-head">
+                                    <div class="profile-section-text">
+                                        <h2 class="profile-block-title">Preferencias</h2>
+                                        <p class="profile-block-hint">Configuración que solo afecta a este navegador.</p>
+                                    </div>
+                                </div>
+
+                                <div class="profile-pref">
+                                    <div class="profile-pref-text">
+                                        <span class="profile-pref-label" id="pref-theme-label">Tema oscuro</span>
+                                        <span class="profile-pref-hint">
+                                            Cambia el aspecto de todo el sitio. Se sincroniza con el botón de la cabecera.
+                                        </span>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="pref-theme" aria-labelledby="pref-theme-label">
+                                        <span class="switch-track"></span>
+                                        <span class="switch-thumb"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Pestaña: Mis pedidos -->
+                        <section class="profile-panel" id="panel-pedidos" role="tabpanel"
+                                 aria-labelledby="tab-pedidos" tabindex="0" hidden>
+                            <div class="profile-block">
+                                <div class="profile-section-head">
+                                    <div class="profile-section-text">
+                                        <h2 class="profile-block-title">Mis pedidos</h2>
+                                        <p class="profile-block-hint" id="posts-summary">Todo lo que has publicado en el foro.</p>
+                                    </div>
+                                    <a class="btn btn-primary" href="publicar.html" id="posts-publish" hidden>
+                                        Publicar un pedido
+                                    </a>
+                                </div>
+
+                                <div class="profile-subfilters" id="posts-filters" role="group"
+                                     aria-label="Filtrar mis publicaciones por estado">
+                                    <button class="profile-subfilter is-active" type="button"
+                                            data-filter="all" aria-pressed="true">
+                                        Todas <span class="profile-subfilter-count" data-count="all">0</span>
+                                    </button>
+                                    <button class="profile-subfilter" type="button"
+                                            data-filter="approved" aria-pressed="false">
+                                        Publicadas <span class="profile-subfilter-count" data-count="approved">0</span>
+                                    </button>
+                                    <button class="profile-subfilter" type="button"
+                                            data-filter="pending" aria-pressed="false">
+                                        En revisión <span class="profile-subfilter-count" data-count="pending">0</span>
+                                    </button>
+                                    <button class="profile-subfilter" type="button"
+                                            data-filter="rejected" aria-pressed="false">
+                                        Rechazadas <span class="profile-subfilter-count" data-count="rejected">0</span>
+                                    </button>
+                                </div>
+
+                                <div class="profile-posts" id="posts-list" aria-live="polite"></div>
+                            </div>
+                        </section>
+                    </div>
+
+                    <aside class="profile-aside" aria-label="Estado de la cuenta">
+                        <!-- Estado de vendedor: el bloque cambia según `seller_status` -->
+                        <section class="profile-seller" id="profile-seller"
+                                 aria-live="polite" aria-label="Estado de tu cuenta de vendedor"></section>
+
+                        <!-- Zona de sesión -->
+                        <section class="profile-session" aria-labelledby="profile-session-title">
                             <div class="profile-section-text">
-                                <h2 class="profile-block-title">Mis pedidos</h2>
-                                <p class="profile-block-hint" id="posts-summary">Todo lo que has publicado en el foro.</p>
+                                <h2 class="profile-block-title" id="profile-session-title">Sesión</h2>
+                                <p class="profile-block-hint">
+                                    Se cerrará tu sesión en este navegador. Tus publicaciones y tus guardados se conservan.
+                                </p>
                             </div>
-                            <a class="btn btn-primary" href="publicar.html" id="posts-publish" hidden>
-                                Publicar un artículo
-                            </a>
-                        </div>
-
-                        <div class="profile-subfilters" id="posts-filters" role="group"
-                             aria-label="Filtrar mis publicaciones por estado">
-                            <button class="profile-subfilter is-active" type="button"
-                                    data-filter="all" aria-pressed="true">
-                                Todas <span class="profile-subfilter-count" data-count="all">0</span>
-                            </button>
-                            <button class="profile-subfilter" type="button"
-                                    data-filter="approved" aria-pressed="false">
-                                Publicadas <span class="profile-subfilter-count" data-count="approved">0</span>
-                            </button>
-                            <button class="profile-subfilter" type="button"
-                                    data-filter="pending" aria-pressed="false">
-                                En revisión <span class="profile-subfilter-count" data-count="pending">0</span>
-                            </button>
-                            <button class="profile-subfilter" type="button"
-                                    data-filter="rejected" aria-pressed="false">
-                                Rechazadas <span class="profile-subfilter-count" data-count="rejected">0</span>
-                            </button>
-                        </div>
-
-                        <div class="profile-posts" id="posts-list" aria-live="polite"></div>
-                    </div>
-                </section>
-
-                <!-- Zona de sesión -->
-                <section class="profile-session" aria-labelledby="profile-session-title">
-                    <div class="profile-section-text">
-                        <h2 class="profile-block-title" id="profile-session-title">Sesión</h2>
-                        <p class="profile-block-hint">
-                            Se cerrará tu sesión en este navegador. Tus publicaciones y tus guardados se conservan.
-                        </p>
-                    </div>
-                    <button class="btn btn-danger" type="button" id="profile-logout">Cerrar sesión</button>
-                </section>
+                            <button class="btn btn-danger" type="button" id="profile-logout">Cerrar sesión</button>
+                        </section>
+                    </aside>
+                </div>
 
             </div>
         </div>
@@ -257,9 +329,11 @@
     <script src="assets/js/ui/toast.js"></script>
     <script src="assets/js/ui/modal.js"></script>
     <script src="assets/js/ui/components.js"></script>
+    <script src="assets/js/ui/depth.js"></script>
     <script src="assets/js/ui/shell.js"></script>
     <script src="assets/js/ui/assistant-widget.js"></script>
     <!-- Página -->
     <script src="assets/js/pages/profile.js"></script>
+
 </body>
 </html>

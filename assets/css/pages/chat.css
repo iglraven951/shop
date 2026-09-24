@@ -9,6 +9,19 @@
 
 .chat-page {
     --chat-outer: 2rem; /* padding vertical total de la página */
+
+    /* Iconos en línea. Se pintan con `mask`, así que heredan `currentColor`
+       del elemento: el mismo trazo sirve en los dos temas y sobre cualquier
+       fondo. Van aquí porque los elementos que los llevan —el estado de
+       entrega de cada globo, los estados vacíos— los genera `chat.js`, y ahí
+       no se puede insertar un <svg> desde el marcado. */
+    --chat-icon-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 14' fill='none' stroke='black' stroke-width='2.1' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m1.6 7.6 3.6 3.6L11.6 4'/%3E%3Cpath d='m8.4 7.6 3.6 3.6L18.4 4'/%3E%3C/svg%3E");
+    --chat-icon-clock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='8' cy='8' r='6.2'/%3E%3Cpath d='M8 4.6V8l2.4 1.6'/%3E%3C/svg%3E");
+    --chat-icon-alert: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='8' cy='8' r='6.2'/%3E%3Cpath d='M8 4.8v3.6M8 11.2h.01'/%3E%3C/svg%3E");
+    --chat-icon-bubbles: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='black' stroke-width='2.1' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 8.5a3.5 3.5 0 0 1 3.5-3.5h11A3.5 3.5 0 0 1 22 8.5v5a3.5 3.5 0 0 1-3.5 3.5H12l-5 4v-4a3 3 0 0 1-3-3Z'/%3E%3Cpath d='M25 12.5a3.5 3.5 0 0 1 3 3.4v5.6a3 3 0 0 1-3 3v3.5l-4.5-3.5H15'/%3E%3C/svg%3E");
+    --chat-icon-search: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='14' cy='14' r='8.5'/%3E%3Cpath d='m20.4 20.4 6.6 6.6'/%3E%3C/svg%3E");
+    --chat-icon-lock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='black' stroke-width='2.1' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='6.5' y='14' width='19' height='13' rx='3.2'/%3E%3Cpath d='M11 14v-3.5a5 5 0 0 1 10 0V14'/%3E%3Cpath d='M16 19.5v3'/%3E%3C/svg%3E");
+
     max-width: 1300px;
     margin-inline: auto;
     padding: var(--space-4) var(--space-5);
@@ -27,8 +40,8 @@
     overflow: hidden;
     background: var(--bg-surface);
     border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-xl), var(--edge-light);
 }
 
 /* --------------------------------------------------------------------------
@@ -44,19 +57,53 @@
 }
 
 .chat-sidebar-head {
+    position: relative;
+    z-index: var(--z-base);
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
     flex-shrink: 0;
     padding: var(--space-4);
+    background-image: var(--gradient-surface);
     border-bottom: 1px solid var(--border-subtle);
 }
 
+/* Cabecera de la bandeja: el símbolo de marca, el título y una línea que
+   recuerda de dónde sale un hilo. Sin ella, «Mensajes» a secas no explica
+   por qué la lista puede estar vacía. */
+.chat-sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-width: 0;
+}
+
+.chat-sidebar-mark {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 38px;
+    height: 38px;
+    color: var(--brand);
+    background: var(--brand-soft);
+    border-radius: var(--radius-md);
+    box-shadow: inset 0 0 0 1px var(--brand-ring);
+}
+
+.chat-sidebar-heading { min-width: 0; }
+
 .chat-sidebar-title {
+    font-family: var(--font-display);
     font-size: var(--text-xl);
     font-weight: 750;
-    letter-spacing: var(--tracking-tight);
+    letter-spacing: var(--tracking-display);
     line-height: var(--leading-tight);
+}
+
+.chat-sidebar-lead {
+    font-size: var(--text-2xs);
+    color: var(--text-secondary);
+    line-height: var(--leading-snug);
 }
 
 .chat-search { position: relative; }
@@ -93,6 +140,7 @@
 }
 
 .chat-item {
+    position: relative;
     display: flex;
     align-items: flex-start;
     gap: var(--space-3);
@@ -109,6 +157,21 @@
                 border-color var(--duration-fast) var(--ease-out);
 }
 
+/* El raíl del hilo abierto. Crece desde el centro en vez de aparecer de
+   golpe: así se lee como que la selección se desplaza por la lista. */
+.chat-item::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 3px;
+    height: 0;
+    background: var(--brand);
+    border-radius: var(--radius-full);
+    transform: translateY(-50%);
+    transition: height var(--duration-base) var(--ease-spring);
+}
+
 .chat-item:hover { background: var(--bg-hover); }
 .chat-item:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
 
@@ -117,7 +180,10 @@
     border-color: var(--brand-ring);
 }
 
+.chat-item.is-active::before { height: 58%; }
+
 .chat-item.is-skeleton { pointer-events: none; }
+.chat-item.is-skeleton::before { display: none; }
 
 .chat-item-thumb {
     flex-shrink: 0;
@@ -125,7 +191,13 @@
     height: 46px;
     object-fit: cover;
     background: var(--bg-raised);
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-md);
+    box-shadow: 0 0 0 1px var(--border-subtle), var(--shadow-sm);
+    transition: box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.chat-item.is-active .chat-item-thumb {
+    box-shadow: 0 0 0 2px var(--brand), var(--shadow-sm);
 }
 
 .chat-item-body {
@@ -183,10 +255,29 @@
     background: var(--brand);
     color: var(--brand-contrast);
     border-radius: var(--radius-full);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 20%, transparent);
     font-size: var(--text-3xs);
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     line-height: 1;
+}
+
+/* Lo que no se ha leído pesa más. Es la única «presencia» honesta que se
+   puede dar aquí: no hay dato de conexión, y fingirlo haría esperar una
+   respuesta que quizá no llega (la misma razón que documenta `chat.js`). */
+.chat-item:has(.chat-item-unread) .chat-item-name {
+    font-weight: 750;
+    color: var(--text-primary);
+}
+
+.chat-item:has(.chat-item-unread) .chat-item-preview {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.chat-item:has(.chat-item-unread) .chat-item-time {
+    font-weight: 700;
+    color: var(--brand);
 }
 
 /* --------------------------------------------------------------------------
@@ -197,7 +288,10 @@
     flex-direction: column;
     min-width: 0;
     min-height: 0;
-    background: var(--bg-base);
+    /* Un halo tenue arriba separa el hilo de la bandeja sin una línea más */
+    background: var(--gradient-glow), var(--bg-base);
+    background-repeat: no-repeat;
+    background-size: 100% 260px, auto;
 }
 
 .chat-thread-panel {
@@ -208,7 +302,13 @@
 }
 
 /* --- Cabecera del hilo --- */
+/* Se eleva sobre el hilo con una sombra propia. No lleva desenfoque: el
+   cuerpo de mensajes es un hermano con su propio desplazamiento, así que
+   por debajo de esta banda no pasa nada que desenfocar —solo costaría
+   composición de GPU en el móvil a cambio de nada. */
 .chat-thread-head {
+    position: relative;
+    z-index: var(--z-base);
     display: flex;
     align-items: center;
     flex-wrap: nowrap;
@@ -216,7 +316,9 @@
     flex-shrink: 0;
     padding: var(--space-3) var(--space-4);
     background: var(--bg-surface);
+    background-image: var(--gradient-surface);
     border-bottom: 1px solid var(--border-subtle);
+    box-shadow: var(--shadow-sm);
 }
 
 /* Solo se muestra en móvil, donde hay un panel a la vez. */
@@ -243,6 +345,7 @@
     width: 38px;
     height: 38px;
     font-size: var(--text-xs);
+    box-shadow: 0 0 0 2px var(--brand-soft), 0 0 0 3px var(--brand-ring);
 }
 
 .chat-peer {
@@ -321,6 +424,12 @@
     min-height: 0;
     padding: var(--space-5) var(--space-5) var(--space-3);
     overflow-y: auto;
+    /* Explícito, no heredado: `overflow-y: auto` convierte el eje horizontal
+       en `auto` también, y la cola del globo propio sobresale 7 px hacia el
+       relleno derecho. Que eso cuente como desbordamiento depende del motor;
+       recortarlo aquí quita la barra horizontal en todos, y la cola cabe de
+       sobra dentro del relleno. */
+    overflow-x: hidden;
     overscroll-behavior: contain;
     scroll-behavior: smooth;
 }
@@ -330,39 +439,53 @@
     flex-direction: column;
 }
 
-/* Separador de fecha entre grupos de días */
+/* Separador de fecha entre grupos de días. La fecha va en una pastilla
+   elevada, no suelta sobre la línea: así el hilo se lee por tramos. */
 .chat-day {
     display: flex;
     align-items: center;
     gap: var(--space-3);
-    margin: var(--space-5) 0 var(--space-3);
-    color: var(--text-muted);
+    margin: var(--space-6) 0 var(--space-4);
+    color: var(--text-secondary);
     font-size: var(--text-3xs);
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: var(--tracking-wide);
 }
 
 .chat-day:first-child { margin-top: 0; }
-.chat-day span { flex-shrink: 0; }
+
+.chat-day span {
+    flex-shrink: 0;
+    padding: var(--space-1) var(--space-3);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-full);
+    box-shadow: var(--shadow-sm);
+}
 
 .chat-day::before,
 .chat-day::after {
     content: '';
     flex: 1;
     height: 1px;
-    background: var(--border-subtle);
+    background: linear-gradient(to right, transparent, var(--border-default));
+}
+
+.chat-day::after {
+    background: linear-gradient(to left, transparent, var(--border-default));
 }
 
 .chat-msg {
     display: flex;
     align-items: flex-end;
-    gap: var(--space-2);
+    /* 12 px, no 8: la cola del globo sobresale 7 px hacia el avatar */
+    gap: var(--space-3);
     max-width: 100%;
     animation: fade-in-up var(--duration-base) var(--ease-out);
 }
 
-.chat-msg + .chat-msg { margin-top: var(--space-3); }
+.chat-msg + .chat-msg { margin-top: var(--space-4); }
 .chat-msg.is-grouped { margin-top: 3px; }
 
 .chat-msg-mine { flex-direction: row-reverse; }
@@ -373,13 +496,15 @@
 .chat-msg.is-grouped .chat-msg-avatar { visibility: hidden; }
 
 .chat-bubble {
+    position: relative;
     max-width: min(60ch, 76%);
     min-width: 0;
     padding: var(--space-3) var(--space-4);
     background: var(--bg-raised);
-    border: 1px solid var(--border-subtle);
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
+    /* El borde pasó a ser un anillo interior: con un borde real, la cola
+       —que se dibuja con el color del globo— enseñaba su propio canto. */
+    box-shadow: inset 0 0 0 1px var(--border-subtle), var(--shadow-sm);
 }
 
 /* Esquina asimétrica del lado del remitente */
@@ -387,10 +512,44 @@
 
 .chat-msg-mine .chat-bubble {
     background: var(--brand);
-    border-color: transparent;
     color: var(--brand-contrast);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand-contrast) 12%, transparent),
+                var(--shadow-md);
     border-bottom-right-radius: var(--radius-xs);
 }
+
+/* Dentro de un grupo la esquina superior del lado del remitente también se
+   recoge: los globos encadenados se leen como un bloque, no como tres cajas
+   sueltas separadas por tres píxeles. */
+.chat-msg-them.is-grouped .chat-bubble { border-top-left-radius: var(--radius-xs); }
+.chat-msg-mine.is-grouped .chat-bubble { border-top-right-radius: var(--radius-xs); }
+
+/* --- La cola ---
+   Un triángulo del mismo color del globo, encajado bajo su esquina.
+   `background-color: inherit` toma el color ya resuelto del padre, así que
+   sirve igual para el globo propio, el ajeno y el que falló. */
+.chat-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    width: 9px;
+    height: 13px;
+    background-color: inherit;
+}
+
+.chat-msg-them .chat-bubble::after {
+    left: -7px;
+    clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+
+.chat-msg-mine .chat-bubble::after {
+    right: -7px;
+    clip-path: polygon(0 0, 100% 100%, 0 100%);
+}
+
+/* Solo el último globo de cada grupo la lleva: una cola por mensaje, con
+   tres píxeles de separación, sería un serrucho. */
+.chat-msg:has(+ .chat-msg.is-grouped) .chat-bubble::after { display: none; }
 
 .chat-bubble-text {
     font-size: var(--text-sm);
@@ -399,17 +558,52 @@
     overflow-wrap: anywhere;
 }
 
+/* Un globo que solo lleva fotos no necesita reservar una línea vacía —ni el
+   hueco que ese párrafo dejaba encima de la primera foto. */
+.chat-bubble-text:empty { display: none; }
+.chat-bubble-text:empty + .chat-bubble-photos { margin-top: 0; }
+
 .chat-bubble-time {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-1);
     margin-top: var(--space-1);
     font-size: var(--text-3xs);
     color: var(--text-muted);
-    text-align: right;
     font-variant-numeric: tabular-nums;
 }
 
+/* --- El estado de entrega, en icono ---
+   Antes el globo propio solo decía la hora, y el de «Enviando…» sustituía
+   esa hora por una palabra: había que leer para saber si el mensaje había
+   salido. El doble visto se reconoce sin leer. */
+.chat-msg-mine .chat-bubble-time::after {
+    content: '';
+    flex-shrink: 0;
+    width: 15px;
+    height: 11px;
+    background-color: currentColor;
+    -webkit-mask: var(--chat-icon-check) center / contain no-repeat;
+    mask: var(--chat-icon-check) center / contain no-repeat;
+}
+
+.chat-msg-mine.is-pending .chat-bubble-time::after {
+    width: 12px;
+    height: 12px;
+    -webkit-mask-image: var(--chat-icon-clock);
+    mask-image: var(--chat-icon-clock);
+}
+
+.chat-msg-mine.is-failed .chat-bubble-time::after {
+    width: 12px;
+    height: 12px;
+    -webkit-mask-image: var(--chat-icon-alert);
+    mask-image: var(--chat-icon-alert);
+}
+
 .chat-msg-mine .chat-bubble-time {
-    color: color-mix(in srgb, var(--brand-contrast) 76%, transparent);
+    color: color-mix(in srgb, var(--brand-contrast) 78%, transparent);
 }
 
 .chat-bubble-time.is-failed { color: var(--danger); font-weight: 650; }
@@ -418,8 +612,8 @@
 
 .chat-msg.is-failed .chat-bubble {
     background: var(--danger-soft);
-    border-color: var(--danger);
     color: var(--text-primary);
+    box-shadow: inset 0 0 0 1px var(--danger), var(--shadow-sm);
 }
 
 .chat-bubble-skeleton {
@@ -432,29 +626,43 @@
 .chat-msg .skeleton.avatar { border-radius: 50%; }
 
 /* --- Indicador de «escribiendo…» --- */
+/* Comparte forma y cola con un globo ajeno de verdad: si se dibujara
+   distinto, parecería un aviso del sistema y no alguien tecleando. */
 .chat-typing {
     display: flex;
     align-items: flex-end;
-    gap: var(--space-2);
-    margin-top: var(--space-3);
+    gap: var(--space-3);
+    margin-top: var(--space-4);
     animation: fade-in var(--duration-fast) var(--ease-out);
 }
 
 .chat-typing-bubble {
+    position: relative;
     display: inline-flex;
     align-items: center;
     gap: 5px;
     padding: var(--space-3) var(--space-4);
     background: var(--bg-raised);
-    border: 1px solid var(--border-subtle);
     border-radius: var(--radius-lg);
     border-bottom-left-radius: var(--radius-xs);
+    box-shadow: inset 0 0 0 1px var(--border-subtle), var(--shadow-sm);
+}
+
+.chat-typing-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: -7px;
+    width: 9px;
+    height: 13px;
+    background-color: inherit;
+    clip-path: polygon(100% 0, 100% 100%, 0 100%);
 }
 
 .chat-typing-dot {
     width: 7px;
     height: 7px;
-    background: var(--text-secondary);
+    background: var(--brand);
     border-radius: 50%;
     animation: chat-typing-bounce 1.25s var(--ease-in-out) infinite;
 }
@@ -463,29 +671,53 @@
 .chat-typing-dot:nth-child(3) { animation-delay: 0.34s; }
 
 @keyframes chat-typing-bounce {
-    0%, 62%, 100% { transform: translateY(0); opacity: 0.38; }
+    0%, 62%, 100% { transform: translateY(0); opacity: 0.32; }
     31% { transform: translateY(-5px); opacity: 1; }
+}
+
+/* Sin movimiento, los tres puntos se quedarían fijos y quietos: en su lugar
+   respiran de opacidad, que sigue diciendo «esto está vivo» sin desplazar. */
+@media (prefers-reduced-motion: reduce) {
+    .chat-typing-dot {
+        opacity: 0.55;
+        animation: none;
+    }
 }
 
 /* --------------------------------------------------------------------------
    Pie del hilo · respuestas rápidas y compositor
    -------------------------------------------------------------------------- */
 .chat-thread-foot {
+    position: relative;
+    z-index: var(--z-base);
     flex-shrink: 0;
     padding: var(--space-3) var(--space-4) var(--space-4);
     background: var(--bg-surface);
     border-top: 1px solid var(--border-subtle);
+    /* Hacia arriba, para que el pie se apoye sobre el hilo y no al revés.
+       Los tokens de sombra solo caen hacia abajo, así que este se compone
+       con el color de la superficie hundida. */
+    box-shadow: 0 -10px 26px color-mix(in srgb, var(--bg-sunken) 55%, transparent);
 }
 
 .chat-quick {
     display: flex;
     gap: var(--space-2);
-    padding-bottom: var(--space-5);
+    /* Los 4 px de arriba son para el salto de la pastilla al pasar por
+       encima: esta fila se desplaza, así que recorta por sus cuatro lados y
+       sin ese margen el salto quedaba cortado. */
+    padding: var(--space-1) 0 var(--space-4);
     overflow-x: auto;
+    overflow-y: hidden;
     overscroll-behavior-x: contain;
     scrollbar-width: none;
+    /* La fila se recorta en el borde en lugar de cortarse en seco: se ve que
+       hay más respuestas a la derecha sin necesidad de una flecha. */
+    -webkit-mask-image: linear-gradient(to right, black calc(100% - 24px), transparent);
+    mask-image: linear-gradient(to right, black calc(100% - 24px), transparent);
 }
 
+.chat-quick:empty { display: none; }
 .chat-quick::-webkit-scrollbar { display: none; }
 
 .chat-quick-chip {
@@ -493,34 +725,56 @@
     padding: var(--space-2) var(--space-4);
     font: inherit;
     font-size: var(--text-2xs);
-    font-weight: 600;
+    font-weight: 650;
     white-space: nowrap;
     color: var(--brand);
     background: var(--brand-soft);
-    border: 1px solid transparent;
+    border: 1px solid var(--brand-ring);
     border-radius: var(--radius-full);
     cursor: pointer;
     transition: background-color var(--duration-fast) var(--ease-out),
                 color var(--duration-fast) var(--ease-out),
+                box-shadow var(--duration-fast) var(--ease-out),
                 transform var(--duration-fast) var(--ease-out);
 }
 
 .chat-quick-chip:hover {
     background: var(--brand);
     color: var(--brand-contrast);
-    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+    transform: translateY(var(--depth-lift));
 }
 
+.chat-quick-chip:active { transform: scale(var(--depth-press)); }
 .chat-quick-chip:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 
+/* --- El compositor ---
+   Una sola pieza: el adjuntar, el campo y el enviar viven dentro de la misma
+   cápsula y el anillo de foco lo lleva ella. Antes eran tres cajas con tres
+   bordes, y el campo de texto parecía un formulario suelto en el pie. */
 .chat-composer {
     display: flex;
     align-items: flex-end;
-    gap: var(--space-2);
+    gap: var(--space-1);
+    padding: var(--space-1);
+    background: var(--bg-raised);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm), var(--edge-light);
+    transition: border-color var(--duration-fast) var(--ease-out),
+                box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.chat-composer:hover { border-color: var(--border-strong); }
+
+.chat-composer:focus-within {
+    border-color: var(--brand);
+    box-shadow: var(--focus-ring), var(--shadow-md);
 }
 
 .chat-composer-field {
-    position: relative;
+    display: flex;
+    flex-direction: column;
     flex: 1;
     min-width: 0;
 }
@@ -528,6 +782,8 @@
 .chat-input {
     display: block;
     width: 100%;
+    /* 44 px de zona pulsable, con el texto centrado por el relleno y no por
+       un hueco muerto debajo (un <textarea> escribe desde arriba). */
     min-height: 44px;
     resize: none;
     overflow-y: hidden;
@@ -535,14 +791,29 @@
     line-height: var(--leading-snug);
 }
 
-/* Se coloca sobre el campo, en el hueco que deja la fila de respuestas rápidas. */
+/* Dentro de la cápsula el campo no dibuja nada propio */
+.chat-composer .chat-input,
+.chat-composer .chat-input:hover,
+.chat-composer .chat-input:focus {
+    padding: var(--space-3) var(--space-2);
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+    outline: none;
+}
+
+/* Flotaba sobre el campo, en el hueco de las respuestas rápidas. Ahí
+   chocaba con la bandeja de fotos en cuanto las dos cosas coincidían —hay
+   sitio para una sola—, así que ahora va en el flujo, bajo el campo y
+   dentro de la cápsula: la cápsula crece una línea cuando aparece y no se
+   solapa con nada. */
 .chat-counter {
-    position: absolute;
-    right: var(--space-2);
-    bottom: calc(100% + 3px);
+    align-self: flex-end;
+    padding: 0 var(--space-2) 2px;
     font-size: var(--text-3xs);
     color: var(--text-muted);
     font-variant-numeric: tabular-nums;
+    line-height: var(--leading-snug);
 }
 
 .chat-counter.is-limit { color: var(--warning); font-weight: 700; }
@@ -550,7 +821,12 @@
 .chat-send {
     flex-shrink: 0;
     min-height: 44px;
+    padding-inline: var(--space-4);
+    border-radius: var(--radius-lg);
 }
+
+.chat-send:not(:disabled) { box-shadow: var(--shadow-md); }
+.chat-send:hover:not(:disabled) { transform: none; }
 
 /* --------------------------------------------------------------------------
    Bienvenida e invitación a iniciar sesión
@@ -559,38 +835,156 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
     gap: var(--space-4);
     flex: 1;
+    min-height: 0;
     padding: var(--space-8) var(--space-6);
+    overflow-y: auto;
     text-align: center;
     animation: fade-in var(--duration-slow) var(--ease-out);
 }
 
+/* Centrado con márgenes automáticos en lugar de `justify-content: center`:
+   cuando el contenido no cabe —una ventana baja, el teléfono tumbado—, el
+   centrado recorta por arriba y deja el dibujo fuera de alcance; los
+   márgenes automáticos se rinden a cero y todo sigue siendo alcanzable. */
+.chat-welcome > :first-child { margin-top: auto; }
+.chat-welcome > :last-child { margin-bottom: auto; }
+
+/* El dibujo va sobre un disco de marca: sin él flotaba descolgado en medio
+   del panel y se leía como un icono roto. */
 .chat-welcome-art {
+    display: grid;
+    place-items: center;
+    width: 132px;
+    height: 132px;
     color: var(--brand);
-    opacity: 0.5;
+    background: var(--brand-soft);
+    border-radius: var(--radius-full);
+    box-shadow: inset 0 0 0 1px var(--brand-ring),
+                0 0 0 10px color-mix(in srgb, var(--brand) 6%, transparent);
 }
 
+.chat-welcome-art svg { opacity: 0.85; }
+
 .chat-welcome-title {
-    font-size: var(--text-lg);
-    font-weight: 650;
-    line-height: var(--leading-snug);
+    font-family: var(--font-display);
+    font-size: var(--text-xl);
+    font-weight: 700;
+    letter-spacing: var(--tracking-tight);
+    line-height: var(--leading-tight);
+    text-wrap: balance;
 }
 
 .chat-welcome-text {
     max-width: 42ch;
     font-size: var(--text-sm);
     color: var(--text-secondary);
+    line-height: var(--leading-normal);
+}
+
+/* Los tres pasos de los que nace un hilo. Es contenido fijo: explica por qué
+   la lista de la izquierda puede estar vacía sin que nada vaya mal. */
+.chat-welcome-steps {
+    display: grid;
+    gap: var(--space-2);
+    width: 100%;
+    max-width: 380px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    text-align: left;
+}
+
+.chat-welcome-step {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    line-height: var(--leading-snug);
+}
+
+.chat-welcome-step strong { color: var(--text-primary); font-weight: 650; }
+
+.chat-welcome-step-num {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    background: var(--brand-soft);
+    border-radius: var(--radius-full);
+    color: var(--brand);
+    font-size: var(--text-3xs);
+    font-weight: 750;
+    font-variant-numeric: tabular-nums;
 }
 
 .chat-gate {
     display: grid;
     place-items: center;
     min-height: 58vh;
-    background: var(--bg-surface);
+    background: var(--gradient-glow), var(--bg-surface);
+    background-repeat: no-repeat;
+    background-size: 100% 260px, auto;
     border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg), var(--edge-light);
+}
+
+/* --------------------------------------------------------------------------
+   Estados vacíos: iconos de trazo, no emoji
+
+   `UI.emptyState` recibe un emoji porque lo llaman diez pantallas distintas,
+   y un emoji se dibuja de una forma en Android, de otra en Windows y de otra
+   en iOS — al lado de una interfaz hecha entera con SVG de trazo, canta.
+   Aquí se tapa el glifo (el contenedor ya es `aria-hidden`) y se pinta el
+   icono con `mask`, que además hereda el color de marca en los dos temas.
+   -------------------------------------------------------------------------- */
+.chat-list .empty-state .empty-icon,
+.chat-gate .empty-state .empty-icon {
+    /* Flex y no la rejilla que trae `.empty-icon`: el emoji sigue en el DOM
+       como nodo de texto y en una rejilla ocuparía su propia fila, bajando
+       el icono unos píxeles. Como elemento flexible de ancho cero no mueve
+       nada. */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 76px;
+    height: 76px;
+    /* El emoji que pone el JS desaparece sin quitarlo del DOM */
+    font-size: 0;
+    line-height: 0;
+    color: var(--brand);
+    background: var(--brand-soft);
+    border-color: var(--brand-ring);
+    border-radius: var(--radius-full);
+}
+
+.chat-list .empty-state .empty-icon::before,
+.chat-gate .empty-state .empty-icon::before {
+    content: '';
+    width: 34px;
+    height: 34px;
+    background-color: currentColor;
+    -webkit-mask: var(--chat-icon-bubbles) center / contain no-repeat;
+    mask: var(--chat-icon-bubbles) center / contain no-repeat;
+}
+
+/* La búsqueda sin resultados es la única de las dos que no ofrece un botón */
+.chat-list .empty-state:not(:has(.btn)) .empty-icon::before {
+    -webkit-mask-image: var(--chat-icon-search);
+    mask-image: var(--chat-icon-search);
+}
+
+.chat-gate .empty-state .empty-icon::before {
+    -webkit-mask-image: var(--chat-icon-lock);
+    mask-image: var(--chat-icon-lock);
 }
 
 /* --------------------------------------------------------------------------
@@ -656,8 +1050,13 @@
 
     .chat-sidebar-head { padding: var(--space-3); }
     .chat-sidebar-title { font-size: var(--text-lg); }
+    .chat-sidebar-mark { width: 34px; height: 34px; }
     .chat-thread-body { padding: var(--space-4) var(--space-3) var(--space-2); }
     .chat-thread-foot { padding: var(--space-3) var(--space-3) var(--space-3); }
+
+    .chat-welcome { gap: var(--space-3); padding: var(--space-6) var(--space-4); }
+    .chat-welcome-art { width: 104px; height: 104px; }
+    .chat-welcome-art svg { width: 84px; height: 84px; }
 }
 
 @media (max-width: 620px) {
@@ -671,6 +1070,10 @@
     .chat-bubble { max-width: 86%; padding: var(--space-3); }
     .chat-send-label { display: none; }
     .chat-send { min-width: 44px; padding-inline: var(--space-3); }
+
+    /* En el teléfono el titular de la bandeja se queda solo: la línea de
+       apoyo le robaba dos renglones al hilo de conversaciones. */
+    .chat-sidebar-lead { display: none; }
 }
 
 @media (max-width: 400px) {
@@ -678,7 +1081,13 @@
     .chat-item-thumb { width: 40px; height: 40px; }
     .chat-item { padding: var(--space-2); gap: var(--space-2); }
     .chat-quick-chip { padding-inline: var(--space-3); }
+
+    /* El hueco de `.chat-msg` no se toca aquí a propósito: la cola del globo
+       sobresale 7 px y con los 8 px de `.chat-item` tocaría el avatar. */
+    .chat-welcome-art { width: 88px; height: 88px; }
+    .chat-welcome-art svg { width: 66px; height: 66px; }
 }
+
 
 /* --------------------------------------------------------------------------
    Fotos dentro de una burbuja
@@ -688,15 +1097,228 @@
    -------------------------------------------------------------------------- */
 .chat-bubble-photos {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
-    gap: var(--space-2);
+    grid-template-columns: repeat(auto-fit, minmax(76px, 1fr));
+    gap: 3px;
     margin-top: var(--space-2);
     max-width: 260px;
+    /* Las fotos forman un solo bloque recortado, como en una aplicación de
+       mensajería: separadas por 3 px y con el canto redondeado del conjunto,
+       no cuatro recortes sueltos flotando dentro del globo. */
+    border-radius: var(--radius-md);
+    overflow: hidden;
 }
 
+/* Un globo con una sola foto la enseña grande: a 76 px no se juzga nada. */
+.chat-bubble-photos:has(.chat-bubble-photo:only-child) {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 220px;
+}
+
+/* Ahora es un botón: abre el visor. A 76 px no se juzga un artículo. */
 .chat-bubble-photo {
+    position: relative;
+    display: block;
     width: 100%;
     aspect-ratio: 1 / 1;
+    padding: 0;
+    border: 0;
+    background: var(--bg-sunken);
+    cursor: zoom-in;
+    transition: filter var(--duration-fast) var(--ease-out);
+}
+
+.chat-bubble-photos:has(.chat-bubble-photo:only-child) .chat-bubble-photo {
+    aspect-ratio: 4 / 3;
+}
+
+.chat-bubble-photo img {
+    width: 100%;
+    height: 100%;
     object-fit: cover;
-    border-radius: var(--radius-sm);
+    display: block;
+}
+
+/* Antes crecía un 4 %, y al crecer se salía del bloque recortado dejando un
+   corte a media foto. Ahora se aclara: el mismo «te estoy señalando esta»
+   sin mover un píxel de sitio. */
+.chat-bubble-photo:hover { filter: brightness(1.12); }
+.chat-bubble-photo:active { filter: brightness(0.94); }
+.chat-bubble-photo:focus-visible { outline: 2px solid var(--brand); outline-offset: -3px; }
+
+/* «+2» sobre la última: las que no caben dejan de desaparecer en silencio. */
+.chat-bubble-photo.has-more::after {
+    content: attr(data-more);
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    /* Un velo del azul más profundo de la marca: no cambia con el tema,
+       porque debajo hay una foto y no una superficie del sistema. */
+    background: color-mix(in srgb, var(--brand-950) 66%, transparent);
+    color: var(--on-navy);
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+    font-weight: 700;
+    backdrop-filter: blur(var(--blur-sm));
+    -webkit-backdrop-filter: blur(var(--blur-sm));
+}
+
+/* ======================================================================
+   Fotos en el chat
+
+   El compositor pasa de una fila de dos piezas a una de tres, con la
+   bandeja de fotos por enviar encima. La bandeja solo ocupa sitio cuando
+   hay algo dentro: el atributo `hidden` lo decide `chat.js`.
+   ====================================================================== */
+
+/* La bandeja se lee como un cajón abierto sobre el compositor: hundida,
+   con su propio rótulo, para que se entienda que eso todavía no se ha
+   enviado. Antes eran dos miniaturas sin marco ni borde —los que pedía
+   usaban tokens que no existen en `tokens.css`, así que el navegador
+   descartaba la declaración entera— flotando sobre el fondo del pie. */
+.chat-tray {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+    padding: var(--space-3);
+    background: var(--bg-sunken);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    animation: fade-in-up var(--duration-fast) var(--ease-out);
+}
+
+.chat-tray[hidden] { display: none; }
+
+.chat-tray::before {
+    content: 'Se enviarán con tu mensaje';
+    flex: 1 0 100%;
+    font-size: var(--text-3xs);
+    font-weight: 700;
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.chat-tray-item {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--bg-raised);
+    box-shadow: 0 0 0 1px var(--border-default), var(--shadow-sm);
+    animation: chat-tray-in var(--duration-base) var(--ease-spring) both;
+}
+
+.chat-tray-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+@keyframes chat-tray-in {
+    from { opacity: 0; transform: scale(0.88); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+/* Encima de la esquina, con su propia zona de toque cómoda.
+   El velo va del azul profundo de la marca —que no cambia con el tema—
+   porque debajo hay una foto, no una superficie del sistema; encima, el
+   blanco de `--on-navy` llega a 6,5 de contraste sobre la peor foto
+   posible, que es una foto enteramente blanca. */
+.chat-tray-drop {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    color: var(--on-navy);
+    background: color-mix(in srgb, var(--brand-950) 72%, transparent);
+    backdrop-filter: blur(var(--blur-sm));
+    -webkit-backdrop-filter: blur(var(--blur-sm));
+    transition: background-color var(--duration-fast) var(--ease-out),
+                color var(--duration-fast) var(--ease-out),
+                transform var(--duration-fast) var(--ease-out);
+}
+
+/* El botón mide 22 px porque encima de una miniatura de 60 no cabe más;
+   el dedo, en cambio, necesita 44. Se los da un pseudoelemento invisible
+   que no ocupa sitio ni tapa la foto. */
+.chat-tray-drop::before {
+    content: '';
+    position: absolute;
+    inset: -11px;
+    border-radius: inherit;
+}
+
+.chat-tray-drop:hover {
+    background-color: var(--danger);
+    color: var(--brand-contrast);
+    transform: scale(1.08);
+}
+
+.chat-tray-drop:active { transform: scale(var(--depth-press)); }
+.chat-tray-drop:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+/* El botón de adjuntar vive dentro del compositor, antes del campo.
+   Sin marco propio: la cápsula ya es el marco, y dos bordes concéntricos
+   lo hacían parecer un control fuera de sitio. */
+.chat-attach {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    color: var(--text-secondary);
+    background: transparent;
+    transition: color var(--duration-fast) var(--ease-out),
+                background-color var(--duration-fast) var(--ease-out),
+                transform var(--duration-fast) var(--ease-out);
+}
+
+.chat-attach:hover:not(:disabled) {
+    color: var(--brand);
+    background: var(--brand-soft);
+}
+
+.chat-attach:active:not(:disabled) { transform: scale(var(--depth-press)); }
+.chat-attach:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+
+.chat-attach:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* Mientras se escala y recomprime una foto grande */
+.chat-attach.is-working {
+    color: var(--brand);
+    background: var(--brand-soft);
+}
+
+.chat-attach.is-working svg { animation: chat-attach-pulse 900ms ease-in-out infinite; }
+
+@keyframes chat-attach-pulse {
+    50% { opacity: 0.35; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .chat-item::before { transition: none; }
+    .chat-tray,
+    .chat-tray-item { animation: none; }
+    .chat-attach.is-working svg { animation: none; }
+    .chat-quick-chip:hover,
+    .chat-tray-drop:hover { transform: none; }
 }

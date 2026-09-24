@@ -498,6 +498,123 @@ textFiles.forEach((rel) => {
     });
 });
 
+/* === 6b. Las pestañas del panel existen en su HTML ===
+
+   El equivalente de ADR-021 para el DOM. `admin.js` declara sus pestañas en un
+   array y luego busca `#tab-X` y `#panel-X` por ese nombre; cuando el
+   vocabulario pasó de «publicaciones» a «pedidos» el JS se renombró y el HTML
+   no, y `activateTab` murió en la primera vuelta del bucle. El panel entero
+   quedó inservible —cuatro secciones inalcanzables y la cola cargando para
+   siempre— con las ocho suites en verde. Esto lo convierte en un fallo de
+   build. */
+if (exists('admin.html') && exists('assets/js/pages/admin.js')) {
+    const adminHtml = read('admin.html');
+    const adminJs = read('assets/js/pages/admin.js');
+    const declared = adminJs.match(/const TABS\s*=\s*\[([^\]]+)\]/);
+
+    if (!declared) {
+        problems.push('admin.js: no encuentro la lista TABS');
+    } else {
+        const tabs = declared[1].match(/'([^']+)'/g).map((t) => t.replace(/'/g, ''));
+        check('admin: hay pestañas declaradas', tabs.length > 0);
+
+        tabs.forEach((tab) => {
+            check(`admin: existe #tab-${tab}`, adminHtml.includes(`id="tab-${tab}"`));
+            check(`admin: existe #panel-${tab}`, adminHtml.includes(`id="panel-${tab}"`));
+            check(`admin: la pestaña ${tab} apunta a su panel`,
+                adminHtml.includes(`aria-controls="panel-${tab}"`));
+        });
+
+        // Y al revés: ningún panel huérfano que el JS no sepa abrir
+        const inHtml = [...adminHtml.matchAll(/id="panel-([\w-]+)"/g)].map((m) => m[1]);
+        inHtml.forEach((panel) => {
+            check(`admin: el panel ${panel} está declarado en TABS`, tabs.includes(panel));
+        });
+
+        // Los atajos de las tarjetas de métrica llevan a una pestaña real
+        [...adminHtml.matchAll(/data-goto-tab="([\w-]+)"/g)].forEach((m) => {
+            check(`admin: el atajo a ${m[1]} lleva a una pestaña real`, tabs.includes(m[1]));
+        });
+
+        // Y los contadores de pestaña cuelgan de una que existe
+        [...adminHtml.matchAll(/data-tab-count="([\w-]+)"/g)].forEach((m) => {
+            check(`admin: el contador de ${m[1]} cuelga de una pestaña real`, tabs.includes(m[1]));
+        });
+    }
+}
+
+/* === 6c. El historial del panel sabe nombrar lo que el servidor registra ===
+   `LOG_META` traducía `approve_post`, que el servidor dejó de escribir hace una
+   migración: toda decisión sobre un pedido salía como «Acción de moderación». */
+if (exists('assets/js/pages/admin.js') && exists('assets/js/core/mock-api.js')) {
+    const adminJs = read('assets/js/pages/admin.js');
+    const server = read('assets/js/core/mock-api.js');
+    const logged = new Set(
+        [...server.matchAll(/logModeration\(\s*\w+\s*,\s*'([\w]+)'/g)].map((m) => m[1])
+    );
+    [...server.matchAll(/action:\s*verdict\.decision[^;]*?'(\w+_request)'/gs)]
+        .forEach((m) => logged.add(m[1]));
+
+    check('el servidor registra acciones de moderación', logged.size > 0);
+    logged.forEach((action) => {
+        check(`el historial sabe nombrar «${action}»`,
+            new RegExp(`\\b${action}\\s*:`).test(adminJs));
+    });
+}
+
+/* === 6d. El sistema de profundidad ===
+
+   La inclinación de las tarjetas es de escritorio a propósito: en un táctil no
+   hay puntero al que seguir y el giro continuo gasta batería. Estas
+   comprobaciones existen para que nadie lo saque de su consulta de medios sin
+   darse cuenta, y para que el módulo no se quede colgado de una página que ya
+   no lo carga. */
+if (exists('assets/js/ui/depth.js')) {
+    const depth = read('assets/js/ui/depth.js');
+
+    check('la profundidad solo se activa con ratón',
+        /\(hover:\s*hover\)\s*and\s*\(pointer:\s*fine\)/.test(depth));
+    check('y respeta a quien pidió menos movimiento',
+        /prefers-reduced-motion/.test(depth));
+    check('la inclinación se pinta en un solo fotograma',
+        /requestAnimationFrame/.test(depth));
+    check('y se suelta al desplazarse',
+        /addEventListener\('scroll'/.test(depth));
+
+    /* Donde se pintan tarjetas, el módulo tiene que estar cargado. No basta
+       con mirar quién carga `components.js` —lo hacen las once páginas—: hay
+       que mirar quién dibuja realmente una `.post-card`. */
+    const CARD_PAGES = ['index.html', 'guardados.html', 'perfil.html',
+        'publicacion.html', 'publicar.html'];
+
+    CARD_PAGES.filter(exists).forEach((page) => {
+        check(`${page}: carga la profundidad`, read(page).includes('assets/js/ui/depth.js'));
+    });
+
+    // Y donde no hay tarjetas, no se carga: son bytes que nadie usa
+    presentPages
+        .filter((p) => !CARD_PAGES.includes(p))
+        .forEach((page) => {
+            check(`${page}: no carga la profundidad`, !read(page).includes('assets/js/ui/depth.js'));
+        });
+
+    // Los tokens que usan el CSS y el módulo
+    const tokens = read('assets/css/tokens.css');
+    ['--depth-perspective', '--depth-lift', '--depth-press', '--edge-light']
+        .forEach((token) => {
+            check(`el token ${token} está definido`, tokens.includes(`${token}:`));
+        });
+
+    /* El filo se define dos veces, una por tema: sobre fondo claro el blanco
+       del tema oscuro se ve como un halo sucio. */
+    const edgeDefs = (tokens.match(/--edge-light:/g) || []).length;
+    check('el filo de luz está definido en ambos temas', edgeDefs >= 2, `${edgeDefs} definiciones`);
+
+    const layout = read('assets/css/layout.css');
+    check('la inclinación vive dentro de su consulta de medios',
+        layout.indexOf('.post-card.is-tilting') > layout.indexOf('@media (hover: hover)'));
+}
+
 /* === 7. Configuración de publicación === */
 check('existe .nojekyll', exists('.nojekyll'));
 check('existe README.md', exists('README.md'));
@@ -510,6 +627,76 @@ if (exists('.github/workflows/pages.yml')) {
     check('workflow: id-token', yml.includes('id-token: write'));
 } else {
     problems.push('falta .github/workflows/pages.yml');
+}
+
+/* ======================================================================
+   La entrada: el guion y la hoja tienen que ir en hora
+
+   La coreografía vive en `intro.css` y `intro.js` solo la acompaña: añade la
+   memoria de sesión, el poder saltarla y la precisión del contador. Si las
+   cifras se separan, no falla nada visible de inmediato y por eso es
+   peligroso: cuando la entrada se acortó de 5200 a 2200 ms y el guion se
+   quedó en 5600, el telón seguía EN EL DOCUMENTO tres segundos y medio
+   después de haberse desvanecido —invisible, pero por encima de todo— y la
+   portada no llegaba a entrar nunca.
+   ====================================================================== */
+
+{
+    const js = read('assets/js/ui/intro.js');
+    const css = read('assets/css/intro.css');
+
+    const cifra = (re, src) => {
+        const m = src.match(re);
+        return m ? Number(m[1]) : null;
+    };
+
+    const exitJs = cifra(/const EXIT_MS = (\d+)/, js);
+    const totalJs = cifra(/const TOTAL_MS = (\d+)/, js);
+    const countJs = cifra(/const COUNT_MS = (\d+)/, js);
+
+    // `animation: intro-exit <duración> <curva> <retardo> forwards`
+    const salida = css.match(/animation: intro-exit (\d+)ms [^;]*?(\d+)ms forwards/);
+    const duraCss = salida ? Number(salida[1]) : null;
+    const empiezaCss = salida ? Number(salida[2]) : null;
+
+    check('intro: el guion declara sus tres tiempos',
+        exitJs !== null && totalJs !== null && countJs !== null,
+        `EXIT ${exitJs}, TOTAL ${totalJs}, COUNT ${countJs}`);
+
+    check('intro: la hoja declara cuándo sube el telón',
+        empiezaCss !== null && duraCss !== null,
+        String(salida));
+
+    if (exitJs !== null && empiezaCss !== null) {
+        check('intro: la señal se da cuando el telón empieza a subir',
+            exitJs === empiezaCss, `guion ${exitJs} · hoja ${empiezaCss}`);
+
+        check('intro: el telón se retira cuando la hoja ya terminó',
+            totalJs >= empiezaCss + duraCss,
+            `retira a ${totalJs}, la hoja acaba a ${empiezaCss + duraCss}`);
+
+        check('intro: el contador llega a 100 antes de que el telón se vaya',
+            countJs < empiezaCss, `contador ${countJs} · telón ${empiezaCss}`);
+
+        /* Nadie aguanta más de dos segundos y pico mirando un logotipo antes
+           de poder usar la página. */
+        check('intro: no dura más de 2,6 segundos',
+            totalJs <= 2600, `${totalJs} ms`);
+    }
+
+    check('intro: avisa a la página cuando se retira',
+        js.includes('intro-done'),
+        'la portada retrasa su entrada hasta esa marca');
+
+    const feed = read('assets/css/pages/feed.css');
+    check('la portada espera esa marca antes de entrar',
+        feed.includes(':root:not(.intro-done)'));
+
+    /* Retrasar y no pausar: un retardo se cumple solo, y si el guion no llega
+       a cargar la portada entra igual, solo más tarde. Pausar exige una señal
+       que alguien tiene que dar, y si falla se queda invisible para siempre. */
+    check('y lo hace retrasando, no pausando',
+        !/:root:not\(\.intro-done\)[^{]*\{[^}]*animation-play-state:\s*paused/.test(feed));
 }
 
 /* === Resultado === */

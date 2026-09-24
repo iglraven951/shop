@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Publicación · DiscoveryShop</title>
-    <meta name="description" content="Mira el detalle del artículo, conversa con quien lo publica y descubre en un mapa real el distrito de Arequipa donde se encuentra.">
+    <meta name="description" content="Mira el detalle del pedido, conversa con quien lo publica y descubre en un mapa real el distrito de Arequipa donde se encuentra.">
     <meta name="theme-color" content="#070c14">
     <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
     <link rel="apple-touch-icon" href="assets/img/logo.png">
@@ -30,6 +30,7 @@
         });
     </script>
 
+    <link rel="stylesheet" href="assets/css/fonts.css">
     <link rel="stylesheet" href="assets/css/tokens.css">
     <link rel="stylesheet" href="assets/css/base.css">
     <link rel="stylesheet" href="assets/css/components.css">
@@ -45,6 +46,11 @@
 
     <main id="main">
         <div class="post-detail-page">
+
+            <!-- Luz de fondo. Decorativa y sin coste: dos degradados que dan
+                 profundidad a la parte alta de la pantalla, que es donde el ojo
+                 entra. No ocupa espacio ni intercepta ningún toque. -->
+            <div class="post-detail-aurora" aria-hidden="true"></div>
 
             <!-- Carga: silueta con la misma forma que la ficha real -->
             <div class="post-detail-boot" id="post-boot" aria-live="polite" aria-busy="true">
@@ -68,7 +74,28 @@
 
                 <div class="post-detail-main">
 
-                    <nav class="breadcrumb" id="breadcrumb" aria-label="Ruta de navegación"></nav>
+                    <!-- Entrada de la pantalla: la ruta y, debajo, una línea que
+                         recuerda de qué va esto. Quien llega desde un enlace
+                         compartido no tiene por qué saber que aquí el que
+                         publica es el que compra. -->
+                    <div class="post-detail-top">
+                        <nav class="breadcrumb" id="breadcrumb" aria-label="Ruta de navegación"></nav>
+
+                        <p class="post-detail-kicker">
+                            <span class="post-detail-kicker-mark" aria-hidden="true">
+                                <svg width="14" height="14" viewBox="0 0 16 16" fill="none"
+                                     stroke="currentColor" stroke-width="1.6"
+                                     stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M2.2 6.4h11.6M4.6 3.4l-2.4 3 2.4 3"/>
+                                    <path d="M13.8 9.6H2.2m9.2 3 2.4-3-2.4-3"/>
+                                </svg>
+                            </span>
+                            <span class="post-detail-kicker-text">
+                                Comercio inverso · <strong>esto es lo que alguien busca</strong>,
+                                y los vendedores de Arequipa responden con su oferta.
+                            </span>
+                        </p>
+                    </div>
 
                     <!-- La publicación, con el texto completo y sus acciones -->
                     <div id="post-article"></div>
@@ -78,7 +105,26 @@
                          aceptar. Para un vendedor: el formulario «Lo tengo».
                          Lo pinta post.js según quién esté mirando. -->
                     <section class="post-offers" id="responder" aria-labelledby="offers-title">
-                        <h2 class="post-detail-section-title" id="offers-title">Respuestas</h2>
+                        <div class="post-offers-head">
+                            <div class="post-offers-head-text">
+                                <h2 class="post-detail-section-title" id="offers-title">Respuestas</h2>
+                                <p class="post-offers-lead">
+                                    Aquí se decide el trato: cada vendedor contesta con su
+                                    precio, sus fotos y su zona. Se ordenan de más barata a
+                                    más cara para poder compararlas de un vistazo.
+                                </p>
+                            </div>
+
+                            <span class="post-offers-mark" aria-hidden="true">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                                     stroke="currentColor" stroke-width="1.6"
+                                     stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 20.5 4.8 16V8L12 3.5 19.2 8v8Z"/>
+                                    <path d="M12 12.2 4.8 8m7.2 4.2L19.2 8M12 12.2v8.3"/>
+                                </svg>
+                            </span>
+                        </div>
+
                         <div id="offers-body" aria-live="polite"></div>
                     </section>
 
@@ -105,19 +151,21 @@
 
                 <aside class="post-detail-side" aria-label="Información de quien publica y ubicación">
 
-                    <!-- Quién publica -->
-                    <section class="seller-card" id="seller-card" aria-labelledby="seller-card-title">
+                    <!-- Quién publica. `data-tilt` la engancha a `depth.js`: se
+                         inclina siguiendo al puntero, y solo con ratón. -->
+                    <section class="seller-card" id="seller-card" data-tilt
+                             aria-labelledby="seller-card-title">
                         <h2 class="sr-only" id="seller-card-title">Quién publica</h2>
                     </section>
 
                     <!-- Mapa real del distrito -->
                     <section class="post-map-card" aria-labelledby="map-title">
                         <div class="post-map-head">
-                            <h2 class="post-detail-section-title" id="map-title">Dónde está el artículo</h2>
+                            <h2 class="post-detail-section-title" id="map-title">Dónde se necesita</h2>
                             <p class="post-map-district" id="post-map-district">Arequipa, Perú</p>
                         </div>
 
-                        <div class="post-map" id="post-map" role="region" aria-label="Mapa del distrito donde está el artículo"></div>
+                        <div class="post-map" id="post-map" role="region" aria-label="Mapa del distrito donde se necesita"></div>
 
                         <!-- Leyenda junto al símbolo, no una nota suelta al pie:
                              quien mira el mapa necesita saber qué significa ese
@@ -126,7 +174,7 @@
                             <span class="post-map-legend-dot" aria-hidden="true"></span>
                             <span class="post-map-legend-text">
                                 El punto marca el <strong>centro del distrito</strong>,
-                                no la dirección del artículo.
+                                no la dirección de quien lo pide.
                             </span>
                         </p>
 
@@ -159,6 +207,7 @@
     <script src="assets/js/core/native.js"></script>
     <script src="assets/js/core/seed.js"></script>
     <script src="assets/js/core/moderator.js"></script>
+    <script src="assets/js/core/seller-bot.js"></script>
     <script src="assets/js/core/mock-api.js"></script>
     <script src="assets/js/core/store.js"></script>
     <script src="assets/js/core/api.js"></script>
@@ -166,6 +215,7 @@
     <script src="assets/js/ui/toast.js"></script>
     <script src="assets/js/ui/modal.js"></script>
     <script src="assets/js/ui/components.js"></script>
+    <script src="assets/js/ui/depth.js"></script>
     <script src="assets/js/ui/shell.js"></script>
     <script src="assets/js/ui/assistant-widget.js"></script>
     <!-- Página -->

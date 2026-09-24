@@ -9,6 +9,7 @@
     <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
     <link rel="apple-touch-icon" href="assets/img/logo.png">
     <link rel="manifest" href="site.webmanifest">
+    <link rel="stylesheet" href="assets/css/fonts.css">
     <link rel="stylesheet" href="assets/css/tokens.css">
     <link rel="stylesheet" href="assets/css/base.css">
     <link rel="stylesheet" href="assets/css/components.css">
@@ -47,7 +48,16 @@
             <!-- Con sesión pero sin permisos: ni datos ni botones de moderación -->
             <section class="admin-denied" id="admin-denied" hidden aria-labelledby="admin-denied-title">
                 <div class="admin-denied-card">
-                    <div class="admin-denied-icon" aria-hidden="true">🛡️</div>
+                    <span class="admin-denied-glow" aria-hidden="true"></span>
+
+                    <span class="admin-denied-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                             stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2.8 4.4 6v5.6c0 4.5 3.1 8.2 7.6 9.6 4.5-1.4 7.6-5.1 7.6-9.6V6Z"/>
+                            <path d="M9.4 12.1 11.3 14l3.5-3.6"/>
+                        </svg>
+                    </span>
+
                     <h1 class="admin-denied-title" id="admin-denied-title">
                         Esta sección es solo para el equipo de moderación
                     </h1>
@@ -57,7 +67,7 @@
                         tu perfil y lo revisamos.
                     </p>
                     <div class="admin-denied-actions">
-                        <a class="btn btn-primary btn-lg" href="index.html">Volver al feed</a>
+                        <a class="btn btn-primary btn-lg" href="index.html">Volver al tablón</a>
                         <a class="btn btn-secondary btn-lg" href="perfil.html">Ir a mi perfil</a>
                     </div>
                 </div>
@@ -66,20 +76,54 @@
             <!-- Panel de moderación -->
             <div id="admin-content" hidden>
 
+                <!-- Cabecera: la misma gramática de portada que el resto del sitio
+                     (resplandor de marca, retícula fina, antetítulo en píldora),
+                     para que el panel no parezca otra aplicación. -->
                 <header class="admin-header">
+                    <span class="admin-header-glow" aria-hidden="true"></span>
+                    <span class="admin-header-grid" aria-hidden="true"></span>
+
                     <div class="admin-header-text">
-                        <p class="admin-eyebrow">Equipo de moderación</p>
-                        <h1 class="admin-title">Panel de administración</h1>
+                        <p class="admin-eyebrow">
+                            <span class="admin-eyebrow-dot" aria-hidden="true"></span>
+                            Equipo de moderación
+                        </p>
+
+                        <h1 class="admin-title">
+                            <span class="admin-title-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+                                     stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 2.8 4.4 6v5.6c0 4.5 3.1 8.2 7.6 9.6 4.5-1.4 7.6-5.1 7.6-9.6V6Z"/>
+                                    <path d="M9.4 12.1 11.3 14l3.5-3.6"/>
+                                </svg>
+                            </span>
+                            <span>Panel de administración</span>
+                        </h1>
+
                         <p class="admin-subtitle">
                             La IA revisa cada pedido en cuanto se envía: aquí ves lo que
                             decidió, resuelves lo que dejó en duda y atiendes las solicitudes
                             de cuenta de vendedor.
                         </p>
                     </div>
-                    <button class="btn btn-secondary admin-refresh" type="button" id="admin-refresh">
-                        <span aria-hidden="true">↻</span>
-                        <span>Actualizar</span>
-                    </button>
+
+                    <div class="admin-header-side">
+                        <p class="admin-live" aria-hidden="true">
+                            <span class="admin-live-dot"></span>
+                            Cola en vivo
+                        </p>
+
+                        <button class="btn btn-secondary admin-refresh" type="button" id="admin-refresh">
+                            <svg class="admin-refresh-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"
+                                 stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                                 stroke-linejoin="round" aria-hidden="true">
+                                <path d="M13.6 6.8A5.8 5.8 0 0 0 3.5 4.4"/>
+                                <path d="M2.4 9.2a5.8 5.8 0 0 0 10.1 2.4"/>
+                                <path d="M2.6 2.4v2.6h2.6"/><path d="M13.4 13.6V11h-2.6"/>
+                            </svg>
+                            <span>Actualizar</span>
+                        </button>
+                    </div>
                 </header>
 
                 <!-- Métricas
@@ -87,12 +131,19 @@
                      abajo las cifras de contexto que solo se consultan. -->
                 <section class="admin-metrics" aria-label="Resumen de moderación" id="admin-metrics">
 
-                    <!-- Nivel 1: las dos colas de trabajo. Son botones: llevan a su pestaña. -->
+                    <!-- Nivel 1: las tres colas de trabajo. Son botones: llevan a su pestaña. -->
                     <div class="admin-metrics-primary">
                         <button class="admin-metric admin-metric-lead admin-metric-action is-warning" type="button"
-                                data-goto-tab="publicaciones" data-metric-card="posts-pending">
+                                data-goto-tab="pedidos" data-metric-card="posts-pending">
                             <span class="admin-metric-top">
-                                <span class="admin-metric-icon" aria-hidden="true">⏳</span>
+                                <span class="admin-metric-icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+                                         stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M7 3.4h10"/><path d="M7 20.6h10"/>
+                                        <path d="M8 3.4v3.1c0 2 4 3.3 4 5.5 0 2.2-4 3.5-4 5.5v3.1"/>
+                                        <path d="M16 3.4v3.1c0 2-4 3.3-4 5.5 0 2.2 4 3.5 4 5.5v3.1"/>
+                                    </svg>
+                                </span>
                                 <span class="admin-metric-pulse" aria-hidden="true"></span>
                             </span>
                             <span class="admin-metric-value" data-metric="posts-pending">—</span>
@@ -110,7 +161,14 @@
                         <button class="admin-metric admin-metric-lead admin-metric-action is-brand" type="button"
                                 data-goto-tab="vendedores" data-metric-card="sellers-pending">
                             <span class="admin-metric-top">
-                                <span class="admin-metric-icon" aria-hidden="true">🧑‍💼</span>
+                                <span class="admin-metric-icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+                                         stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="10" cy="8" r="3.6"/>
+                                        <path d="M3.6 20.2a6.7 6.7 0 0 1 11.1-4.4"/>
+                                        <path d="m15.2 18.4 1.9 1.9 3.6-3.7"/>
+                                    </svg>
+                                </span>
                                 <span class="admin-metric-pulse" aria-hidden="true"></span>
                             </span>
                             <span class="admin-metric-value" data-metric="sellers-pending">—</span>
@@ -131,7 +189,14 @@
                         <button class="admin-metric admin-metric-lead admin-metric-action is-accent" type="button"
                                 data-goto-tab="ia" data-metric-card="posts-doubt">
                             <span class="admin-metric-top">
-                                <span class="admin-metric-icon" aria-hidden="true">🤔</span>
+                                <span class="admin-metric-icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+                                         stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M20.4 13.2a2.6 2.6 0 0 1-2.6 2.6H9.2L4.6 19.4V6.4a2.6 2.6 0 0 1 2.6-2.6h10.6a2.6 2.6 0 0 1 2.6 2.6Z"/>
+                                        <path d="M10.4 8.3a2.1 2.1 0 0 1 4 .8c0 1.4-2 1.7-2 2.9"/>
+                                        <path d="M12.4 13.6h.01"/>
+                                    </svg>
+                                </span>
                                 <span class="admin-metric-pulse" aria-hidden="true"></span>
                             </span>
                             <span class="admin-metric-value" data-metric="posts-doubt">—</span>
@@ -150,77 +215,131 @@
                     <!-- Nivel 2: contexto. Ni piden acción ni deben competir por la mirada. -->
                     <div class="admin-metrics-secondary">
                         <div class="admin-metric admin-metric-compact">
-                            <span class="admin-metric-icon" aria-hidden="true">🔎</span>
+                            <span class="admin-metric-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                                     stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="10.6" cy="10.6" r="6.4"/><path d="m15.4 15.4 4.4 4.4"/>
+                                </svg>
+                            </span>
                             <span class="admin-metric-value" data-metric="posts-open">—</span>
                             <span class="admin-metric-label">Esperando respuesta</span>
                         </div>
 
                         <!-- La única cifra que dice si esto funciona: de todo lo que
                              se pidió, cuánto acabó encontrándose. -->
-                        <div class="admin-metric admin-metric-compact">
-                            <span class="admin-metric-icon" aria-hidden="true">🤝</span>
+                        <div class="admin-metric admin-metric-compact has-ring">
+                            <!-- El mismo porcentaje que ya dice la nota, pero
+                                 como forma: una proporción se ve antes de
+                                 leerse. Lo dibuja un conic-gradient. -->
+                            <span class="admin-ring" id="admin-rate-ring" role="img">
+                                <span class="admin-ring-value">—</span>
+                            </span>
                             <span class="admin-metric-value" data-metric="posts-fulfilled">—</span>
                             <span class="admin-metric-label">Pedidos resueltos</span>
                             <span class="admin-metric-hint" data-metric="fulfilled-detail"></span>
                         </div>
 
                         <div class="admin-metric admin-metric-compact">
-                            <span class="admin-metric-icon" aria-hidden="true">🚫</span>
+                            <span class="admin-metric-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                                     stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="8.2"/><path d="m6.2 6.2 11.6 11.6"/>
+                                </svg>
+                            </span>
                             <span class="admin-metric-value" data-metric="posts-rejected">—</span>
                             <span class="admin-metric-label">Pedidos rechazados</span>
                         </div>
 
                         <div class="admin-metric admin-metric-compact">
-                            <span class="admin-metric-icon" aria-hidden="true">👥</span>
+                            <span class="admin-metric-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                                     stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="9.4" cy="8.6" r="3.4"/>
+                                    <path d="M3.4 19.4a6.2 6.2 0 0 1 12 0"/>
+                                    <path d="M16.4 5.6a3.2 3.2 0 0 1 0 6"/>
+                                    <path d="M18.2 14.2a5.6 5.6 0 0 1 2.6 4.4"/>
+                                </svg>
+                            </span>
                             <span class="admin-metric-value" data-metric="users-total">—</span>
                             <span class="admin-metric-label">Personas registradas</span>
                         </div>
 
-                        <div class="admin-metric admin-metric-compact">
-                            <span class="admin-metric-icon" aria-hidden="true">📈</span>
+                        <div class="admin-metric admin-metric-compact has-chart">
+                            <span class="admin-metric-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                                     stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3.6 15.4 9 10l3.4 3.4 5.4-5.8"/>
+                                    <path d="M14.4 7.6h4v4"/>
+                                    <path d="M3.6 20.4h16.8"/>
+                                </svg>
+                            </span>
                             <span class="admin-metric-value" data-metric="activity-total">—</span>
-                            <span class="admin-metric-label">Actividad del foro</span>
+                            <span class="admin-metric-label">Actividad del tablón</span>
                             <span class="admin-metric-hint" data-metric="activity-detail"></span>
+                            <!-- Las decisiones de los últimos catorce días.
+                                 Sale del historial que ya está cargado. -->
+                            <span class="admin-chart" id="admin-activity-chart"></span>
                         </div>
                     </div>
                 </section>
 
                 <!-- Pestañas -->
                 <div class="admin-tabs" id="admin-tabs" role="tablist" aria-label="Secciones de moderación">
-                    <button class="admin-tab is-active" type="button" role="tab" data-tab="publicaciones"
-                            id="tab-publicaciones" aria-controls="panel-publicaciones" aria-selected="true">
-                        <span aria-hidden="true">📝</span>
+                    <button class="admin-tab is-active" type="button" role="tab" data-tab="pedidos"
+                            id="tab-pedidos" aria-controls="panel-pedidos" aria-selected="true">
+                        <svg class="admin-tab-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor"
+                             stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M7 3.4h6a1.6 1.6 0 0 1 1.6 1.6H5.4A1.6 1.6 0 0 1 7 3.4Z"/>
+                            <path d="M14.6 5h1a1.6 1.6 0 0 1 1.6 1.6v9a1.6 1.6 0 0 1-1.6 1.6h-11a1.6 1.6 0 0 1-1.6-1.6v-9A1.6 1.6 0 0 1 4.4 5h1"/>
+                            <path d="M7.2 10.4h5.6"/><path d="M7.2 13.4h3.6"/>
+                        </svg>
                         <span>Pedidos</span>
-                        <span class="admin-tab-count" data-tab-count="publicaciones" hidden></span>
+                        <span class="admin-tab-count" data-tab-count="pedidos" hidden></span>
                     </button>
                     <button class="admin-tab" type="button" role="tab" data-tab="vendedores"
                             id="tab-vendedores" aria-controls="panel-vendedores" aria-selected="false" tabindex="-1">
-                        <span aria-hidden="true">🧑‍💼</span>
+                        <svg class="admin-tab-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor"
+                             stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="10" cy="7" r="3"/>
+                            <path d="M4 16.6a6 6 0 0 1 12 0"/>
+                        </svg>
                         <span>Vendedores</span>
                         <span class="admin-tab-count" data-tab-count="vendedores" hidden></span>
                     </button>
                     <button class="admin-tab" type="button" role="tab" data-tab="denuncias"
                             id="tab-denuncias" aria-controls="panel-denuncias" aria-selected="false" tabindex="-1">
-                        <span aria-hidden="true">🚩</span>
+                        <svg class="admin-tab-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor"
+                             stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M5 17.2V3.4"/>
+                            <path d="M5 4.2h8.6l-1.5 3 1.5 3H5Z"/>
+                        </svg>
                         <span>Denuncias</span>
                         <span class="admin-tab-count" data-tab-count="denuncias" hidden></span>
                     </button>
                     <button class="admin-tab" type="button" role="tab" data-tab="ia"
                             id="tab-ia" aria-controls="panel-ia" aria-selected="false" tabindex="-1">
-                        <span aria-hidden="true">🤖</span>
+                        <svg class="admin-tab-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor"
+                             stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <rect x="4" y="6.4" width="12" height="9.2" rx="2.6"/>
+                            <path d="M10 3.2v3.2"/><path d="M7.6 10.6h.01"/><path d="M12.4 10.6h.01"/>
+                            <path d="M8.4 13.2h3.2"/>
+                        </svg>
                         <span>Asistente IA</span>
                         <span class="admin-tab-count" data-tab-count="ia" hidden></span>
                     </button>
                     <button class="admin-tab" type="button" role="tab" data-tab="historial"
                             id="tab-historial" aria-controls="panel-historial" aria-selected="false" tabindex="-1">
-                        <span aria-hidden="true">🕑</span>
+                        <svg class="admin-tab-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor"
+                             stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="10" cy="10" r="7"/><path d="M10 5.8V10l2.8 1.8"/>
+                        </svg>
                         <span>Historial</span>
                     </button>
                 </div>
 
-                <!-- Pestaña: Publicaciones -->
-                <section class="admin-panel" id="panel-publicaciones" role="tabpanel"
-                         aria-labelledby="tab-publicaciones" tabindex="0">
+                <!-- Pestaña: Pedidos -->
+                <section class="admin-panel" id="panel-pedidos" role="tabpanel"
+                         aria-labelledby="tab-pedidos" tabindex="0">
 
                     <div class="admin-toolbar">
                         <div class="segmented admin-filters" role="group" aria-label="Filtrar pedidos por estado">
@@ -249,9 +368,18 @@
                     </div>
 
                     <p class="admin-hint">
-                        <span aria-hidden="true">⌨️</span>
-                        Atajo: con una fila enfocada pulsa <kbd>A</kbd> para aprobarla o
-                        <kbd>R</kbd> para abrir el diálogo de rechazo.
+                        <span class="admin-hint-icon" aria-hidden="true">
+                            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"
+                                 stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="2.4" y="5.4" width="15.2" height="9.2" rx="2"/>
+                                <path d="M5.6 8.4h.01"/><path d="M8.4 8.4h.01"/><path d="M11.2 8.4h.01"/>
+                                <path d="M14 8.4h.01"/><path d="M6.8 11.6h6.4"/>
+                            </svg>
+                        </span>
+                        <span>
+                            Atajo: con una fila enfocada pulsa <kbd>A</kbd> para aprobarla o
+                            <kbd>R</kbd> para abrir el diálogo de rechazo.
+                        </span>
                     </p>
 
                     <div class="admin-queue-head" id="admin-queue-head" hidden>
@@ -294,6 +422,12 @@
                 <section class="admin-panel" id="panel-vendedores" role="tabpanel"
                          aria-labelledby="tab-vendedores" tabindex="0" hidden>
 
+                    <p class="admin-panel-intro">
+                        Cualquier cuenta puede publicar un pedido; responderlo con una oferta
+                        necesita permiso. Aquí se decide quién lo tiene: no solo tiendas,
+                        también personas que venden lo que ya no usan.
+                    </p>
+
                     <div class="admin-toolbar">
                         <div class="segmented admin-filters" role="group" aria-label="Filtrar solicitudes por estado">
                             <button class="segmented-item" type="button" data-seller-status="pending" aria-pressed="true">
@@ -324,8 +458,8 @@
 
                     <p class="admin-panel-intro">
                         Cada denuncia señala un pedido que ya es visible. Resolverla
-                        cierra el aviso y responde a quien lo envió; aprobar o retirar la
-                        pedido se sigue haciendo desde «Pedidos».
+                        cierra el aviso y responde a quien lo envió; aprobar o retirar el
+                        pedido se sigue haciendo desde «Pedidos», y marcarlo +18 también.
                     </p>
 
                     <div class="admin-toolbar">
@@ -355,24 +489,41 @@
 
                     <p class="admin-panel-intro">
                         La IA de la plataforma revisa cada pedido en cuanto se envía.
-                        Cuando lo tiene claro decide sola; cuando no, la deja en duda y te
-                        la trae aquí para que la resuelvas tú.
+                        Cuando lo tiene claro decide sola; cuando no, lo deja en duda y te
+                        lo trae aquí para que lo resuelvas tú.
                     </p>
 
                     <!-- Resumen: tres cifras, cada una con el color de su decisión -->
                     <div class="admin-ai-summary">
                         <div class="admin-ai-stat is-approved">
-                            <span class="admin-ai-stat-icon" aria-hidden="true">✅</span>
+                            <span class="admin-ai-stat-icon" aria-hidden="true">
+                                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.9"
+                                     stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="10" cy="10" r="7"/><path d="m6.8 10.2 2.2 2.2 4.2-4.6"/>
+                                </svg>
+                            </span>
                             <span class="admin-ai-stat-value" data-ai-stat="approved">—</span>
                             <span class="admin-ai-stat-label">Aprobadas</span>
                         </div>
                         <div class="admin-ai-stat is-rejected">
-                            <span class="admin-ai-stat-icon" aria-hidden="true">🚫</span>
+                            <span class="admin-ai-stat-icon" aria-hidden="true">
+                                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.9"
+                                     stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="10" cy="10" r="7"/><path d="M7.6 7.6l4.8 4.8"/><path d="M12.4 7.6l-4.8 4.8"/>
+                                </svg>
+                            </span>
                             <span class="admin-ai-stat-value" data-ai-stat="rejected">—</span>
                             <span class="admin-ai-stat-label">Rechazadas</span>
                         </div>
                         <div class="admin-ai-stat is-pending">
-                            <span class="admin-ai-stat-icon" aria-hidden="true">🤔</span>
+                            <span class="admin-ai-stat-icon" aria-hidden="true">
+                                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.9"
+                                     stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="10" cy="10" r="7"/>
+                                    <path d="M8.3 8.1a1.8 1.8 0 0 1 3.5.7c0 1.2-1.7 1.5-1.7 2.5"/>
+                                    <path d="M10 13.7h.01"/>
+                                </svg>
+                            </span>
                             <span class="admin-ai-stat-value" data-ai-stat="pending">—</span>
                             <span class="admin-ai-stat-label">En duda</span>
                         </div>
@@ -381,11 +532,17 @@
                     <!-- Ajustes de aviso -->
                     <section class="admin-ai-settings" aria-labelledby="admin-ai-settings-title">
                         <h2 class="admin-ai-settings-title" id="admin-ai-settings-title">
-                            <span aria-hidden="true">📲</span>
+                            <span class="admin-ai-settings-icon" aria-hidden="true">
+                                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"
+                                     stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="5.4" y="2.6" width="9.2" height="14.8" rx="2.4"/>
+                                    <path d="M8.6 14.6h2.8"/>
+                                </svg>
+                            </span>
                             Avisos en tu WhatsApp
                         </h2>
                         <p class="admin-ai-settings-note">
-                            El foro no tiene servidor propio, así que no manda los mensajes
+                            El tablón no tiene servidor propio, así que no manda los mensajes
                             por su cuenta: cada aviso abre WhatsApp con el texto ya escrito
                             y llega a tu chat de un clic.
                         </p>
@@ -433,7 +590,11 @@
 
                         <button class="btn btn-secondary btn-sm admin-ai-test" type="button"
                                 id="admin-whatsapp-test">
-                            <span aria-hidden="true">✉️</span>
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M14.2 1.8 7.4 8.6"/>
+                                <path d="M14.2 1.8 9.9 14.2l-2.5-5.6-5.6-2.5Z"/>
+                            </svg>
                             <span>Enviar mensaje de prueba</span>
                         </button>
                     </section>
@@ -489,6 +650,7 @@
     <script src="assets/js/core/native.js"></script>
     <script src="assets/js/core/seed.js"></script>
     <script src="assets/js/core/moderator.js"></script>
+    <script src="assets/js/core/seller-bot.js"></script>
     <script src="assets/js/core/mock-api.js"></script>
     <script src="assets/js/core/store.js"></script>
     <script src="assets/js/core/api.js"></script>

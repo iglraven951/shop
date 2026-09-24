@@ -69,7 +69,7 @@
     // Texto legal del modal de registro: breve, honesto y sin enlaces rotos.
     const LEGAL_SECTIONS = [
         ['Resumen honesto.', 'DiscoveryShop es un proyecto de demostración. En esta versión publicada no hay servidor: tu cuenta, tus publicaciones y tus mensajes se guardan únicamente en el almacenamiento local de tu navegador y nunca viajan a Internet.'],
-        ['Uso del foro.', 'Te comprometes a publicar artículos reales y lícitos, a describirlos con veracidad y a tratar con respeto a las demás personas del foro.'],
+        ['Uso del tablón.', 'Te comprometes a publicar pedidos reales y lícitos, a describirlos con veracidad y a tratar con respeto a las demás personas.'],
         ['Cuentas de vendedor.', 'Publicar requiere la aprobación del equipo. Hasta entonces tu cuenta funciona con normalidad: puedes reaccionar, guardar, comentar y escribir mensajes.'],
         ['Tus datos.', 'Guardamos tu nombre, tu correo, tu distrito y, si lo indicas, tu teléfono, con el único fin de mostrar tu perfil y tus publicaciones. Puedes borrarlo todo cuando quieras desde «Reiniciar datos de demostración», en el pie de página.'],
         ['Sin garantías.', 'Al tratarse de una demostración, el contenido puede reiniciarse sin aviso. No introduzcas información sensible ni contraseñas que uses en otros sitios.'],
@@ -177,7 +177,7 @@
         switch (user.seller_status) {
             case 'approved': return 'vendedor verificado';
             case 'pending': return 'vendedor en revisión';
-            case 'rejected': return 'comprador (solicitud de vendedor rechazada)';
+            case 'rejected': return 'comprador (solicitud de vendedor rechazado)';
             default: return 'comprador';
         }
     }
@@ -569,7 +569,7 @@
                 return true;
             }
 
-            if (roleError) roleError.textContent = 'Elige si quieres comprar o vender para continuar';
+            if (roleError) roleError.textContent = 'Elige un tipo de cuenta para continuar';
             roleInputs.forEach((input) => input.setAttribute('aria-invalid', 'true'));
             return false;
         }
@@ -687,14 +687,14 @@
                 size: 'md',
                 dismissible: false,
                 content: `<div class="auth-legal">
-                    <p>Tu cuenta ya está creada, ${username}. Tu solicitud para publicar
-                    artículos quedó registrada y el equipo la revisará en breve.</p>
-                    <p><strong>Mientras tanto puedes</strong> explorar el foro, reaccionar
-                    con «me gusta» y «me interesa», guardar artículos, comentar y escribirte
-                    con quien vende.</p>
-                    <p><strong>Todavía no puedes</strong> publicar artículos. En cuanto tu
-                    cuenta sea aprobada recibirás el aviso y el botón de publicar aparecerá
-                    en la cabecera.</p>
+                    <p>Tu cuenta ya está creada, ${username}. Tu solicitud de vendedor quedó
+                    registrada y el equipo la revisará en breve.</p>
+                    <p><strong>Desde ya puedes</strong> publicar tus propios pedidos, marcar
+                    «También lo busco», guardar, comentar y conversar cuando aceptes una
+                    oferta.</p>
+                    <p><strong>Todavía no puedes</strong> responder pedidos ajenos con tus
+                    ofertas. En cuanto tu cuenta de vendedor sea aprobada recibirás el aviso y el botón
+                    «Lo tengo» aparecerá en cada pedido.</p>
                 </div>`,
                 actions: [
                     {

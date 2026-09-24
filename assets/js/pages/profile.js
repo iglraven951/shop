@@ -61,7 +61,7 @@
     /** Solo el administrador y el vendedor aprobado pueden publicar. */
     /**
      * Pedir algo no necesita permiso: quien tiene cuenta, pide. La cuenta de
-     * vendedor aprobada sirve para lo contrario —responder ofertas—, y eso se
+     * vendedor aprobado sirve para lo contrario —responder ofertas—, y eso se
      * mira en la ficha del pedido, no aquí.
      */
     function canPublish() {
@@ -97,14 +97,78 @@
         $('#profile-avatar').textContent = format.initials(user.username);
         $('#profile-name').textContent = user.username || 'Sin nombre';
         $('#profile-email').textContent = user.email || '';
-        $('#profile-district').textContent = `📍 ${user.district || 'Arequipa'}`;
-        $('#profile-since').textContent = `🗓️ Miembro desde ${format.date(user.created_at)}`;
+        /* Con SVG y no con emoji: 📍 y 🗓️ los dibuja cada sistema operativo a
+           su manera —y en Windows el segundo ni siquiera sale en color—, así
+           que dos fichas contiguas no se parecían entre sí. El resto del sitio
+           usa esta misma familia de trazo. El dato va escapado, como siempre. */
+        const icon = (path) => `<svg class="profile-fact-icon" width="13" height="13"
+            viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg>`;
+
+        const pin = '<path d="M8 14.5s5-4.2 5-7.8A5 5 0 0 0 3 6.7c0 3.6 5 7.8 5 7.8z"/>'
+            + '<circle cx="8" cy="6.7" r="1.8"/>';
+        const calendar = '<rect x="2.2" y="3.2" width="11.6" height="10.6" rx="2"/>'
+            + '<path d="M2.2 6.4h11.6M5.5 1.8v2.4M10.5 1.8v2.4"/>';
+
+        $('#profile-district').innerHTML = `${icon(pin)}${escapeHtml(user.district || 'Arequipa')}`;
+        $('#profile-since').innerHTML =
+            `${icon(calendar)}Miembro desde ${escapeHtml(format.date(user.created_at))}`;
 
         const badge = $('#profile-role');
         badge.className = `profile-role ${role.className}`;
         badge.textContent = role.label;
 
+        renderReputation();
+
         document.title = `${user.username || 'Mi perfil'} · Mi perfil · DiscoveryShop`;
+    }
+
+    /* ======================================================================
+       Reputación
+
+       No calcula nada: `rating` y `rating_count` llegan en la sesión y solo
+       se recalculan cuando alguien califica un trato confirmado. Una cuenta
+       sin calificaciones lo dice en vez de enseñar un cero, que se leería
+       como una mala nota en lugar de como una ausencia de notas.
+       ====================================================================== */
+
+    function renderReputation() {
+        const user = state.user;
+        const block = $('#profile-reputation');
+        const stars = $('#profile-rating-stars');
+        const value = $('#profile-rating-value');
+        const note = $('#profile-rating-note');
+
+        if (!user || !block || !stars || !value || !note) return;
+
+        const score = Number(user.rating) || 0;
+        const count = Number(user.rating_count) || 0;
+        const offers = Number(user.total_offers) || 0;
+
+        const sent = offers
+            ? `${format.number(offers)} ${format.plural(offers, 'oferta enviada', 'ofertas enviadas')}`
+            : '';
+
+        if (!count) {
+            block.classList.add('is-unrated');
+            stars.style.setProperty('--fill', '0%');
+            stars.removeAttribute('title');
+            value.textContent = 'Sin calificaciones todavía';
+            note.textContent = sent
+                ? `${sent}. Las estrellas llegan cuando se confirma un trato.`
+                : 'Las estrellas solo salen de tratos confirmados: nadie puede '
+                    + 'calificarte hasta que cierres uno.';
+            return;
+        }
+
+        const parts = [`${format.number(count)} ${format.plural(count, 'trato calificado', 'tratos calificados')}`];
+        if (sent) parts.push(sent);
+
+        block.classList.remove('is-unrated');
+        stars.style.setProperty('--fill', `${(Math.max(0, Math.min(5, score)) / 5 * 100).toFixed(1)}%`);
+        stars.setAttribute('title', `Calificación de ${score.toFixed(1)} sobre 5`);
+        value.textContent = `${score.toFixed(1)} de 5`;
+        note.textContent = `${parts.join(' · ')}.`;
     }
 
     function setMetric(name, value) {
@@ -150,16 +214,19 @@
         if (variant === 'admin') return {
             icon: '🛡️',
             title: 'Cuenta de administración',
-            message: 'Tu cuenta revisa las publicaciones y las solicitudes de vendedor del foro.',
+            message: 'Tu cuenta revisa los pedidos, las denuncias y las solicitudes de vendedor.',
             actions: '<a class="btn btn-secondary" href="admin.html">Abrir el panel de administración</a>',
         };
 
+        /* Lo que desbloquea un vendedor aprobado es RESPONDER, no publicar: eso
+           ya lo podía hacer antes (ADR-019). Aquí decía lo contrario y mandaba
+           al formulario de pedidos, que no es donde se responde a nadie. */
         if (variant === 'approved') return {
             icon: '✅',
-            title: 'Cuenta de vendedor verificada',
-            badge: '<span class="badge badge-success">Verificada</span>',
-            message: 'Ya puedes publicar tus artículos. Cada publicación pasa por una revisión rápida del equipo antes de aparecer en el foro.',
-            actions: '<a class="btn btn-primary" href="publicar.html">Publicar un artículo</a>',
+            title: 'Vendedor verificado',
+            badge: '<span class="badge badge-success">Verificado</span>',
+            message: 'Ya puedes responder con tus ofertas los pedidos que te interesen. Cuando alguien acepte una, se abre la conversación para coordinar la entrega.',
+            actions: '<a class="btn btn-primary" href="index.html">Ver pedidos para responder</a>',
         };
 
         if (variant === 'pending') {
@@ -168,7 +235,7 @@
                 icon: '⏳',
                 title: 'Tu solicitud está en revisión',
                 badge: '<span class="badge badge-warning">En revisión</span>',
-                message: 'Mientras tanto puedes usar el foro con normalidad: comentar, guardar publicaciones y escribir a quien vende. Todavía no puedes publicar artículos.',
+                message: 'Mientras tanto tu cuenta funciona con normalidad: publicas los pedidos que quieras, comentas, guardas y conversas cuando aceptes una oferta. Lo único que falta es poder responder pedidos ajenos con los tuyos.',
                 meta: `Enviada el ${escapeHtml(format.date(since))} · ${escapeHtml(format.relative(since))}`,
             };
         }
@@ -186,13 +253,13 @@
 
         return {
             icon: '🏪',
-            title: '¿Tienes una tienda y quieres responder pedidos?',
-            message: 'Pedir no necesita permiso: ya puedes. Responder sí. Con una cuenta de tienda ofreces lo que tengas a quien lo esté buscando. La solicitud es gratuita y la revisa el equipo.',
+            title: '¿Tienes algo que ofrecer?',
+            message: 'Pedir no necesita permiso: ya puedes. Responder sí. Con una cuenta de vendedor ofreces lo que tengas a quien lo esté buscando. La solicitud es gratuita y la revisa el equipo.',
             extra: `
                 <ul class="profile-seller-list">
                     <li>Ofrece lo que tienes a quien ya lo está buscando.</li>
                     <li>Al aceptarte una oferta se abre el chat con esa persona.</li>
-                    <li>Apareces en el mapa de tiendas de tu distrito.</li>
+                    <li>Apareces en el mapa de vendedores de tu distrito.</li>
                 </ul>`,
             actions: '<button class="btn btn-primary" type="button" data-action="apply-seller">Solicitar cuenta de vendedor</button>',
         };
@@ -647,7 +714,7 @@
         return UI.emptyState({
             icon: '🔎',
             title: 'Publica tu primer pedido',
-            message: 'Di qué estás buscando y cuánto puedes pagar. Las tiendas de Arequipa te responden con lo que tienen.',
+            message: 'Di qué estás buscando y cuánto puedes pagar. Los vendedores de Arequipa te responden con lo que tienen.',
             action: { label: 'Pedir lo que busco', href: 'publicar.html' },
         });
     }
@@ -942,7 +1009,7 @@
         const gate = $('#profile-gate');
         gate.innerHTML = UI.loginGate({
             title: 'Tu perfil te está esperando',
-            message: 'Inicia sesión para editar tus datos, seguir el estado de tus pedidos y solicitar tu cuenta de tienda.',
+            message: 'Inicia sesión para editar tus datos, seguir el estado de tus pedidos y solicitar tu cuenta de vendedor.',
             icon: '🔐',
         });
         gate.hidden = false;
@@ -959,6 +1026,43 @@
         } catch (error) {
             return null;
         }
+    }
+
+    /**
+     * Vuelve a pedir la sesión al servidor y repinta si algo cambió.
+     *
+     * La copia del almacén se guardó al iniciar sesión y no envejece sola.
+     * Daba igual mientras el perfil solo enseñaba nombre y distrito, que no
+     * cambian a espaldas de nadie; con la reputación delante deja de dar
+     * igual: `rating` y `total_offers` los recalcula el servidor cuando
+     * alguien califica un trato o cuando envías una oferta, y con la caché
+     * mandando tu nota se quedaría clavada hasta cerrar sesión.
+     *
+     * Se pinta primero con lo que hay —nadie mira una pantalla en blanco
+     * esperando a la red— y se corrige después, solo si de verdad cambió.
+     */
+    async function refreshUser() {
+        let fresh = null;
+
+        try {
+            const session = await api.getCurrentUser();
+            fresh = session ? (session.user || session) : null;
+        } catch (error) {
+            return;   // sin red se sigue con lo que había, que es razonable
+        }
+
+        if (!fresh || !fresh.id || fresh.id !== state.user.id) return;
+
+        const changed = ['rating', 'rating_count', 'total_offers', 'total_sales',
+            'seller_status', 'verified', 'username', 'district']
+            .some((key) => fresh[key] !== state.user[key]);
+
+        if (!changed) return;
+
+        state.user = fresh;
+        store.set({ user: fresh });
+        renderIdentity();
+        renderSeller();
     }
 
     async function init() {
@@ -981,6 +1085,9 @@
         fillProfileForm();
         bindProfileForm();
         bindPreferences();
+
+        // Y se corrige con lo que diga el servidor, sin hacer esperar a nadie
+        refreshUser();
         bindSeller();
         bindPostsPanel();
         bindSavedMetric();

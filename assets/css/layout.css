@@ -34,11 +34,19 @@
     padding-inline: var(--space-5);
 }
 
+/* La marca es un enlace a la portada, y en el teléfono se queda sola con su
+   cuadro de 38 px: el nombre y el lema se ocultan ahí. Los dos mínimos le dan
+   la zona de toque completa sin agrandar el dibujo ni descolocar la fila —el
+   alto lo hereda de la cabecera, el ancho lo daba el contenido, y con el
+   contenido oculto se quedaba en los 38 px del cuadro. */
 .brand {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: var(--space-3);
     flex-shrink: 0;
+    min-width: 44px;
+    min-height: 44px;
     border-radius: var(--radius-sm);
 }
 
@@ -68,6 +76,7 @@
 }
 
 .brand-name {
+    font-family: var(--font-display);
     font-size: var(--text-lg);
     font-weight: 750;
     letter-spacing: var(--tracking-tight);
@@ -89,6 +98,9 @@
 .header-search {
     position: relative;
     flex: 1;
+    /* Los iconos no encogen; sin este mínimo, toda la presión del ancho
+       caía sobre el buscador y su texto acababa recortado. */
+    min-width: 180px;
     max-width: 560px;
     /* Centrada en pantallas anchas */
     margin-inline: auto;
@@ -146,7 +158,7 @@
     background: var(--bg-overlay);
     border: 1px solid var(--border-default);
     border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lg);
+    box-shadow: var(--shadow-lg), var(--edge-light);
     animation: fade-in-up var(--duration-fast) var(--ease-out);
 }
 
@@ -210,12 +222,16 @@
     margin-left: auto;
 }
 
+/* 44 px, que es el mínimo con el que un dedo acierta sin mirar. Estaban a 40
+   y en el teléfono son los seis controles de la barra superior: los que más
+   se pulsan de todo el sitio. El icono de dentro no cambia de tamaño, solo
+   la superficie que lo rodea. */
 .header-icon-btn {
     position: relative;
     display: grid;
     place-items: center;
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     border-radius: var(--radius-md);
     color: var(--text-secondary);
     transition: background-color var(--duration-fast) var(--ease-out),
@@ -340,7 +356,7 @@
     left: 50%;
     transform: translateX(-50%);
     z-index: var(--z-sticky);
-    box-shadow: var(--shadow-lg);
+    box-shadow: var(--shadow-lg), var(--edge-light-strong);
     transition: transform var(--duration-base) var(--ease-out),
                 opacity var(--duration-base) var(--ease-out);
 }
@@ -448,14 +464,60 @@
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-lg);
     overflow: hidden;
+    /* Apoyada, no impresa: el canto recoge luz y la sombra corta la separa
+       del fondo incluso en reposo. */
+    box-shadow: var(--shadow-sm), var(--edge-light);
     transition: border-color var(--duration-base) var(--ease-out),
-                box-shadow var(--duration-base) var(--ease-out);
+                box-shadow var(--duration-base) var(--ease-out),
+                transform var(--duration-base) var(--ease-out);
     animation: fade-in-up var(--duration-slow) var(--ease-out) backwards;
 }
 
 .post-card:hover {
     border-color: var(--border-default);
-    box-shadow: var(--shadow-md);
+    box-shadow: var(--shadow-lg), var(--edge-light-strong);
+    transform: translateY(var(--depth-lift));
+}
+
+/* Responde al dedo: cede un punto y vuelve. Sin esto, en el teléfono un toque
+   no confirma nada hasta que la página siguiente carga. */
+.post-card:active {
+    box-shadow: var(--shadow-sm), var(--edge-light);
+    transform: scale(var(--depth-press));
+    transition-duration: var(--duration-fast);
+}
+
+/* --- Inclinación 3D, solo con ratón ---
+   El contenedor da la perspectiva y la tarjeta gira dentro de ella; los
+   ángulos los escribe `depth.js` en dos variables, y aquí se componen con la
+   elevación para que no compitan por la misma propiedad. Es un efecto de
+   escritorio a propósito: en un táctil no hay puntero al que seguir, y el
+   giro continuo cuesta batería sin aportar nada. */
+@media (hover: hover) and (pointer: fine) {
+    .post-feed,
+    .post-grid {
+        perspective: var(--depth-perspective);
+    }
+
+    .post-card.is-tilting {
+        transform:
+            translateY(var(--depth-lift))
+            rotateX(var(--tilt-x, 0deg))
+            rotateY(var(--tilt-y, 0deg));
+        transition: box-shadow var(--duration-base) var(--ease-out),
+                    border-color var(--duration-base) var(--ease-out);
+        will-change: transform;
+    }
+}
+
+/* Quien pidió menos movimiento no recibe ni giro ni desplazamiento: solo la
+   sombra, que es información, no animación. */
+@media (prefers-reduced-motion: reduce) {
+    .post-card:hover,
+    .post-card:active,
+    .post-card.is-tilting {
+        transform: none;
+    }
 }
 
 /* --- Cabecera: autor, distrito y antigüedad --- */
@@ -1019,7 +1081,10 @@
    Pie de página
    -------------------------------------------------------------------------- */
 .site-footer {
-    margin-top: var(--space-16);
+    /* 32 y no 64: cada página ya cierra con 64 px propios, y entre los dos
+       dejaban 176 px de blanco antes de la primera línea del pie. Cada
+       medida se había decidido por su lado, sin sumarlas nunca. */
+    margin-top: var(--space-8);
     padding: var(--space-12) 0 var(--space-8);
     background: var(--bg-surface);
     border-top: 1px solid var(--border-subtle);
@@ -1117,6 +1182,22 @@
 }
 
 /* Tablet: sidebar como panel deslizante */
+/* --------------------------------------------------------------------------
+   Franja intermedia: la cabecera se descarga antes de replegarse
+
+   Entre 721 y 900 px no caben la marca, un buscador con un mínimo decente y
+   ocho iconos: la fila de acciones se salía 13 px y aparecía desplazamiento
+   horizontal. Se retiran los dos accesos que el menú desplegable ya enumera
+   —el mapa y los guardados—, y se quedan los que no viven en otro sitio:
+   tema, mensajes, avisos, la cuenta y el botón de pedir.
+   -------------------------------------------------------------------------- */
+@media (max-width: 900px) {
+    .header-actions a[href="mapa.html"],
+    .header-actions a[href="guardados.html"] {
+        display: none;
+    }
+}
+
 @media (max-width: 960px) {
     .page-shell {
         grid-template-columns: minmax(0, 1fr);
@@ -1133,7 +1214,7 @@
         max-height: none;
         border-radius: 0;
         border-right: 1px solid var(--border-default);
-        box-shadow: var(--shadow-xl);
+        box-shadow: var(--shadow-xl), var(--edge-light);
         transform: translateX(-100%);
         transition: transform var(--duration-base) var(--ease-out);
     }
@@ -1203,7 +1284,18 @@
        enumera las mismas secciones. */
     .menu-toggle { display: grid; }
 
-    .header-actions .header-icon-btn:not(#theme-toggle),
+    /* Se quedan la campana y la cuenta.
+       La campana, porque es el único acceso a los avisos que existe: ni el
+       menú ni la barra inferior los enumeran, así que sin ella un teléfono no
+       podía ver una sola notificación — ni saber que la tenía, porque el
+       contador se iba con el botón.
+       La cuenta, porque el comentario de arriba siempre dijo que se dejaba
+       «menú, marca y cuenta» y la regla no la excluía: el avatar se ocultaba
+       con el resto, el menú desplegable no lleva «Cerrar sesión», y salir de
+       la sesión en un móvil exigía entrar al perfil y bajar hasta el final.
+       Mapa, guardados y mensajes sí están en el menú y en la barra inferior, y
+       por eso pueden irse. */
+    .header-actions .header-icon-btn:not(#theme-toggle):not(#notif-trigger):not(#user-menu-trigger),
     .header-publish {
         display: none;
     }
@@ -1299,18 +1391,35 @@
    -------------------------------------------------------------------------- */
 .bottom-nav { display: none; }
 
-@media (max-width: 860px) {
+/* 720 px y no 860: es exactamente donde la cabecera se repliega y esconde sus
+   iconos. Con 860 había una franja —721 a 860, donde cae un iPad vertical de
+   768— en la que se veían LAS DOS navegaciones a la vez: «Pedir», «Mensajes» y
+   «Pedidos» duplicados arriba y abajo, y 56 px de alto perdidos sin motivo,
+   porque la cabecera de escritorio ya llevaba a todas partes. Las dos barras
+   se turnan; nunca coinciden. */
+@media (max-width: 720px) {
     .bottom-nav {
         position: fixed;
         inset: auto 0 0 0;
         z-index: var(--z-sticky);
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(5, 1fr);
         background: var(--bg-overlay);
         border-top: 1px solid var(--border-default);
         /* En la app, por encima de la barra de gestos del sistema */
         padding-bottom: var(--ds-inset-bottom, 0px);
         backdrop-filter: blur(12px);
+        /* Flota sobre el contenido, así que proyecta hacia arriba: sin esto,
+           el tablón parece pasar por detrás de una franja pintada en vez de
+           deslizarse bajo una barra. */
+        box-shadow: 0 -8px 24px rgba(3, 8, 18, 0.28), var(--edge-light);
+        /* El alto es EL token, no una consecuencia del contenido. Medido en la
+           app: el botón destacado lleva su icono en una pastilla de 30 px y
+           estiraba la fila a 64, mientras el token seguía diciendo 56 — ocho
+           píxeles de cada pantalla quedaban debajo de la barra, y el asistente
+           y el cajón del mapa se apoyaban ocho píxeles más abajo de la cuenta.
+           Fijándolo aquí, lo que el token promete es lo que la barra mide. */
+        block-size: var(--ds-bottom-nav);
     }
 
     .bottom-nav-item {
@@ -1330,10 +1439,44 @@
     .bottom-nav-item:hover { color: var(--text-secondary); }
     .bottom-nav-item.is-active { color: var(--brand); }
 
+    /* «Pedir» no es un sitio al que ir, es lo que se viene a hacer: se
+       distingue por color y peso, sin salirse de la fila ni de los tokens. */
+    .bottom-nav-item.is-primary { color: var(--brand); }
+
+    .bottom-nav-item.is-primary .bottom-nav-icon {
+        display: grid;
+        place-items: center;
+        width: 30px;
+        height: 30px;
+        margin-top: -2px;
+        background: var(--brand);
+        color: var(--brand-contrast);
+        border-radius: var(--radius-full);
+    }
+
+    .bottom-nav-item.is-primary .bottom-nav-label { font-weight: 700; }
+
+    .bottom-nav-item.is-primary:active .bottom-nav-icon { transform: scale(0.94); }
+
     .bottom-nav-label {
         font-size: var(--text-3xs);
         font-weight: 600;
         letter-spacing: var(--tracking-wide);
+        /* Cinco columnas dejan ~64 px útiles a 360 px de ancho, y «Mensajes»
+           ronda los 50 con la fuente del sistema —que es la que se usa, porque
+           Inter no se descarga—. Cabe, pero sin margen para un cuerpo de letra
+           más grande del sistema. Antes de partirse en dos líneas y descuadrar
+           esa columna frente a las otras cuatro, se recorta. */
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* A 360 px o menos el aire sobra menos que las letras. */
+    @media (max-width: 360px) {
+        .bottom-nav-label { letter-spacing: 0; }
+        .bottom-nav-item { padding-left: 2px; padding-right: 2px; }
     }
 
     .bottom-nav-item .count-dot {
@@ -1343,11 +1486,12 @@
         transform: translateX(6px);
     }
 
-    /* Alto real de la barra: los 56 px del botón más lo que el sistema
-       reserva abajo para sus gestos. Fuera de esta consulta vale cero, así que
-       una pantalla puede descontarlo siempre sin preguntar si hay barra. */
+    /* Alto real de la barra: 64 px —el botón táctil de 56 más el aire que pide
+       la pastilla de «Pedir»— y lo que el sistema reserva abajo para sus
+       gestos. Fuera de esta consulta vale cero, así que una pantalla puede
+       descontarlo siempre sin preguntar si hay barra. */
     body.has-bottom-nav {
-        --ds-bottom-nav: calc(56px + var(--ds-inset-bottom, 0px));
+        --ds-bottom-nav: calc(64px + var(--ds-inset-bottom, 0px));
     }
 
     /* El contenido necesita sitio para no acabar debajo de la barra, y los
@@ -1363,10 +1507,52 @@
         bottom: calc(var(--ds-bottom-nav) + var(--space-4));
     }
 
+    /* La barra de acciones en lote del panel.
+       Se anclaba con `sticky`, y en el teléfono eso no la pegaba a nada: el
+       `overflow-y: auto` del body lo convierte en el contenedor de scroll, así
+       que el sticky se resuelve contra un contenedor de 3600 px y la barra se
+       quedaba fuera de la pantalla, medida en la app a 1701 px con un viewport
+       de 854. Con `fixed` el ancla es el viewport, que es lo que se quería
+       decir; se sube por encima de la barra inferior y el panel le reserva su
+       hueco mientras hay selección. */
+    body.has-bottom-nav .admin-bulk {
+        position: fixed;
+        inset: auto var(--space-4) calc(var(--ds-bottom-nav) + var(--space-3));
+    }
+
+    /* El hueco que deja la barra al salir del flujo. Generoso porque en móvil
+       se apila en columna. */
+    .admin-panel.has-bulk { padding-bottom: 170px; }
+
     /* El cajón del mapa se apoya en el borde inferior y vive en una capa por
        encima de la barra: sin subirlo la tapa entera y deja esa pantalla sin
        salida, que es donde más falta hace volver. */
     body.has-bottom-nav .map-panel {
         bottom: var(--ds-bottom-nav);
+    }
+}
+
+/* --------------------------------------------------------------------------
+   La paginación y el botón flotante
+
+   La paginación cierra el tablón, y el asistente flota justo encima de esa
+   esquina: al llegar al final del desplazamiento, el último número queda
+   debajo del botón y deja de poder pulsarse. No basta con mover el botón
+   —cualquier sitio donde se ponga tapará algo— sino con dejar sitio para que
+   la fila pueda subir por encima de él.
+
+   Y los botones miden 40 px. Con el ratón están bien proporcionados a su
+   número; con el dedo, no.
+   -------------------------------------------------------------------------- */
+@media (pointer: coarse) {
+    .page-btn {
+        min-width: 44px;
+        height: 44px;
+    }
+
+    /* Alto del botón flotante más su margen, para que la fila entera pueda
+       quedar por encima al final del recorrido. */
+    .pagination {
+        padding-bottom: calc(54px + var(--space-6));
     }
 }

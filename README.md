@@ -1,10 +1,11 @@
 # DiscoveryShop
 
-Foro de artículos de segunda mano de **Arequipa, Perú**. Las publicaciones se leen
-como en una red social: se comentan, se guardan, se dice «me interesa» y se escribe
-por privado a quien publica.
+**Comercio inverso** en **Arequipa, Perú**. Funciona al revés que un
+marketplace: el comprador publica **lo que busca** —con su presupuesto y el
+distrito— y los vendedores de la ciudad le responden con **ofertas**. El comprador
+acepta una, se abre el chat privado y quedan para verse.
 
-> **No es una tienda.** No hay carrito, ni pagos, ni pedidos, ni envíos.
+> **No es un comercio al uso.** No hay carrito, ni pagos, ni envíos, ni comisiones.
 > DiscoveryShop solo conecta a las personas; el trato se cierra fuera de la
 > plataforma, normalmente viéndose en el distrito acordado.
 
@@ -27,7 +28,7 @@ ocurre dentro del navegador.
 
 | Pieza | Qué hace |
 |---|---|
-| `assets/js/core/seed.js` | El contenido inicial: distritos de Arequipa con coordenadas reales, usuarios con su rol y las publicaciones de ejemplo |
+| `assets/js/core/seed.js` | El contenido inicial: distritos de Arequipa con coordenadas reales, usuarios con su rol y los pedidos de ejemplo |
 | `assets/js/core/mock-api.js` | Implementa toda la lógica —sesiones, permisos, moderación, reacciones, comentarios, mapa, mensajes— y la guarda en `localStorage` |
 | `assets/js/core/api.js` | El único punto por el que las páginas piden datos |
 
@@ -50,22 +51,34 @@ restaura el catálogo original y cierra la sesión.
 
 | Rol | Qué puede hacer |
 |---|---|
-| **Visitante** (sin sesión) | Ver el feed, buscar, filtrar, abrir publicaciones y consultar el mapa de vendedores |
-| **Comprador** (`role: 'buyer'`) | Todo lo anterior y además: ❤️ me gusta, 🙋 me interesa, 🔖 guardar, 💬 comentar, escribir por privado y 🚩 denunciar una publicación |
-| **Vendedor aprobado** (`seller_status: 'approved'`) | Todo lo anterior y además **publicar artículos** y marcarlos como reservados o vendidos |
-| **Administrador** (`role: 'admin'`) | Aprobar o rechazar publicaciones y solicitudes de vendedor, y resolver denuncias |
+| **Visitante** (sin sesión) | Ver el tablón, buscar, filtrar, abrir un pedido y consultar el mapa de vendedores |
+| **Cualquier cuenta** | Todo lo anterior y además **publicar pedidos**, 🙋 «también lo busco», 🔖 guardar, 💬 comentar y 🚩 denunciar |
+| **Tienda aprobada** (`seller_status: 'approved'`) | Todo lo anterior y además **responder pedidos con una oferta** (precio, mensaje y fotos) y conversar con quien la acepte |
+| **Administrador** (`role: 'admin'`) | Aprobar o rechazar pedidos y solicitudes de vendedor, y resolver denuncias |
 
-Al registrarse se elige entre comprador o vendedor. Quien elige vendedor entra
-como comprador con la solicitud **en revisión** (`seller_status: 'pending'`) y
-**no puede publicar hasta que un administrador la apruebe**; mientras tanto usa
-la cuenta con total normalidad. Toda publicación nueva nace también en revisión
-y solo aparece en el foro cuando el administrador la aprueba.
+Al registrarse se dice si además se quiere vender. Quien lo hace entra con
+la solicitud **en revisión** (`seller_status: 'pending'`) y **no puede responder
+pedidos hasta que un administrador la apruebe**; mientras tanto su cuenta pide
+con total normalidad. **Pedir no requiere permiso; responder sí** (ADR-019).
+Todo pedido nuevo nace también en revisión y solo aparece en el tablón cuando
+el administrador lo aprueba.
 
 Cada cuenta tiene además una **campana de avisos** en la cabecera: ahí llegan
-las reacciones y los comentarios a lo que publicas, y las decisiones que se
-toman sobre ello. Un artículo puede marcarse **reservado** o **vendido** sin
-retirarlo del foro: se sigue viendo, atenuado y con su etiqueta, porque saber
-que algo ya se fue también es información.
+las ofertas que recibe un pedido tuyo, la aceptación de una oferta tuya, los
+comentarios y las decisiones de moderación.
+
+Dos reglas mantienen el tablón vivo y legible:
+
+- **Cinco pedidos abiertos por persona.** Al cerrar o eliminar uno se recupera
+  el sitio. Lo que se limita es el ruido presente, no el historial.
+- **Quince días hábiles de vida.** Pasado el plazo el pedido se retira solo,
+  para que nadie responda a algo que ya no se busca. Un pedido con oferta
+  aceptada no caduca: sostiene un trato y la reputación de quien respondió.
+
+Un pedido pasa por `open → matched → fulfilled` según avanza, sin salir del
+tablón, porque saber que algo ya se resolvió también es información. Y al
+confirmarse la compra, quien pidió puede **retirar el pedido**: el trato, su
+precio y la calificación viven aparte y se conservan.
 
 ---
 
@@ -76,8 +89,8 @@ Todas usan la contraseña **`demo1234`**.
 | Correo | Rol | Para probar |
 |---|---|---|
 | `admin@discoveryshop.pe` | Administrador | El panel de moderación: aprobar y rechazar |
-| `juan@discoveryshop.pe` | Vendedor aprobado | Publicar un artículo y verlo entrar en revisión |
-| `miguel@discoveryshop.pe` | Vendedor en revisión | El aviso de que aún no puede publicar |
+| `juan@discoveryshop.pe` | Tienda aprobada | Responder un pedido con una oferta |
+| `miguel@discoveryshop.pe` | Tienda en revisión | Pide con normalidad; aún no puede responder |
 | `patricia@discoveryshop.pe` | Comprador | Comentar, guardar y escribir a quien publica |
 
 También puedes crear una cuenta nueva desde `registro.html`: en modo
@@ -192,22 +205,26 @@ node tests/contract.test.mjs
 node tests/responsive.test.mjs
 node tests/contrast.test.mjs
 node tests/ai.test.mjs
+node tests/chat.test.mjs
+node tests/tokens.test.mjs
 node tests/transport.test.mjs
 node tests/android.test.mjs
 ```
 
 | Archivo | Qué comprueba |
 |---|---|
-| `tests/core.test.mjs` | El contrato de datos: publicaciones, filtros, sesión, permisos y moderación de `MockAPI` |
+| `tests/core.test.mjs` | El contrato de datos: pedidos, ofertas, tratos, filtros, sesión, permisos y moderación de `MockAPI` |
 | `tests/integrity.test.mjs` | La integridad del sitio: enlaces que resuelven, orden de los scripts, colores desde los tokens, ortografía española y ausencia de restos de depuración |
 | `tests/contract.test.mjs` | Que los métodos que invocan las páginas existan de verdad en el núcleo, cargándolo en un DOM simulado |
 | `tests/responsive.test.mjs` | Los patrones que provocan desbordes horizontales o elementos inalcanzables a 360, 768 y 1440 px |
 | `tests/contrast.test.mjs` | Que cada combinación de texto sobre fondo de la paleta cumpla WCAG 2.1 AA, en ambos temas |
-| `tests/ai.test.mjs` | El comportamiento del asistente de búsqueda y del revisor de publicaciones |
+| `tests/ai.test.mjs` | El comportamiento del asistente y del revisor automático de pedidos: qué entiende, qué presupuesto lee de una frase, y qué señala de cómo está escrita |
+| `tests/chat.test.mjs` | El vendedor que contesta en el chat: que su regateo tenga suelo, que ceda cada vez menos, que recuerde tras recargar la página, y que un mensaje pueda ser solo fotos |
+| `tests/tokens.test.mjs` | Que toda `var(--x)` del CSS esté definida. Una que no resuelve hace que el navegador descarte la declaración entera, en silencio: la regla no falla, simplemente no se dibuja |
 | `tests/transport.test.mjs` | El transporte de la capa de datos: cuándo habla con el servidor, cuándo cae a la demo, y que un 4xx del servidor llegue intacto en vez de disfrazarse de éxito |
 | `tests/android.test.mjs` | La app Android: proyecto completo, iconos en todas las densidades, nada de HTTP en claro y que la copia del sitio dentro del APK sea idéntica a la real |
 
-Las siete se ejecutan también en cada despliegue: si alguna falla, el sitio no
+Las diez se ejecutan también en cada despliegue: si alguna falla, el sitio no
 se publica.
 
 ---
@@ -218,16 +235,16 @@ Todas las páginas viven en la raíz, sin carpetas anidadas.
 
 | Archivo | Propósito |
 |---|---|
-| `index.html` | Feed del foro con búsqueda, filtros, orden y paginación |
-| `publicacion.html?id=post-001` | Detalle del artículo, comentarios y mapa del distrito |
-| `mapa.html` | Mapa de todos los vendedores por distrito |
-| `admin.html` | Panel de moderación: publicaciones y solicitudes de vendedor |
+| `index.html` | El tablón de pedidos, con búsqueda, filtros, orden y paginación |
+| `publicacion.html?id=req-001` | El pedido, sus ofertas, los comentarios y el mapa del distrito |
+| `mapa.html` | Los vendedores que responden pedidos, por distrito |
+| `admin.html` | Panel de moderación: pedidos, vendedores, denuncias y bandeja de la IA |
 | `login.html` | Iniciar sesión (admite `?next=` para volver a donde estabas) |
-| `registro.html` | Crear una cuenta eligiendo comprador o vendedor |
-| `perfil.html` | Perfil, publicaciones propias y estado de la solicitud de vendedor |
-| `publicar.html` | Formulario para publicar un artículo (solo vendedores aprobados) |
-| `guardados.html` | Publicaciones guardadas con el marcador 🔖 |
-| `mensajes.html?c=conv-id` | Mensajería privada con quien publica |
+| `registro.html` | Crear una cuenta, indicando si además se quiere vender |
+| `perfil.html` | Perfil, reputación, pedidos propios y estado de la solicitud de vendedor |
+| `publicar.html` | Formulario para publicar un pedido (cualquier cuenta con sesión) |
+| `guardados.html` | Pedidos guardados con el marcador 🔖 |
+| `mensajes.html?c=conv-id` | Chat privado, que solo existe tras aceptar una oferta |
 | `404.html` | Página no encontrada (la sirve GitHub Pages automáticamente) |
 
 ---

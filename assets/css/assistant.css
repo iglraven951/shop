@@ -10,15 +10,22 @@
    deben poder taparlo.
 
    Sin un solo color literal: todo sale de los tokens, para que el widget
-   cambie de tema con el resto del sitio sin tocar este archivo.
+   cambie de tema con el resto del sitio sin tocar este archivo. Donde hace
+   falta un matiz intermedio se mezcla con `color-mix()` entre dos tokens, que
+   sigue siendo el token y no un valor escrito a mano.
    ========================================================================== */
 
 .ds-assistant {
     /* Ancho del panel en escritorio. El nombre evita la palabra «width» a
        propósito: la auditoría responsive busca anchos fijos y este es un
        límite, no una medida. */
-    --asst-panel-max: 420px;
+    --asst-panel-max: 428px;
     --asst-edge: var(--space-5);
+
+    /* Diámetro del botón. Con nombre propio porque lo leen el halo, el punto
+       de aviso y los cortes de pantalla estrecha: si el botón encoge, todo lo
+       que lo rodea encoge con él sin repetir la cifra. */
+    --asst-fab-size: 60px;
 
     /* Caja del tamaño del botón, anclada a la esquina. El panel se posiciona
        dentro de ella en absoluto, así que al abrirse crece hacia arriba y a la
@@ -39,60 +46,166 @@ body.is-modal-open .ds-assistant {
     transition: opacity var(--duration-fast) var(--ease-out);
 }
 
-/* En el centro de mensajes el compositor llega hasta la esquina inferior
-   derecha, justo donde vive el botón: se sube lo que mide esa fila para no
-   tapar el «Enviar» de una conversación entre personas. Un navegador sin
-   `:has()` ignora la regla y recupera la posición de siempre. */
-body:has(.chat-page) .ds-assistant:not(.is-open) {
-    bottom: calc(var(--asst-edge) + 92px);
+/* --------------------------------------------------------------------------
+   Dónde NO debe flotar
+
+   Un botón fijo se cruza con el contenido en cuanto la página se desplaza, y
+   eso es normal: se aparta con el dedo. Lo que no se puede tolerar es que se
+   quede clavado encima de un control que nunca se mueve. Aquí van las dos
+   pantallas donde eso pasa, medidas en Chrome.
+   -------------------------------------------------------------------------- */
+
+/* El centro de mensajes es un armazón anclado al alto de la ventana: el hilo
+   se desplaza por dentro y el compositor no se mueve nunca. Medido, el pie del
+   hilo ocupa la franja de 85 a 226 px sobre el fondo a 1280×800, y de 131 a
+   263 px a 390×844 con la barra inferior puesta. El botón flotante caía dentro
+   de las dos: tapaba el 33 % del «Enviar» de una conversación entre dos
+   personas, de forma permanente, sin manera de apartarlo.
+
+   Antes esto se intentaba resolver subiéndolo 92 px. Ya no alcanza —el
+   compositor creció— y afinar el número otra vez solo aplaza la avería: debajo
+   del compositor quedan 67 px libres en el teléfono, y meter ahí un botón de
+   54 deja márgenes de seis píxeles. Se retira, que además es lo coherente: la
+   pantalla ya ES una conversación, y un segundo globo de chat encima confunde
+   antes que ayuda. El asistente sigue en las otras diez.
+
+   Un navegador sin `:has()` ignora la regla y recupera la posición de siempre. */
+body:has(.chat-page) .ds-assistant { display: none; }
+
+/* El panel de moderación pone sus acciones justo ahí.
+
+   Cada fila de la cola termina en «Ver · Aprobar · Rechazar · Marcar +18», y
+   la barra de lote —«Vaciar bandeja», «Aprobar seleccionados»— se levanta
+   anclada al pie. El botón flotante caía encima de las dos: se le vio tapando
+   un «Marcar +18» de fila y el «Vaciar bandeja».
+
+   Se retira, por el mismo motivo que en el chat: no es un número que afinar,
+   es que esa esquina ya tiene dueño. Y, además, aquí no hace falta — quien
+   modera es del equipo y no necesita que una IA le explique cómo funciona el
+   sitio; la que sí trabaja en esta pantalla es la otra, el revisor, y vive
+   dentro de la cola, no en un globo.
+
+   Un navegador sin `:has()` ignora la regla y recupera la posición de siempre. */
+body:has(.admin-page) .ds-assistant { display: none; }
+
+/* Acceso y registro en pantalla estrecha: una sola tarjeta de margen a margen,
+   más alta que la ventana, con un botón de envío que la cruza entera. Ahí el
+   asistente no tiene adónde apartarse —a la izquierda pasa lo mismo y arriba
+   están los controles de la cabecera— y son, además, las dos únicas pantallas
+   del sitio con una sola tarea. Por encima de 720 px el formulario vuelve a
+   ser una columna con sitio libre a su derecha (medido a 768: ningún control
+   del formulario queda debajo) y el botón reaparece. */
+@media (max-width: 720px) {
+    body:has(.auth-layout) .ds-assistant { display: none; }
 }
 
 /* ==========================================================================
    1. Botón flotante
+
+   Tiene que pedir que lo pulsen sin robarle protagonismo a la página. Son tres
+   capas: el resplandor quieto que lo separa del fondo, el halo que gira solo
+   cuando hay intención de pulsarlo, y el sello dentro.
    ========================================================================== */
 
 .asst-fab {
     position: relative;
     display: grid;
     place-items: center;
-    width: 58px;
-    height: 58px;
+    width: var(--asst-fab-size);
+    height: var(--asst-fab-size);
     padding: 0;
     color: var(--on-navy);
     background: var(--gradient-brand);
     border: 0;
     border-radius: var(--radius-full);
+    /* Sombra de apoyo y, encima, un resplandor del azul de marca: sin él el
+       botón se ve pegado; con él, encendido. Quieto no cuesta un fotograma. */
     box-shadow: var(--shadow-lg);
+    box-shadow: var(--shadow-lg),
+                0 6px 28px color-mix(in srgb, var(--brand-400) 42%, transparent);
     cursor: pointer;
-    /* Entra sola, un instante después de que la página se asiente: aparecer
-       de golpe junto al resto del contenido pasa desapercibido. */
-    animation: asst-fab-in var(--duration-slow) var(--ease-spring) 600ms backwards;
+    -webkit-tap-highlight-color: transparent;
+    /* Entra solo, un instante después de que la página se asiente: aparecer
+       de golpe junto al resto del contenido pasa desapercibido.
+
+       El botón SOLO se funde; el muelle lo hace el sello de dentro. Con la
+       escala aquí, durante los 600 ms de espera el fotograma inicial de la
+       animación —que `backwards` aplica antes de empezar— encogía el botón a
+       0,6: medido en Chrome, 36×36 px en lugar de 60, y 31×31 en los teléfonos
+       donde mide 52. Eso es una zona pulsable por debajo del mínimo accesible
+       durante el primer momento de CADA página, y permanente en cualquier
+       motor que no llegue a arrancar la animación. Lo que se anima no puede
+       ser la caja del único control que hay aquí. */
+    animation: asst-fab-in var(--duration-slow) var(--ease-out) 600ms backwards;
     transition: transform var(--duration-base) var(--ease-spring),
                 box-shadow var(--duration-base) var(--ease-out),
                 opacity var(--duration-fast) var(--ease-out);
 }
 
 .asst-fab:hover {
-    transform: translateY(-2px) scale(1.04);
+    transform: translateY(-3px) scale(1.05);
     box-shadow: var(--shadow-xl);
+    box-shadow: var(--shadow-xl),
+                0 12px 40px color-mix(in srgb, var(--brand-400) 58%, transparent);
 }
 
-.asst-fab:active { transform: translateY(0) scale(0.96); }
+.asst-fab:active { transform: translateY(0) scale(0.94); }
 
 .asst-fab:focus-visible {
     outline: 2px solid var(--brand);
-    outline-offset: 3px;
+    outline-offset: 4px;
 }
 
-.asst-fab svg {
+/* El sello, por encima del halo. Sin esta capa posicionada el pseudoelemento
+   del halo se pintaría encima del dibujo, porque lo posicionado va después. */
+.asst-fab-mark {
+    position: relative;
+    z-index: var(--z-base);
+    display: grid;
+    place-items: center;
+    animation: asst-mark-in var(--duration-slow) var(--ease-spring) 640ms backwards;
+    transition: transform var(--duration-base) var(--ease-spring);
+}
+
+.asst-fab-mark svg {
     width: 30px;
     height: 30px;
 }
 
-/* El botón desaparece mientras el panel ocupa su sitio. */
+.asst-fab:hover .asst-fab-mark { transform: rotate(-8deg) scale(1.06); }
+
+/* Halo: un barrido cónico desenfocado alrededor del botón. En reposo está
+   quieto y tenue —un anillo que gira sin parar en las once páginas es batería
+   regalada—; gira al acercarse el puntero, al recibir el foco y durante la
+   primera visita, que es cuando hay algo que decir. */
+.asst-fab-halo {
+    position: absolute;
+    inset: -6px;
+    border-radius: var(--radius-full);
+    background: conic-gradient(from 210deg,
+        transparent 0deg,
+        var(--accent) 60deg,
+        var(--brand-300) 140deg,
+        transparent 250deg);
+    filter: blur(7px);
+    opacity: 0.38;
+    transition: opacity var(--duration-base) var(--ease-out);
+}
+
+.asst-fab:hover .asst-fab-halo,
+.asst-fab:focus-visible .asst-fab-halo { opacity: 0.85; }
+
+.asst-fab:hover .asst-fab-halo,
+.asst-fab:focus-visible .asst-fab-halo,
+.asst-fab:has(.asst-ping) .asst-fab-halo {
+    animation: asst-orbit 6s linear infinite;
+}
+
+/* El botón desaparece mientras el panel ocupa su sitio. Se va girando hacia
+   dentro, como si el panel lo absorbiera. */
 .ds-assistant.is-open .asst-fab {
     opacity: 0;
-    transform: scale(0.8);
+    transform: scale(0.72) rotate(-22deg);
     pointer-events: none;
 }
 
@@ -104,8 +217,9 @@ body:has(.chat-page) .ds-assistant:not(.is-open) {
    interrumpir a nadie. Desaparece en cuanto se abre el panel una vez. */
 .asst-ping {
     position: absolute;
-    top: 2px;
-    right: 2px;
+    top: 3px;
+    right: 3px;
+    z-index: calc(var(--z-base) + 1);
     width: 12px;
     height: 12px;
     background: var(--accent);
@@ -123,13 +237,26 @@ body:has(.chat-page) .ds-assistant:not(.is-open) {
 }
 
 @keyframes asst-fab-in {
-    from { opacity: 0; transform: translateY(18px) scale(0.6); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* El muelle, sobre el dibujo: puede deformarse cuanto quiera porque no es lo
+   que se pulsa. */
+@keyframes asst-mark-in {
+    from { transform: translateY(10px) scale(0.3) rotate(-50deg); }
+    to { transform: translateY(0) scale(1) rotate(0deg); }
 }
 
 @keyframes asst-ping {
     0% { opacity: 0.7; transform: scale(0.8); }
     70%, 100% { opacity: 0; transform: scale(1.9); }
+}
+
+/* Un solo giro para las dos piezas que orbitan: el halo del botón y el barrido
+   del avatar. Compartirlo las mantiene a la misma velocidad angular. */
+@keyframes asst-orbit {
+    to { transform: rotate(1turn); }
 }
 
 /* ==========================================================================
@@ -143,13 +270,13 @@ body:has(.chat-page) .ds-assistant:not(.is-open) {
     display: flex;
     flex-direction: column;
     width: min(var(--asst-panel-max), calc(100vw - var(--space-10)));
-    height: min(600px, calc(100vh - var(--header-height) - var(--space-16)));
-    height: min(600px, calc(100dvh - var(--header-height) - var(--space-16)));
+    height: min(620px, calc(100vh - var(--header-height) - var(--space-16)));
+    height: min(620px, calc(100dvh - var(--header-height) - var(--space-16)));
     overflow: hidden;
     background: var(--bg-surface);
     border: 1px solid var(--border-default);
     border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-xl);
+    box-shadow: var(--shadow-xl), var(--edge-light);
     /* El origen abajo a la derecha hace que el panel parezca desplegarse
        desde el propio botón, no aparecer flotando en el aire. */
     transform-origin: 100% 100%;
@@ -161,41 +288,89 @@ body:has(.chat-page) .ds-assistant:not(.is-open) {
 }
 
 @keyframes asst-panel-in {
-    from { opacity: 0; transform: translateY(16px) scale(0.92); }
+    from { opacity: 0; transform: translateY(18px) scale(0.9); }
     to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @keyframes asst-panel-out {
     from { opacity: 1; transform: translateY(0) scale(1); }
-    to { opacity: 0; transform: translateY(10px) scale(0.95); }
+    to { opacity: 0; transform: translateY(10px) scale(0.94); }
 }
+
+/* Aquí hubo una entrada escalonada para la cabecera, los chips y el
+   compositor: `opacity: 0` con `backwards` y un retardo de 60, 110 y 140 ms,
+   para que el panel se montara pieza a pieza en vez de aparecer terminado.
+   Se quitó tras verla fallar. `backwards` significa que, mientras corre el
+   retardo, el elemento se pinta en su primer fotograma —invisible—, y ese
+   estado dura lo que tarde la animación en arrancar. Capturado en Chrome con
+   el compositor detenido, las tres piezas se quedaron en opacidad 0: el panel
+   abierto, la conversación a la vista, y ni cabecera, ni sugerencias, ni
+   campo donde escribir. El adorno valía poco y podía esconder lo único que
+   hay que usar; el panel entero ya entra con su propia animación, que es la
+   que se nota. Una animación decorativa no puede ser la que decide si un
+   control existe. */
 
 /* ==========================================================================
    3. Cabecera
+
+   Es la cara del asistente: el sello, el nombre con su distintivo y una línea
+   de estado. Detrás, el mismo resplandor de marca que encabeza las secciones
+   del sitio, para que la ventana no arranque en una franja plana.
    ========================================================================== */
 
 .asst-head {
+    position: relative;
     display: flex;
     align-items: center;
     gap: var(--space-3);
     flex-shrink: 0;
     padding: var(--space-3) var(--space-4);
+    overflow: hidden;
     background: var(--bg-raised);
     border-bottom: 1px solid var(--border-subtle);
 }
 
+.asst-head::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--gradient-glow);
+    pointer-events: none;
+}
+
+.asst-head > * { position: relative; }
+
 .asst-avatar {
+    position: relative;
     display: grid;
     place-items: center;
     flex-shrink: 0;
-    width: 40px;
-    height: 40px;
+    width: 42px;
+    height: 42px;
+    overflow: hidden;
     color: var(--on-navy);
     background: var(--gradient-brand);
     border-radius: var(--radius-full);
+    box-shadow: var(--shadow-md);
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--brand-400) 40%, transparent);
 }
 
-.asst-avatar svg { width: 26px; height: 26px; }
+/* Barrido de luz girando dentro del avatar: el asistente está despierto. */
+.asst-avatar-orbit {
+    position: absolute;
+    inset: 0;
+    background: conic-gradient(from 0deg,
+        transparent 0deg,
+        color-mix(in srgb, var(--on-navy) 42%, transparent) 80deg,
+        transparent 190deg);
+    animation: asst-orbit 5.5s linear infinite;
+}
+
+.asst-avatar svg {
+    position: relative;
+    width: 26px;
+    height: 26px;
+}
 
 .asst-id {
     display: flex;
@@ -205,10 +380,44 @@ body:has(.chat-page) .ds-assistant:not(.is-open) {
 }
 
 .asst-name {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;
+    font-family: var(--font-display);
     font-size: var(--text-sm);
     font-weight: 700;
+    letter-spacing: var(--tracking-tight);
     line-height: var(--leading-snug);
     color: var(--text-primary);
+}
+
+/* A 360 px la fila de la cabecera se queda en 194 px para el nombre y
+   «Asistente DiscoveryShop» pide 175 más el distintivo: en vez de partirlo con
+   puntos suspensivos, el apellido se retira en el corte de 400 px y queda
+   «Asistente · IA», que con el sello al lado dice lo mismo. */
+.asst-name-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Distintivo «IA». Pequeño y sin gritar: dice de qué va esto sin ocupar una
+   línea de texto. */
+.asst-badge {
+    flex-shrink: 0;
+    padding: 1px var(--space-2);
+    font-family: var(--font-sans);
+    font-size: var(--text-3xs);
+    font-weight: 700;
+    letter-spacing: var(--tracking-wide);
+    color: var(--accent);
+    background: var(--accent-soft);
+    border: 1px solid var(--border-default);
+    border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+    border-radius: var(--radius-full);
+    line-height: var(--leading-snug);
 }
 
 .asst-status {
@@ -218,6 +427,12 @@ body:has(.chat-page) .ds-assistant:not(.is-open) {
     font-size: var(--text-2xs);
     color: var(--text-secondary);
     line-height: var(--leading-snug);
+    /* En un panel de 320 px, «busca y redacta por ti» no puede empujar a los
+       botones de la derecha fuera de la fila. */
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .asst-status-dot {
@@ -226,6 +441,7 @@ body:has(.chat-page) .ds-assistant:not(.is-open) {
     flex-shrink: 0;
     background: var(--success);
     border-radius: var(--radius-full);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 22%, transparent);
     animation: pulse-soft 2.6s var(--ease-in-out) infinite;
 }
 
@@ -242,13 +458,16 @@ body:has(.chat-page) .ds-assistant:not(.is-open) {
     border-radius: var(--radius-sm);
     cursor: pointer;
     transition: background-color var(--duration-fast) var(--ease-out),
-                color var(--duration-fast) var(--ease-out);
+                color var(--duration-fast) var(--ease-out),
+                transform var(--duration-fast) var(--ease-out);
 }
 
 .asst-head-btn:hover {
     background: var(--bg-hover);
     color: var(--text-primary);
 }
+
+.asst-head-btn:active { transform: scale(var(--depth-press)); }
 
 .asst-head-btn:focus-visible {
     outline: 2px solid var(--brand);
@@ -275,10 +494,18 @@ body:has(.chat-page) .ds-assistant:not(.is-open) {
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
+    /* Con dos mensajes, el hilo se quedaba pegado arriba y sobraba media
+       ventana de vacío entre la conversación y el campo de escribir. Esto lo
+       apoya abajo, como cualquier chat. En cuanto el contenido desborda, el
+       margen automático vale cero y el desplazamiento funciona igual —que es
+       lo que no hace `justify-content: flex-end`, que recorta por arriba. */
+    margin-top: auto;
 }
 
 .asst-msg {
     display: flex;
+    align-items: flex-end;
+    gap: var(--space-2);
     max-width: 100%;
 }
 
@@ -287,22 +514,46 @@ body:has(.chat-page) .ds-assistant:not(.is-open) {
 
 .asst-msg.is-new { animation: fade-in-up var(--duration-base) var(--ease-out); }
 
+/* Sello junto a lo que dice el asistente: es lo que convierte una lista de
+   recuadros en alguien hablando. En una ráfaga seguida solo lo lleva el
+   primero —se reserva el hueco para no descuadrar la columna—, salvo cuando
+   está pensando, que es justo cuando interesa mirarlo. */
+.asst-msg-mark {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    align-self: flex-end;
+    width: 24px;
+    height: 24px;
+    margin-bottom: 2px;
+    color: var(--brand);
+}
+
+.asst-msg-mark svg { width: 18px; height: 18px; }
+
+.asst-msg-bot + .asst-msg-bot > .asst-msg-mark { visibility: hidden; }
+.asst-msg-bot + .asst-msg-bot.is-thinking > .asst-msg-mark { visibility: visible; }
+
 .asst-bubble {
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
-    max-width: 88%;
+    max-width: 84%;
     min-width: 0;
     padding: var(--space-3) var(--space-4);
     background: var(--bg-raised);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-lg);
     border-bottom-left-radius: var(--radius-xs);
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow-sm), var(--edge-light);
 }
 
 .asst-msg-mine .asst-bubble {
-    background: var(--brand);
+    max-width: 86%;
+    /* Un degradado entre dos pasos de la propia marca: en oscuro va del claro
+       al más claro, en claro del profundo al más profundo, así que el texto
+       de encima nunca pierde contraste respecto al relleno plano. */
+    background: linear-gradient(150deg, var(--brand-hover), var(--brand) 38%);
     border-color: transparent;
     color: var(--brand-contrast);
     border-bottom-left-radius: var(--radius-lg);
@@ -315,9 +566,11 @@ body:has(.chat-page) .ds-assistant:not(.is-open) {
     border-color: var(--danger);
 }
 
+.asst-msg.is-error .asst-msg-mark { color: var(--danger); }
+
 .asst-text {
     font-size: var(--text-sm);
-    line-height: var(--leading-snug);
+    line-height: var(--leading-normal);
     /* Una URL o una palabra larguísima nunca debe desbordar la burbuja. */
     overflow-wrap: anywhere;
 }
@@ -333,6 +586,53 @@ body:has(.chat-page) .ds-assistant:not(.is-open) {
     text-align: right;
 }
 
+/* Rótulo que encabeza un bloque dentro de la burbuja: los pedidos hallados o
+   el borrador. Es lo que deja claro de un vistazo qué está haciendo la IA. */
+.asst-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: calc(var(--space-2) * -1);
+    font-size: var(--text-3xs);
+    font-weight: 700;
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.asst-kicker svg { flex-shrink: 0; }
+
+/* ==========================================================================
+   4b. Redactando un pedido
+
+   La diferencia que más importa: una cosa es contestar una pregunta y otra
+   convertir una frase suelta en un pedido publicable, que es lo que esta
+   plataforma existe para hacer. Esas respuestas llevan el filo de acento, el
+   rótulo con el lápiz y una llamada rellena en lugar de un enlace tenue.
+   ========================================================================== */
+
+.asst-msg.is-composing .asst-bubble {
+    background: var(--bg-raised);
+    background: color-mix(in srgb, var(--accent) 7%, var(--bg-raised));
+    border-color: var(--accent);
+    border-color: color-mix(in srgb, var(--accent) 32%, transparent);
+    box-shadow: inset 3px 0 0 var(--accent), var(--shadow-sm);
+}
+
+.asst-msg.is-composing .asst-kicker { color: var(--accent); }
+.asst-msg.is-composing .asst-msg-mark { color: var(--accent); }
+
+.asst-msg.is-composing .asst-more {
+    color: var(--brand-contrast);
+    background: linear-gradient(150deg, var(--brand-hover), var(--brand) 38%);
+    box-shadow: var(--shadow-sm);
+}
+
+.asst-msg.is-composing .asst-more:hover {
+    background: var(--brand-hover);
+    box-shadow: var(--shadow-md);
+}
+
 /* ==========================================================================
    5. Resultados dentro de la burbuja
    ========================================================================== */
@@ -346,7 +646,7 @@ body:has(.chat-page) .ds-assistant:not(.is-open) {
 .asst-card {
     display: flex;
     align-items: center;
-    gap: var(--space-3);
+    gap: var(--space-2);
     padding: var(--space-2);
     background: var(--bg-overlay);
     border: 1px solid var(--border-subtle);
@@ -355,13 +655,15 @@ body:has(.chat-page) .ds-assistant:not(.is-open) {
     text-decoration: none;
     transition: border-color var(--duration-fast) var(--ease-out),
                 background-color var(--duration-fast) var(--ease-out),
+                box-shadow var(--duration-fast) var(--ease-out),
                 transform var(--duration-fast) var(--ease-out);
 }
 
 .asst-card:hover {
     background: var(--bg-hover);
     border-color: var(--brand-ring);
-    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+    transform: translateY(var(--depth-lift));
 }
 
 .asst-card:focus-visible {
@@ -371,11 +673,11 @@ body:has(.chat-page) .ds-assistant:not(.is-open) {
 
 .asst-card-thumb {
     flex-shrink: 0;
-    width: 46px;
-    height: 46px;
+    width: 44px;
+    height: 44px;
     object-fit: cover;
     background: var(--bg-sunken);
-    border-radius: var(--radius-xs);
+    border-radius: var(--radius-sm);
 }
 
 .asst-card-body {
@@ -407,19 +709,29 @@ body:has(.chat-page) .ds-assistant:not(.is-open) {
     white-space: nowrap;
 }
 
+/* El presupuesto, en pastilla: es el dato por el que se compara una ficha con
+   otra, y suelto entre dos textos grises se perdía. */
 .asst-card-price {
     flex-shrink: 0;
-    align-self: flex-start;
-    font-size: var(--text-xs);
+    align-self: center;
+    padding: 2px var(--space-2);
+    font-size: var(--text-3xs);
     font-weight: 750;
     color: var(--brand);
+    background: var(--brand-soft);
+    border-radius: var(--radius-full);
     white-space: nowrap;
+    font-variant-numeric: tabular-nums;
 }
 
 /* Enlace de «ver todos los resultados» */
 .asst-more {
-    display: block;
-    padding: var(--space-3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    min-height: 40px;
+    padding: var(--space-2) var(--space-4);
     text-align: center;
     font-size: var(--text-xs);
     font-weight: 650;
@@ -429,13 +741,21 @@ body:has(.chat-page) .ds-assistant:not(.is-open) {
     border-radius: var(--radius-md);
     text-decoration: none;
     transition: background-color var(--duration-fast) var(--ease-out),
-                color var(--duration-fast) var(--ease-out);
+                color var(--duration-fast) var(--ease-out),
+                box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.asst-more::after {
+    content: "→";
+    transition: transform var(--duration-fast) var(--ease-out);
 }
 
 .asst-more:hover {
     background: var(--brand);
     color: var(--brand-contrast);
 }
+
+.asst-more:hover::after { transform: translateX(3px); }
 
 .asst-more:focus-visible {
     outline: 2px solid var(--brand);
@@ -445,7 +765,7 @@ body:has(.chat-page) .ds-assistant:not(.is-open) {
 /* Reintento tras un fallo del motor */
 .asst-retry {
     align-self: flex-start;
-    min-height: 36px;
+    min-height: 40px;
     padding: var(--space-2) var(--space-4);
     font: inherit;
     font-size: var(--text-xs);
@@ -463,32 +783,60 @@ body:has(.chat-page) .ds-assistant:not(.is-open) {
 .asst-retry:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 
 /* ==========================================================================
-   6. «Escribiendo…»
+   6. «Pensando…»
+
+   Tres puntos botando son el gesto de un chat entre personas. Aquí, además,
+   se dice la palabra y se le pasa un brillo por encima: una máquina que está
+   razonando se parece más a eso que a alguien tecleando.
    ========================================================================== */
 
 .asst-typing {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: var(--space-3);
     align-self: flex-start;
     padding: var(--space-3) var(--space-4);
     background: var(--bg-raised);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-lg);
     border-bottom-left-radius: var(--radius-xs);
+    box-shadow: var(--shadow-sm), var(--edge-light);
     animation: fade-in var(--duration-fast) var(--ease-out);
+}
+
+.asst-typing-dots {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
 }
 
 .asst-typing-dot {
     width: 7px;
     height: 7px;
-    background: var(--text-secondary);
+    background: var(--brand);
     border-radius: var(--radius-full);
     animation: asst-bounce 1.25s var(--ease-in-out) infinite;
 }
 
 .asst-typing-dot:nth-child(2) { animation-delay: 0.17s; }
 .asst-typing-dot:nth-child(3) { animation-delay: 0.34s; }
+
+.asst-typing-label {
+    font-size: var(--text-2xs);
+    font-weight: 600;
+    color: var(--text-secondary);
+    /* El brillo recorre las letras. Si el navegador no sabe recortar el fondo
+       contra el texto, se queda el color declarado arriba y se lee igual. */
+    background: linear-gradient(100deg,
+        var(--text-muted) 24%,
+        var(--text-primary) 44%,
+        var(--text-muted) 64%);
+    background-size: 220% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shimmer 2s linear infinite;
+}
 
 @keyframes asst-bounce {
     0%, 62%, 100% { transform: translateY(0); opacity: 0.38; }
@@ -497,36 +845,54 @@ body:has(.chat-page) .ds-assistant:not(.is-open) {
 
 /* ==========================================================================
    7. Sugerencias
+
+   Salieron del hilo y se anclaron sobre el compositor: dentro del hilo se
+   iban hacia arriba con el primer mensaje y dejaban de estar a mano justo
+   cuando servían. Aquí siguen visibles y se tocan sin apuntar.
    ========================================================================== */
 
 .asst-suggest {
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-2);
-    margin-top: var(--space-3);
+    flex-shrink: 0;
+    padding: var(--space-3) var(--space-4) 0;
+    background: var(--bg-surface);
+    border-top: 1px solid var(--border-subtle);
 }
 
 .asst-chip {
-    min-height: 36px;
+    position: relative;
+    /* 44 px de alto reales: es el mínimo táctil, y aquí no hay sitio para
+       trampas —el chip es lo que más se pulsa del panel. */
+    min-height: 44px;
     padding: var(--space-2) var(--space-4);
     font: inherit;
-    font-size: var(--text-2xs);
-    font-weight: 600;
+    font-size: var(--text-xs);
+    font-weight: 650;
     color: var(--brand);
     background: var(--brand-soft);
     border: 1px solid transparent;
+    border-color: color-mix(in srgb, var(--brand) 22%, transparent);
     border-radius: var(--radius-full);
     cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
     transition: background-color var(--duration-fast) var(--ease-out),
+                border-color var(--duration-fast) var(--ease-out),
                 color var(--duration-fast) var(--ease-out),
+                box-shadow var(--duration-fast) var(--ease-out),
                 transform var(--duration-fast) var(--ease-out);
 }
 
 .asst-chip:hover {
     background: var(--brand);
+    border-color: transparent;
     color: var(--brand-contrast);
-    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+    transform: translateY(var(--depth-lift));
 }
+
+.asst-chip:active { transform: scale(var(--depth-press)); }
 
 .asst-chip:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 
@@ -539,8 +905,12 @@ body:has(.chat-page) .ds-assistant:not(.is-open) {
     align-items: flex-end;
     gap: var(--space-2);
     flex-shrink: 0;
-    padding: var(--space-3);
+    padding: var(--space-3) var(--space-4);
     background: var(--bg-surface);
+}
+
+/* Sin sugerencias encima, el compositor necesita su propia línea de corte. */
+.asst-suggest[hidden] + .asst-composer {
     border-top: 1px solid var(--border-subtle);
 }
 
@@ -560,6 +930,7 @@ body:has(.chat-page) .ds-assistant:not(.is-open) {
     border: 1px solid var(--border-default);
     border-radius: var(--radius-lg);
     transition: border-color var(--duration-fast) var(--ease-out),
+                background-color var(--duration-fast) var(--ease-out),
                 box-shadow var(--duration-fast) var(--ease-out);
 }
 
@@ -567,8 +938,9 @@ body:has(.chat-page) .ds-assistant:not(.is-open) {
 
 .asst-input:focus {
     outline: none;
+    background: var(--bg-overlay);
     border-color: var(--brand);
-    box-shadow: 0 0 0 3px var(--brand-soft);
+    box-shadow: var(--focus-ring);
 }
 
 .asst-send {
@@ -579,22 +951,33 @@ body:has(.chat-page) .ds-assistant:not(.is-open) {
     min-height: 44px;
     padding: 0;
     color: var(--brand-contrast);
-    background: var(--brand);
+    background: linear-gradient(150deg, var(--brand-hover), var(--brand) 38%);
     border: 0;
     border-radius: var(--radius-lg);
     cursor: pointer;
-    transition: background-color var(--duration-fast) var(--ease-out),
-                opacity var(--duration-fast) var(--ease-out),
-                transform var(--duration-fast) var(--ease-out);
+    transition: opacity var(--duration-fast) var(--ease-out),
+                box-shadow var(--duration-fast) var(--ease-out),
+                transform var(--duration-base) var(--ease-spring);
 }
+
+.asst-send svg { transition: transform var(--duration-fast) var(--ease-out); }
 
 .asst-send:hover:not(:disabled) {
-    background: var(--brand-hover);
-    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+    box-shadow: var(--shadow-md),
+                0 4px 16px color-mix(in srgb, var(--brand-400) 45%, transparent);
+    transform: translateY(-2px);
 }
 
+.asst-send:hover:not(:disabled) svg { transform: translateX(1px) translateY(-1px); }
+
+.asst-send:active:not(:disabled) { transform: scale(var(--depth-press)); }
+
+/* Apagado mientras no hay nada que enviar: encoge un poco, para que al
+   escribir la primera letra se note que el botón se ha despertado. */
 .asst-send:disabled {
-    opacity: 0.45;
+    opacity: 0.4;
+    transform: scale(0.92);
     cursor: not-allowed;
 }
 
@@ -620,8 +1003,15 @@ body:has(.chat-page) .ds-assistant:not(.is-open) {
         bottom: var(--asst-edge);
     }
 
-    /* El contenedor deja de acotar al panel para que este pueda ocupar todo. */
-    .ds-assistant.is-open {
+    /* El contenedor deja de acotar al panel para que este pueda ocupar todo.
+       Va por identificador a propósito: dentro de la aplicación, `native.css`
+       vuelve a anclar `.ds-assistant` a la esquina con los márgenes de las
+       barras del sistema, y con la misma fuerza que una clase ganaba por ir
+       en el archivo de después —la hoja se quedaba a dieciséis píxeles de
+       los bordes derecho e inferior, con la página asomando por detrás. El
+       aire de las barras se lo pone el panel por dentro, unas líneas más
+       abajo, que es como se resuelven aquí las hojas a pantalla completa. */
+    #ds-assistant.is-open {
         inset: 0;
     }
 
@@ -638,9 +1028,35 @@ body:has(.chat-page) .ds-assistant:not(.is-open) {
         animation: asst-sheet-out var(--duration-fast) var(--ease-out) forwards;
     }
 
-    .asst-head { padding: var(--space-3); }
+    /* A pantalla completa la hoja llega al borde físico, así que el aire de
+       la barra de estado y el de los gestos se lo pone ella por dentro. Fuera
+       de la aplicación las dos medidas valen cero y no cambia nada. */
+    .asst-head {
+        padding: calc(var(--space-3) + var(--ds-inset-top, 0px)) var(--space-3) var(--space-3);
+    }
+
     .asst-thread { padding: var(--space-3); }
-    .asst-bubble { max-width: 92%; }
+
+    .asst-composer {
+        padding: var(--space-3) var(--space-3)
+                 calc(var(--space-3) + var(--ds-inset-bottom, 0px));
+    }
+
+    .asst-bubble { max-width: 86%; }
+
+    /* En una hoja estrecha las sugerencias se van a tres renglones y se comen
+       la conversación: se convierten en una fila que se arrastra de lado. */
+    .asst-suggest {
+        padding: var(--space-3) var(--space-3) 0;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        scrollbar-width: none;
+    }
+
+    .asst-suggest::-webkit-scrollbar { display: none; }
+
+    .asst-chip { flex: 0 0 auto; }
 }
 
 /* A pantalla completa el panel sube como una hoja, no se despliega desde una
@@ -656,12 +1072,26 @@ body:has(.chat-page) .ds-assistant:not(.is-open) {
 }
 
 @media (max-width: 400px) {
-    .asst-fab { width: 52px; height: 52px; }
-    .asst-fab svg { width: 26px; height: 26px; }
-    .asst-avatar { width: 36px; height: 36px; }
-    .asst-avatar svg { width: 23px; height: 23px; }
-    .asst-card-thumb { width: 40px; height: 40px; }
+    .ds-assistant { --asst-fab-size: 54px; }
+
+    .asst-fab-mark svg { width: 27px; height: 27px; }
+    .asst-avatar { width: 38px; height: 38px; }
+    .asst-avatar svg { width: 24px; height: 24px; }
+    .asst-card-thumb { width: 42px; height: 42px; }
     .asst-bubble { padding: var(--space-3); }
+    .asst-msg-mark { width: 20px; height: 20px; }
+    .asst-msg-mark svg { width: 16px; height: 16px; }
+
+    /* A 320 px la cabecera deja 142 px para el nombre y el estado. Ahí caben
+       «Asistente · IA» y «En línea»; lo demás se recortaba con puntos
+       suspensivos a mitad de palabra —«busca y redac…»—, que se lee peor que
+       no estar. Se retira entero en vez de partirlo. */
+    .asst-name-suffix,
+    .asst-status-more { display: none; }
+
+    /* Con el sello robando 28 px de fila, la burbuja no puede seguir pidiendo
+       el 86 % del ancho o el conjunto toca el borde. */
+    .asst-msg-bot .asst-bubble { max-width: calc(100% - var(--space-8)); }
 }
 
 /* ==========================================================================
@@ -673,18 +1103,35 @@ body:has(.chat-page) .ds-assistant:not(.is-open) {
 
 @media (prefers-reduced-motion: reduce) {
     .asst-fab,
+    .asst-fab-mark,
     .asst-panel,
     .asst-msg.is-new,
     .asst-typing { animation: none; }
 
     .asst-fab:hover,
+    .asst-fab:hover .asst-fab-mark,
     .asst-card:hover,
     .asst-chip:hover,
-    .asst-send:hover:not(:disabled) { transform: none; }
+    .asst-send:hover:not(:disabled),
+    .asst-send:hover:not(:disabled) svg,
+    .asst-more:hover::after { transform: none; }
 
     .asst-ping::after,
     .asst-status-dot,
-    .asst-typing-dot { animation: none; }
+    .asst-typing-dot,
+    .asst-avatar-orbit,
+    .asst-fab:hover .asst-fab-halo,
+    .asst-fab:focus-visible .asst-fab-halo,
+    .asst-fab:has(.asst-ping) .asst-fab-halo { animation: none; }
+
+    /* Sin el brillo recorriendo las letras, el recorte del fondo dejaría el
+       texto transparente: se devuelve el color plano. */
+    .asst-typing-label {
+        background: none;
+        animation: none;
+        -webkit-text-fill-color: currentColor;
+        color: var(--text-secondary);
+    }
 
     .asst-thread { scroll-behavior: auto; }
 }
